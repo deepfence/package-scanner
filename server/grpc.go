@@ -18,20 +18,20 @@ import (
 )
 
 type gRPCServer struct {
-	socket_path string
-	plugin_name string
+	socketPath string
+	pluginName string
 	pb.UnimplementedSyftPluginServer
 	pb.UnimplementedAgentPluginServer
 }
 
-func RunServer(socket_path string, plugin_name string) error {
+func RunServer(socketPath string, pluginName string) error {
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	lis, err := net.Listen("unix", socket_path)
+	lis, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func RunServer(socket_path string, plugin_name string) error {
 		done <- true
 	}()
 
-	impl := &gRPCServer{socket_path: socket_path, plugin_name: plugin_name}
+	impl := &gRPCServer{socketPath: socketPath, pluginName: pluginName}
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterSyftPluginServer(s, impl)
 	// Register reflection service on gRPC server.
@@ -59,14 +59,14 @@ func RunServer(socket_path string, plugin_name string) error {
 	return nil
 }
 
-func (s *gRPCServer) GetSBOMJSON(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
-	jsonBOM, err := syft.GetJSONSBOM(r.UserInput)
+func (s *gRPCServer) GetVulnerabilitySBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
+	jsonBOM, err := syft.GetVulnerabilitySBOM(r.UserInput)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 	req := pb.SBOMResult{}
-	json.Unmarshal(jsonBOM, &req)
+	err = json.Unmarshal(jsonBOM, &req)
 	if err != nil {
 		log.Error(err)
 		return nil, err

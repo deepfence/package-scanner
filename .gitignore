@@ -1,2 +1,4 @@
 vulnerability-sbom-plugin
 *.sock
+.idea
+vendor

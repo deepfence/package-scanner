@@ -8,7 +8,7 @@ import (
 )
 
 // TODO: Add support to filter based on language
-func GetJSONSBOM(userInput string) ([]byte, error) {
+func GetVulnerabilitySBOM(userInput string) ([]byte, error) {
 	if userInput == "" {
 		return nil, fmt.Errorf("user input is empty")
 	}

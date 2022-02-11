@@ -14,12 +14,12 @@ const (
 )
 
 var (
-	socket_path = flag.String("socket-path", "", "The server port")
-	user_input  = flag.String("user-input", "", "The user input")
+	socketPath = flag.String("socket-path", "", "The server port")
+	userInput  = flag.String("user-input", "", "The user input")
 )
 
-func run_once() {
-	jsonBOM, err := syft.GetJSONSBOM(*user_input)
+func runOnce() {
+	jsonBOM, err := syft.GetVulnerabilitySBOM(*userInput)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
@@ -30,12 +30,12 @@ func run_once() {
 func main() {
 	flag.Parse()
 
-	if *socket_path != "" {
-		err := server.RunServer(*socket_path, PLUGIN_NAME)
+	if *socketPath != "" {
+		err := server.RunServer(*socketPath, PLUGIN_NAME)
 		if err != nil {
 			log.Panic(err)
 		}
 	} else {
-		run_once()
+		runOnce()
 	}
 }
