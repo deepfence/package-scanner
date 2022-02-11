@@ -9,6 +9,7 @@ $(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
 clean:
 	(cd agent-plugins-grpc && make clean)
 	-rm -rf ./SecretScanner
+	-rm -rf vendor
 
 SYFTPLUGIN: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
 	go mod vendor
