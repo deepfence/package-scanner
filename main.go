@@ -3,39 +3,49 @@ package main
 import (
 	"flag"
 	"fmt"
-
-	"github.com/deepfence/vulnerability-sbom-plugin/internal/syft"
-	"github.com/deepfence/vulnerability-sbom-plugin/server"
+	"github.com/deepfence/vulnerability-sbom-plugin/vulnerability-sbom"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	PLUGIN_NAME = "SyftPlugin"
+	PluginName     = "SyftPlugin"
+	modeLocal      = "local"
+	modeGrpcServer = "grpc-server"
 )
 
 var (
-	socketPath = flag.String("socket-path", "", "The server port")
-	userInput  = flag.String("user-input", "", "The user input")
+	mode       = flag.String("mode", modeLocal, modeLocal+" | "+modeGrpcServer)
+	socketPath = flag.String("socket-path", "", "Socket path for grpc server")
+	source     = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
+	scanType   = flag.String("scan-type", "all", "base,java,python,ruby,php,javascript,rust,golang")
 )
 
 func runOnce() {
-	jsonBOM, err := syft.GetVulnerabilitySBOM(*userInput)
+	sbom, err := vulnerability_sbom.GetVulnerabilitySBOM(*source, *scanType)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
-	fmt.Println(string(jsonBOM))
+	fmt.Println(sbom.String())
 }
 
 func main() {
 	flag.Parse()
 
-	if *socketPath != "" {
-		err := server.RunServer(*socketPath, PLUGIN_NAME)
+	if *mode == modeLocal {
+		runOnce()
+	} else if *mode == modeGrpcServer {
+		if *socketPath == "" {
+			log.Errorf("socket-path is required")
+			return
+		}
+		err := vulnerability_sbom.RunServer(*socketPath, PluginName)
 		if err != nil {
-			log.Panic(err)
+			log.Errorf("error: %v", err)
+			return
 		}
 	} else {
-		runOnce()
+		log.Errorf("invalid mode")
+		return
 	}
 }
