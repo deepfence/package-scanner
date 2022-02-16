@@ -18,18 +18,18 @@ func GenerateSBOM(source string, scanType string) (*pb.SBOMResult, error) {
 		return nil, fmt.Errorf("source is empty")
 	}
 	syftArgs := []string{"packages", source, "-o", "json", "-q"}
-	if strings.HasPrefix(source, "dir:") {
+	if strings.HasPrefix(source, "dir:") || source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude")
-			syftArgs = append(syftArgs, "'."+excludeDir+"/**'")
+			syftArgs = append(syftArgs, "."+excludeDir+"/**")
 		}
 	} else {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude")
-			syftArgs = append(syftArgs, "'"+excludeDir+"'")
+			syftArgs = append(syftArgs, ""+excludeDir+"")
 		}
 	}
-	log.Infof("Generating SBOM: %s %s", source, syftArgs)
+	log.Infof("Generating SBOM: %s - syft %s", source, syftArgs)
 	cmd := exec.Command("syft", syftArgs...)
 	jsonBOM, err := cmd.Output()
 	sbom := pb.SBOMResult{}

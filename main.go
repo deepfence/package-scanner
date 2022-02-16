@@ -17,7 +17,7 @@ var (
 	mode       = flag.String("mode", modeLocal, modeLocal+" | "+modeGrpcServer)
 	socketPath = flag.String("socket-path", "", "Socket path for grpc server")
 	source     = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
-	scanType   = flag.String("scan-type", "all", "base,java,python,ruby,php,javascript,rust,golang")
+	scanType   = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
 )
 
 func runOnce() {
@@ -31,6 +31,10 @@ func runOnce() {
 
 func main() {
 	flag.Parse()
+	customFormatter := new(log.TextFormatter)
+	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	log.SetFormatter(customFormatter)
+	customFormatter.FullTimestamp = true
 
 	if *mode == modeLocal {
 		runOnce()

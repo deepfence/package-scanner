@@ -1,4 +1,4 @@
-all: SYFTPLUGIN
+all: proto
 
 $(PWD)/agent-plugins-grpc/proto/*.proto:
 	$(PWD)/bootstrap.sh
@@ -9,10 +9,8 @@ $(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
 clean:
 	(cd agent-plugins-grpc && make clean)
 	-rm -rf package-scanner
-	-rm -rf vendor
 
-SYFTPLUGIN: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
-	go mod vendor
+proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
 	go build -v
 
 .PHONY: clean
