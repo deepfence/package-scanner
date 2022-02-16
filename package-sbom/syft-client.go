@@ -1,4 +1,4 @@
-package vulnerability_sbom
+package package_sbom
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ var (
 	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/mnt", "/run", "/proc", "/dev", "/boot", "/etc", "/sys", "/lost+found"}
 )
 
-func GetVulnerabilitySBOM(source string, scanType string) (*pb.SBOMResult, error) {
+func GenerateSBOM(source string, scanType string) (*pb.SBOMResult, error) {
 	if source == "" {
 		return nil, fmt.Errorf("source is empty")
 	}

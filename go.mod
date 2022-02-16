@@ -1,4 +1,4 @@
-module github.com/deepfence/vulnerability-sbom-plugin
+module github.com/deepfence/package-scanner
 
 go 1.17
 

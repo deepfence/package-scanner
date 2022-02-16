@@ -1,4 +1,4 @@
-vulnerability-sbom-plugin
+package-scanner
 *.sock
 .idea
 vendor

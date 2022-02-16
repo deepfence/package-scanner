@@ -1,4 +1,4 @@
-package vulnerability_sbom
+package package_sbom
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 type gRPCServer struct {
 	socketPath string
 	pluginName string
-	pb.UnimplementedSyftPluginServer
+	pb.UnimplementedPackageScannerServer
 	pb.UnimplementedAgentPluginServer
 }
 
@@ -42,7 +42,7 @@ func RunServer(socketPath string, pluginName string) error {
 
 	impl := &gRPCServer{socketPath: socketPath, pluginName: pluginName}
 	pb.RegisterAgentPluginServer(s, impl)
-	pb.RegisterSyftPluginServer(s, impl)
+	pb.RegisterPackageScannerServer(s, impl)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	log.Infof("main: server listening at %v", lis.Addr())
@@ -55,8 +55,8 @@ func RunServer(socketPath string, pluginName string) error {
 	return nil
 }
 
-func (s *gRPCServer) GetVulnerabilitySBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
-	sbom, err := GetVulnerabilitySBOM(r.Source, r.ScanType)
+func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
+	sbom, err := GenerateSBOM(r.Source, r.ScanType)
 	if err != nil {
 		log.Error(err)
 		return nil, err

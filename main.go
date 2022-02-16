@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/deepfence/vulnerability-sbom-plugin/vulnerability-sbom"
+	"github.com/deepfence/package-scanner/package-sbom"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,7 +21,7 @@ var (
 )
 
 func runOnce() {
-	sbom, err := vulnerability_sbom.GetVulnerabilitySBOM(*source, *scanType)
+	sbom, err := package_sbom.GenerateSBOM(*source, *scanType)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
@@ -39,7 +39,7 @@ func main() {
 			log.Errorf("socket-path is required")
 			return
 		}
-		err := vulnerability_sbom.RunServer(*socketPath, PluginName)
+		err := package_sbom.RunServer(*socketPath, PluginName)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return
