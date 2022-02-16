@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	PluginName     = "SyftPlugin"
+	PluginName     = "PackageScanner"
 	modeLocal      = "local"
 	modeGrpcServer = "grpc-server"
 )
