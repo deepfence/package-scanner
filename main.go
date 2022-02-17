@@ -8,14 +8,17 @@ import (
 )
 
 const (
-	PluginName     = "PackageScanner"
-	modeLocal      = "local"
-	modeGrpcServer = "grpc-server"
+	PluginName             = "PackageScanner"
+	modeLocal              = "local"
+	modeGrpcServer         = "grpc-server"
+	jsonOutput             = "json"
+	deepfenceConsoleOutput = "deepfence-console"
 )
 
 var (
 	mode       = flag.String("mode", modeLocal, modeLocal+" | "+modeGrpcServer)
 	socketPath = flag.String("socket-path", "", "Socket path for grpc server")
+	output     = flag.String("output", jsonOutput, jsonOutput+" | "+deepfenceConsoleOutput)
 	source     = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
 	scanType   = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
 )

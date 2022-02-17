@@ -1,7 +1,6 @@
 package package_sbom
 
 import (
-	"encoding/json"
 	"fmt"
 	pb "github.com/deepfence/agent-plugins-grpc/proto"
 	log "github.com/sirupsen/logrus"
@@ -32,11 +31,10 @@ func GenerateSBOM(source string, scanType string) (*pb.SBOMResult, error) {
 	log.Infof("Generating SBOM: %s - syft %s", source, syftArgs)
 	cmd := exec.Command("syft", syftArgs...)
 	jsonBOM, err := cmd.Output()
-	sbom := pb.SBOMResult{}
-	err = json.Unmarshal(jsonBOM, &sbom)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
+	sbom := pb.SBOMResult{Sbom: string(jsonBOM)}
 	return &sbom, nil
 }
