@@ -18,7 +18,6 @@ import (
 	syftSource "github.com/anchore/syft/syft/source"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
-	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -74,12 +73,17 @@ func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 
 	if config.VulnerabilityScan == true {
 		publisher, err = output.NewPublisher(config)
+		if err != nil {
+			return nil, err
+		}
 		publisher.PublishScanStatus()
 	}
 
 	sbom, err := syftProvider(config.Source, exclusions, catalogerConfig, catalogers, registryOptions)
 	if err != nil {
-		publisher.PublishScanError(err.Error())
+		if config.VulnerabilityScan == true {
+			publisher.PublishScanError(err.Error())
+		}
 		return nil, err
 	}
 
@@ -110,11 +114,6 @@ func syftProvider(source string, exclusions []string, config cataloger.Config, c
 		return nil, err
 	}
 	release := linux.IdentifyRelease(resolver)
-	if release != nil {
-		logrus.Infof("identified distro: %s", release.String())
-	} else {
-		logrus.Info("could not identify distro")
-	}
 	catalog, _, err := cataloger.Catalog(resolver, release, catalogers...)
 	if err != nil {
 		return nil, err

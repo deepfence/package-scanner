@@ -29,7 +29,7 @@ func NewPublisher(config util.Config) (*Publisher, error) {
 func (p *Publisher) publishScanStatus(message string, status string) {
 	err := p.dfClient.SendScanStatustoConsole(message, status)
 	if err != nil {
-		logrus.Error(p.config.ScanId, err.Error())
+		logrus.Error(p.config.ScanId, " ", err.Error())
 	}
 }
 
@@ -65,7 +65,7 @@ func (p *Publisher) RunVulnerabilityScan(sbom *util.Sbom) {
 	err := p.dfClient.SendSBOMtoConsole(sbom)
 	if err != nil {
 		p.PublishScanError(err.Error())
-		logrus.Error(p.config.ScanId, err.Error())
+		logrus.Error(p.config.ScanId, " ", err.Error())
 	}
 }
 

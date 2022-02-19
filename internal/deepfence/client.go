@@ -29,7 +29,7 @@ func NewClient(config util.Config) (*Client, error) {
 		return nil, err
 	}
 	mgmtConsoleUrl := config.ManagementConsoleUrl + ":" + config.ManagementConsolePort
-	if mgmtConsoleUrl != "" {
+	if mgmtConsoleUrl == "" {
 		return nil, fmt.Errorf("management console url is required")
 	}
 	return &Client{config: config, httpClient: httpClient, mgmtConsoleUrl: mgmtConsoleUrl}, nil
