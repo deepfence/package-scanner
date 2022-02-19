@@ -4,6 +4,7 @@ import (
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/sirupsen/logrus"
+	"io"
 	"time"
 )
 
@@ -37,6 +38,10 @@ func (p *Publisher) PublishScanError(errMsg string) {
 	p.stopScanStatus <- true
 	time.Sleep(3 * time.Second)
 	p.PublishScanStatusMessage(errMsg, "ERROR")
+}
+
+func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
+	return p.dfClient.SendDocumentToConsole(requestUrl, postReader)
 }
 
 func (p *Publisher) PublishScanStatus(status string) {
