@@ -2,34 +2,54 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/deepfence/package-scanner/package-sbom"
+	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
+	"strconv"
+	"strings"
 )
 
 const (
-	PluginName             = "PackageScanner"
-	modeLocal              = "local"
-	modeGrpcServer         = "grpc-server"
-	jsonOutput             = "json"
-	deepfenceConsoleOutput = "deepfence-console"
+	PluginName = "PackageScanner"
 )
 
 var (
-	mode       = flag.String("mode", modeLocal, modeLocal+" | "+modeGrpcServer)
-	socketPath = flag.String("socket-path", "", "Socket path for grpc server")
-	output     = flag.String("output", jsonOutput, jsonOutput+" | "+deepfenceConsoleOutput)
-	source     = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
-	scanType   = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
+	mode                  = flag.String("mode", util.ModeLocal, util.ModeLocal+" | "+util.ModeGrpcServer)
+	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
+	output                = flag.String("output", util.JsonOutput, "Output format: json")
+	quiet                 = flag.Bool("quiet", false, "Don't display any output in stdout")
+	managementConsoleUrl  = flag.String("mgmt-console-url", "", "Deepfence Management Console URL")
+	managementConsolePort = flag.Int("mgmt-console-port", 443, "Deepfence Management Console Port")
+	vulnerabilityScan     = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
+	deepfenceKey          = flag.String("deepfence-key", "", "Deepfence key for auth")
+	source                = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
+	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
+	scanId                = flag.String("scan-id", "", "(Optional) Scan id")
 )
 
-func runOnce() {
-	sbom, err := package_sbom.GenerateSBOM(*source, *scanType)
+func runOnce(config util.Config) {
+	hostname := util.GetHostname()
+	if strings.HasPrefix(config.Source, "dir:") {
+		hostname := util.GetHostname()
+		config.HostName = hostname
+		config.NodeId = hostname
+		config.NodeType = util.NodeTypeHost
+		if config.ScanId == "" {
+			config.ScanId = hostname + "_" + util.GetDatetimeNow()
+		}
+	} else {
+		config.NodeId = config.Source
+		config.HostName = hostname
+		config.NodeType = util.NodeTypeImage
+		if config.ScanId == "" {
+			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
+		}
+	}
+	_, err := package_sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
-	fmt.Println(sbom.String())
 }
 
 func main() {
@@ -39,14 +59,28 @@ func main() {
 	log.SetFormatter(customFormatter)
 	customFormatter.FullTimestamp = true
 
-	if *mode == modeLocal {
-		runOnce()
-	} else if *mode == modeGrpcServer {
+	config := util.Config{
+		Mode:                  *mode,
+		SocketPath:            *socketPath,
+		Output:                *output,
+		Quiet:                 *quiet,
+		ManagementConsoleUrl:  *managementConsoleUrl,
+		ManagementConsolePort: strconv.Itoa(*managementConsolePort),
+		DeepfenceKey:          *deepfenceKey,
+		Source:                *source,
+		ScanType:              *scanType,
+		VulnerabilityScan:     *vulnerabilityScan,
+		ScanId:                *scanId,
+	}
+
+	if *mode == util.ModeLocal {
+		runOnce(config)
+	} else if *mode == util.ModeGrpcServer {
 		if *socketPath == "" {
 			log.Errorf("socket-path is required")
 			return
 		}
-		err := package_sbom.RunServer(*socketPath, PluginName)
+		err := package_sbom.RunServer(PluginName, config)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return
