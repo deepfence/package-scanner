@@ -5,10 +5,12 @@ $(PWD)/agent-plugins-grpc/proto/*.proto:
 
 $(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
 	(cd agent-plugins-grpc && make go)
+	-rm -rf proto
+	cp -r agent-plugins-grpc/proto .
 
 clean:
 	(cd agent-plugins-grpc && make clean)
-	-rm -rf package-scanner
+	-rm -rf package-scanner proto
 
 proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
 	go build -v

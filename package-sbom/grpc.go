@@ -2,9 +2,8 @@ package package_sbom
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	pb "github.com/deepfence/agent-plugins-grpc/proto"
+	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -97,14 +96,11 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		RegistryId:            r.RegistryId,
 	}
 
-	sbom, err := GenerateSBOM(config)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	sbomBytes, err := json.Marshal(&sbom)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.SBOMResult{Sbom: string(sbomBytes)}, nil
+	go func() {
+		_, err := GenerateSBOM(config)
+		if err != nil {
+			log.Error(err)
+		}
+	}()
+	return &pb.SBOMResult{Sbom: "sbom generation started"}, nil
 }

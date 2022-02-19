@@ -2,3 +2,4 @@ package-scanner
 *.sock
 .idea
 vendor
+proto

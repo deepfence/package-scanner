@@ -2,15 +2,13 @@ module github.com/deepfence/package-scanner
 
 go 1.17
 
-replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc
-
 require (
 	github.com/anchore/grype v0.33.0
 	github.com/anchore/stereoscope v0.0.0-20220217141419-c6f02aed9ed2
 	github.com/anchore/syft v0.38.0
-	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
 	github.com/sirupsen/logrus v1.8.1
 	google.golang.org/grpc v1.44.0
+	google.golang.org/protobuf v1.27.1
 )
 
 require (
@@ -75,5 +73,4 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/genproto v0.0.0-20211111162719-482062a4217b // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
 )
