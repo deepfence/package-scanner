@@ -76,7 +76,7 @@ func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 		if err != nil {
 			return nil, err
 		}
-		publisher.PublishScanStatus()
+		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
 	sbom, err := syftProvider(config.Source, exclusions, catalogerConfig, catalogers, registryOptions)

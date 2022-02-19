@@ -26,7 +26,7 @@ func NewPublisher(config util.Config) (*Publisher, error) {
 	}, nil
 }
 
-func (p *Publisher) publishScanStatus(message string, status string) {
+func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	err := p.dfClient.SendScanStatustoConsole(message, status)
 	if err != nil {
 		logrus.Error(p.config.ScanId, " ", err.Error())
@@ -36,17 +36,17 @@ func (p *Publisher) publishScanStatus(message string, status string) {
 func (p *Publisher) PublishScanError(errMsg string) {
 	p.stopScanStatus <- true
 	time.Sleep(3 * time.Second)
-	p.publishScanStatus(errMsg, "ERROR")
+	p.PublishScanStatusMessage(errMsg, "ERROR")
 }
 
-func (p *Publisher) PublishScanStatus() {
+func (p *Publisher) PublishScanStatus(status string) {
 	go func() {
-		p.publishScanStatus("", "GENERATING_SBOM")
+		p.PublishScanStatusMessage("", status)
 		ticker := time.NewTicker(2 * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
-				p.publishScanStatus("", "GENERATING_SBOM")
+				p.PublishScanStatusMessage("", status)
 			case <-p.stopScanStatus:
 				return
 			}
@@ -60,7 +60,7 @@ func (p *Publisher) StopPublishScanStatus() {
 }
 
 func (p *Publisher) RunVulnerabilityScan(sbom *util.Sbom) {
-	p.publishScanStatus("", "GENERATED_SBOM")
+	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
 	err := p.dfClient.SendSBOMtoConsole(sbom)
 	if err != nil {
