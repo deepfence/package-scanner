@@ -11,6 +11,7 @@ import (
 	"github.com/anchore/syft/syft/pkg/cataloger/golang"
 	"github.com/anchore/syft/syft/pkg/cataloger/java"
 	"github.com/anchore/syft/syft/pkg/cataloger/javascript"
+	"github.com/anchore/syft/syft/pkg/cataloger/php"
 	"github.com/anchore/syft/syft/pkg/cataloger/python"
 	"github.com/anchore/syft/syft/pkg/cataloger/rpmdb"
 	"github.com/anchore/syft/syft/pkg/cataloger/ruby"
@@ -29,11 +30,6 @@ var (
 
 func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 	var exclusions []string
-	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		exclusions = linuxExcludeDirs
-	} else {
-		exclusions = imageExcludeDirs
-	}
 
 	catalogerConfig := cataloger.Config{
 		Search: cataloger.SearchConfig{
@@ -42,20 +38,37 @@ func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 			Scope:                    syftSource.AllLayersScope,
 		},
 	}
-	catalogers := []cataloger.Cataloger{
-		ruby.NewGemFileLockCataloger(),
-		ruby.NewGemSpecCataloger(),
-		python.NewPythonIndexCataloger(),
-		python.NewPythonPackageCataloger(),
-		javascript.NewJavascriptLockCataloger(),
-		javascript.NewJavascriptPackageCataloger(),
-		deb.NewDpkgdbCataloger(),
-		rpmdb.NewRpmdbCataloger(),
-		java.NewJavaCataloger(catalogerConfig.Java()),
-		apkdb.NewApkdbCataloger(),
-		//golang.NewGoModuleBinaryCataloger(),
-		golang.NewGoModFileCataloger(),
-		rust.NewCargoLockCataloger(),
+	var catalogers []cataloger.Cataloger
+
+	// TODO: filter languages based on scan type
+	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
+		exclusions = linuxExcludeDirs
+		catalogers = []cataloger.Cataloger{
+			ruby.NewGemFileLockCataloger(),
+			python.NewPythonIndexCataloger(),
+			python.NewPythonPackageCataloger(),
+			php.NewPHPComposerLockCataloger(),
+			javascript.NewJavascriptLockCataloger(),
+			deb.NewDpkgdbCataloger(),
+			rpmdb.NewRpmdbCataloger(),
+			java.NewJavaCataloger(catalogerConfig.Java()),
+			apkdb.NewApkdbCataloger(),
+			golang.NewGoModFileCataloger(),
+			rust.NewCargoLockCataloger(),
+		}
+	} else {
+		exclusions = imageExcludeDirs
+		catalogers = []cataloger.Cataloger{
+			ruby.NewGemSpecCataloger(),
+			python.NewPythonIndexCataloger(),
+			python.NewPythonPackageCataloger(),
+			php.NewPHPComposerInstalledCataloger(),
+			javascript.NewJavascriptPackageCataloger(),
+			deb.NewDpkgdbCataloger(),
+			rpmdb.NewRpmdbCataloger(),
+			java.NewJavaCataloger(catalogerConfig.Java()),
+			apkdb.NewApkdbCataloger(),
+		}
 	}
 
 	var auth = make([]image.RegistryCredentials, 0)
@@ -109,7 +122,7 @@ func syftProvider(source string, exclusions []string, config cataloger.Config, c
 	}
 	defer cleanup()
 
-	resolver, err := src.FileResolver(syftSource.AllLayersScope)
+	resolver, err := src.FileResolver(syftSource.SquashedScope)
 	if err != nil {
 		return nil, err
 	}
