@@ -6,6 +6,7 @@ require (
 	github.com/anchore/grype v0.33.0
 	github.com/anchore/stereoscope v0.0.0-20220217141419-c6f02aed9ed2
 	github.com/anchore/syft v0.38.0
+	github.com/aws/aws-sdk-go v1.27.0
 	github.com/sirupsen/logrus v1.8.1
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1

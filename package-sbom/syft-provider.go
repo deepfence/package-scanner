@@ -72,8 +72,14 @@ func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 	}
 
 	var auth = make([]image.RegistryCredentials, 0)
+	var err error
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		// TODO: registry
+		registryUrl, username, password, err := GetCredentialsFromRegistry(config.RegistryId)
+		if err != nil {
+			return nil, err
+		}
+		auth = append(auth, image.RegistryCredentials{Authority: registryUrl, Username: username, Password: password})
 	}
 	registryOptions := &image.RegistryOptions{
 		InsecureSkipTLSVerify: true,
@@ -82,7 +88,6 @@ func GenerateSBOM(config util.Config) (*util.Sbom, error) {
 	}
 
 	var publisher *output.Publisher
-	var err error
 
 	if config.VulnerabilityScan == true {
 		publisher, err = output.NewPublisher(config)
