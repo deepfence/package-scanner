@@ -2,7 +2,6 @@ package deepfence
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/deepfence/package-scanner/util"
@@ -18,10 +17,6 @@ type Client struct {
 	httpClient     *http.Client
 	mgmtConsoleUrl string
 }
-
-const (
-	httpOk = 200
-)
 
 func NewClient(config util.Config) (*Client, error) {
 	httpClient, err := buildHttpClient()
@@ -43,11 +38,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	return c.SendDocumentToConsole(ingestScanStatusAPI, postReader)
 }
 
-func (c *Client) SendSBOMtoConsole(sbom *util.Sbom) error {
-	sbomStr, err := json.Marshal(&sbom)
-	if err != nil {
-		return err
-	}
+func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues := url.Values{}
 	urlValues.Set("image_name", c.config.NodeId)
 	urlValues.Set("image_id", c.config.ImageId)
@@ -59,7 +50,7 @@ func (c *Client) SendSBOMtoConsole(sbom *util.Sbom) error {
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
-	return c.SendDocumentToConsole(requestUrl, bytes.NewReader(sbomStr))
+	return c.SendDocumentToConsole(requestUrl, bytes.NewReader(sbom))
 }
 
 func (c *Client) SendDocumentToConsole(requestUrl string, postReader io.Reader) error {

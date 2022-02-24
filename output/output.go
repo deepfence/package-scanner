@@ -11,7 +11,6 @@ import (
 type Publisher struct {
 	config         util.Config
 	dfClient       *deepfence.Client
-	sbom           *util.Sbom
 	stopScanStatus chan bool
 }
 
@@ -64,7 +63,7 @@ func (p *Publisher) StopPublishScanStatus() {
 	time.Sleep(3 * time.Second)
 }
 
-func (p *Publisher) RunVulnerabilityScan(sbom *util.Sbom) {
+func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
 	err := p.dfClient.SendSBOMtoConsole(sbom)

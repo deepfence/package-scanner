@@ -16,6 +16,7 @@ const (
 var (
 	mode                  = flag.String("mode", util.ModeLocal, util.ModeLocal+" | "+util.ModeGrpcServer)
 	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
+	port                  = flag.String("port", "", "Port for grpc server")
 	output                = flag.String("output", util.JsonOutput, "Output format: json")
 	quiet                 = flag.Bool("quiet", false, "Don't display any output in stdout")
 	managementConsoleUrl  = flag.String("mgmt-console-url", "", "Deepfence Management Console URL")
@@ -28,6 +29,10 @@ var (
 )
 
 func runOnce(config util.Config) {
+	if config.Source == "" {
+		log.Error("Error: source is required")
+		return
+	}
 	hostname := util.GetHostname()
 	if strings.HasPrefix(config.Source, "dir:") {
 		hostname := util.GetHostname()
@@ -45,11 +50,12 @@ func runOnce(config util.Config) {
 			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
 		}
 	}
-	_, err := package_sbom.GenerateSBOM(config)
+	sbom, err := package_sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
+	log.Info(string(sbom))
 }
 
 func main() {
@@ -62,6 +68,7 @@ func main() {
 	config := util.Config{
 		Mode:                  *mode,
 		SocketPath:            *socketPath,
+		Port:                  *port,
 		Output:                *output,
 		Quiet:                 *quiet,
 		ManagementConsoleUrl:  *managementConsoleUrl,
@@ -76,10 +83,6 @@ func main() {
 	if *mode == util.ModeLocal {
 		runOnce(config)
 	} else if *mode == util.ModeGrpcServer {
-		if *socketPath == "" {
-			log.Errorf("socket-path is required")
-			return
-		}
 		err := package_sbom.RunServer(PluginName, config)
 		if err != nil {
 			log.Errorf("error: %v", err)

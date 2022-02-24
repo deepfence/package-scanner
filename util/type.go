@@ -1,17 +1,9 @@
 package util
 
-import (
-	grypePkg "github.com/anchore/grype/grype/pkg"
-)
-
-type Sbom struct {
-	Packages []grypePkg.Package
-	Context  grypePkg.Context
-}
-
 type Config struct {
 	Mode                  string
 	SocketPath            string
+	Port                  string
 	Output                string
 	Quiet                 bool
 	ManagementConsoleUrl  string
