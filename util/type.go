@@ -20,12 +20,17 @@ type Config struct {
 	ContainerName         string
 	KubernetesClusterName string
 	RegistryId            string
+	FailOnCount           int
+	FailOnSeverityCount   string
+	FailOnScore           float64
+	MaskCveIds            string
 }
 
 const (
 	ModeLocal      = "local"
 	ModeGrpcServer = "grpc-server"
 	JsonOutput     = "json"
+	TableOutput    = "table"
 	NodeTypeHost   = "host"
 	NodeTypeImage  = "container_image"
 )
