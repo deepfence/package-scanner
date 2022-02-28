@@ -27,10 +27,6 @@ func RunHttpServer(config util.Config) error {
 	if err != nil {
 		return err
 	}
-	deepfenceClient, err = deepfence.NewClient(config)
-	if err != nil {
-		return err
-	}
 	http.HandleFunc("/registry", registryHandler)
 
 	fmt.Printf("Starting server at port %s\n", config.Port)
@@ -81,13 +77,10 @@ func decrementRegistryChannelProcessCount() {
 
 func processRegistryMessage(registryMessage registryChannelMessage) {
 	defer decrementRegistryChannelProcessCount()
-	sbom, err := GenerateSBOM(registryMessage.config)
+	_, err := GenerateSBOM(registryMessage.config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
-	}
-	err = deepfenceClient.SendSBOMtoConsole(sbom)
-	if err != nil {
-		log.Errorf("Error sending SBOM to console: %s", err.Error())
+		return
 	}
 }
 
@@ -102,6 +95,9 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	err := decoder.Decode(&config)
 	if err != nil {
 		fmt.Println("Unable to decode input JSON request:", err)
+	}
+	if config.Source == "" {
+		config.Source = fmt.Sprintf("registry:%s", config.ImageId)
 	}
 
 	regMessage := registryChannelMessage{config: config}

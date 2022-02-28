@@ -80,6 +80,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	if config.VulnerabilityScan == true {
+		if publisher == nil {
+			publisher, err = output.NewPublisher(config)
+			if err != nil {
+				return nil, err
+			}
+		}
 		publisher.StopPublishScanStatus()
 		// Send sbom to Deepfence Management Console for Vulnerability Scan
 		publisher.RunVulnerabilityScan(sbom)
