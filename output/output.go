@@ -1,10 +1,14 @@
 package output
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
+	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"io"
+	"os"
 	"time"
 )
 
@@ -40,7 +44,8 @@ func (p *Publisher) PublishScanError(errMsg string) {
 }
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
-	return p.dfClient.SendDocumentToConsole(requestUrl, postReader)
+	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil)
+	return err
 }
 
 func (p *Publisher) PublishScanStatus(status string) {
@@ -73,8 +78,57 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	}
 }
 
-func (p *Publisher) Output() {
-	if p.config.Output == util.JsonOutput {
-		// TODO: Get scan results from management console
+func (p *Publisher) GetVulnerabilityScanResults() (*deepfence.VulnerabilityScanDetail, error) {
+	err := p.dfClient.WaitForScanToComplete()
+	if err != nil {
+		return nil, err
 	}
+	return p.dfClient.GetVulnerabilityScanSummary()
+}
+
+func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanDetail) error {
+	logrus.Infof("Total Vulnerabilities: %d\n", vulnerabilityScanDetail.Total)
+	logrus.Infof("Critical Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Critical)
+	logrus.Infof("High Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.High)
+	logrus.Infof("Medium Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Medium)
+	logrus.Infof("Low Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Low)
+	logrus.Infof("Vulnerability Score: %f\n", vulnerabilityScanDetail.CveScore)
+
+	vulnerabilities, err := p.dfClient.GetVulnerabilities()
+	if err != nil {
+		return err
+	}
+	if len(vulnerabilities.Data.Hits) > 0 {
+		fmt.Print("\nVulnerabilities\n\n")
+	}
+	if p.config.Output == util.JsonOutput {
+		var vuln []byte
+		for _, cve := range vulnerabilities.Data.Hits {
+			vuln, err = json.MarshalIndent(cve, "", "  ")
+			if err == nil {
+				fmt.Println(string(vuln))
+			}
+		}
+	} else if p.config.Output == util.TableOutput {
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
+		table.SetHeaderLine(true)
+		table.SetBorder(true)
+		table.SetAutoWrapText(true)
+		table.SetAutoFormatHeaders(true)
+		table.SetColMinWidth(0, 15)
+		table.SetColMinWidth(1, 15)
+		table.SetColMinWidth(2, 15)
+		table.SetColMinWidth(3, 50)
+		var packageName string
+		for _, cve := range vulnerabilities.Data.Hits {
+			packageName = cve.Source.CveCausedByPackage
+			if packageName == "" {
+				packageName = cve.Source.CveCausedByPackagePath
+			}
+			table.Append([]string{cve.Source.CveID, cve.Source.CveSeverity, packageName, cve.Source.CveDescription})
+		}
+		table.Render()
+	}
+	return nil
 }

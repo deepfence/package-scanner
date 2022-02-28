@@ -20,6 +20,10 @@ type Config struct {
 	ContainerName         string `json:"container_name,omitempty"`
 	KubernetesClusterName string `json:"kubernetes_cluster_name,omitempty"`
 	RegistryId            string `json:"registry_id,omitempty"`
+	FailOnCount           int 	 `json:"-"`
+	FailOnSeverityCount   string `json:"-"`
+	FailOnScore           float64 `json:"-"`
+	MaskCveIds            string `json:"-"`
 }
 
 const (
@@ -27,6 +31,7 @@ const (
 	ModeGrpcServer = "grpc-server"
 	ModeHttpServer = "http-server"
 	JsonOutput     = "json"
+	TableOutput    = "table"
 	NodeTypeHost   = "host"
 	NodeTypeImage  = "container_image"
 )

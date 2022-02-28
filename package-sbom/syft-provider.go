@@ -2,8 +2,10 @@ package package_sbom
 
 import (
 	"fmt"
+	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"strings"
@@ -81,8 +83,47 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.StopPublishScanStatus()
 		// Send sbom to Deepfence Management Console for Vulnerability Scan
 		publisher.RunVulnerabilityScan(sbom)
+
+		if config.Quiet == true && config.FailOnScore <= 0 && config.FailOnCount <= 0 {
+			return sbom, nil
+		}
+
+		vulnerabilityScanDetail, err := publisher.GetVulnerabilityScanResults()
+		if err != nil {
+			return sbom, err
+		}
+
 		if config.Quiet == false {
-			publisher.Output()
+			_ = publisher.Output(vulnerabilityScanDetail)
+		}
+
+		if config.FailOnCount > 0 {
+			exitOnSeverity := func(count int, failOnCount int) {
+				if count >= failOnCount {
+					log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).", count, failOnCount)
+					os.Exit(1)
+				}
+			}
+			if config.FailOnSeverityCount == "" {
+				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
+			} else if config.FailOnSeverityCount == deepfence.CriticalSeverity {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCount)
+			} else if config.FailOnSeverityCount == deepfence.HighSeverity {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnCount)
+			} else if config.FailOnSeverityCount == deepfence.MediumSeverity {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnCount)
+			} else if config.FailOnSeverityCount == deepfence.LowSeverity {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnCount)
+			}
+		}
+		if config.FailOnScore > 0.0 {
+			exitOnSeverityScore := func(score float64, failOnScore float64) {
+				if score >= failOnScore {
+					log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).", score, failOnScore)
+					os.Exit(1)
+				}
+			}
+			exitOnSeverityScore(vulnerabilityScanDetail.CveScore, config.FailOnScore)
 		}
 	}
 

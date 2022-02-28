@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+const (
+	CriticalSeverity = "critical"
+	HighSeverity     = "high"
+	MediumSeverity   = "medium"
+	LowSeverity      = "low"
+)
+
 func buildHttpClient() (*http.Client, error) {
 	// Set up our own certificate pool
 	tlsConfig := &tls.Config{RootCAs: x509.NewCertPool(), InsecureSkipVerify: true}
@@ -20,10 +27,107 @@ func buildHttpClient() (*http.Client, error) {
 				Timeout:   15 * time.Minute,
 				KeepAlive: 15 * time.Minute,
 			}).DialContext,
-			TLSHandshakeTimeout:   10 * time.Second,
+			TLSHandshakeTimeout:   30 * time.Second,
 			ResponseHeaderTimeout: 5 * time.Minute,
 		},
 		Timeout: 15 * time.Minute,
 	}
 	return client, nil
+}
+
+type dfApiAuthResponse struct {
+	Data struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+	} `json:"data"`
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Success bool `json:"success"`
+}
+
+type vulnerabilityScanStatus struct {
+	Data struct {
+		Timestamp             time.Time `json:"@timestamp"`
+		ID                    string    `json:"_id"`
+		Action                string    `json:"action"`
+		CveScanMessage        string    `json:"cve_scan_message"`
+		Host                  string    `json:"host"`
+		HostName              string    `json:"host_name"`
+		KubernetesClusterName string    `json:"kubernetes_cluster_name"`
+		Masked                string    `json:"masked"`
+		NodeID                string    `json:"node_id"`
+		NodeType              string    `json:"node_type"`
+		ScanID                string    `json:"scan_id"`
+		ScanType              string    `json:"scan_type"`
+		TimeStamp             int64     `json:"time_stamp"`
+		Type                  string    `json:"type"`
+	} `json:"data"`
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Success bool `json:"success"`
+}
+
+type VulnerabilityScanDetail struct {
+	Action           string  `json:"action"`
+	ActiveContainers int     `json:"active_containers"`
+	CveScanMessage   string  `json:"cve_scan_message"`
+	CveScore         float64 `json:"cve_score"`
+	NodeName         string  `json:"node_name"`
+	NodeType         string  `json:"node_type"`
+	ScanID           string  `json:"scan_id"`
+	Severity         struct {
+		Critical int `json:"critical"`
+		High     int `json:"high"`
+		Medium   int `json:"medium"`
+		Low      int `json:"low"`
+	} `json:"severity"`
+	TimeStamp time.Time `json:"time_stamp"`
+	Total     int       `json:"total"`
+}
+
+type VulnerabilityScanSummary struct {
+	Data struct {
+		Data []struct {
+			ErrorCount int                       `json:"error_count"`
+			NodeName   string                    `json:"node_name"`
+			NodeType   string                    `json:"node_type"`
+			Scans      []VulnerabilityScanDetail `json:"scans"`
+			TimeStamp  time.Time                 `json:"time_stamp"`
+			TotalCount int                       `json:"total_count"`
+		} `json:"data"`
+		Total int `json:"total"`
+	} `json:"data"`
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Success bool `json:"success"`
+}
+
+type VulnerabilityDetail struct {
+	CveAttackVector        string `json:"cve_attack_vector"`
+	CveCausedByPackage     string `json:"cve_caused_by_package"`
+	CveCausedByPackagePath string `json:"cve_caused_by_package_path"`
+	CveContainerImage      string `json:"cve_container_image"`
+	CveDescription         string `json:"cve_description"`
+	CveFixedIn             string `json:"cve_fixed_in"`
+	CveID                  string `json:"cve_id"`
+	CveLink                string `json:"cve_link"`
+	CveSeverity            string `json:"cve_severity"`
+	CveType                string `json:"cve_type"`
+	HostName               string `json:"host_name"`
+}
+
+type Vulnerabilities struct {
+	Data struct {
+		Hits []struct {
+			Source VulnerabilityDetail `json:"_source"`
+		} `json:"hits"`
+		Total int `json:"total"`
+	} `json:"data"`
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+	Success bool `json:"success"`
 }

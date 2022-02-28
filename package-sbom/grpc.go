@@ -76,7 +76,7 @@ func RunServer(pluginName string, config util.Config) error {
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
 	var nodeId string
 	var nodeType string
-	if strings.HasPrefix(r.Source, "dir:") {
+	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
 		nodeId = r.HostName
 		nodeType = util.NodeTypeHost
 	} else {

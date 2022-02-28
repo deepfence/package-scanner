@@ -14,10 +14,10 @@ const (
 )
 
 var (
-	mode                  = flag.String("mode", util.ModeLocal, util.ModeLocal+" | "+util.ModeGrpcServer)
+	mode                  = flag.String("mode", util.ModeLocal, util.ModeLocal+" or "+util.ModeGrpcServer)
 	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
 	port                  = flag.String("port", "", "Port for grpc server")
-	output                = flag.String("output", util.JsonOutput, "Output format: json")
+	output                = flag.String("output", util.TableOutput, "Output format: json or table")
 	quiet                 = flag.Bool("quiet", false, "Don't display any output in stdout")
 	managementConsoleUrl  = flag.String("mgmt-console-url", "", "Deepfence Management Console URL")
 	managementConsolePort = flag.Int("mgmt-console-port", 443, "Deepfence Management Console Port")
@@ -26,6 +26,10 @@ var (
 	source                = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
 	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
 	scanId                = flag.String("scan-id", "", "(Optional) Scan id")
+	failOnCount           = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
+	failOnSeverityCount   = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
+	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
+	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 )
 
 func runOnce(config util.Config) {
@@ -33,8 +37,16 @@ func runOnce(config util.Config) {
 		log.Error("Error: source is required")
 		return
 	}
+	if config.FailOnScore > 10.0 {
+		log.Error("Error: fail-on-score should be between -1 and 10")
+		return
+	}
+	if config.Output != util.TableOutput && config.Output != util.JsonOutput {
+		log.Errorf("Error: output should be %s or %s", util.JsonOutput, util.TableOutput)
+		return
+	}
 	hostname := util.GetHostname()
-	if strings.HasPrefix(config.Source, "dir:") {
+	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		hostname := util.GetHostname()
 		config.HostName = hostname
 		config.NodeId = hostname
@@ -55,7 +67,9 @@ func runOnce(config util.Config) {
 		log.Errorf("Error: %v", err)
 		return
 	}
-	log.Info(string(sbom))
+	if config.VulnerabilityScan == false && config.Quiet == false {
+		log.Info(string(sbom))
+	}
 }
 
 func main() {
@@ -78,6 +92,10 @@ func main() {
 		ScanType:              *scanType,
 		VulnerabilityScan:     *vulnerabilityScan,
 		ScanId:                *scanId,
+		FailOnScore:           *failOnScore,
+		FailOnCount:           *failOnCount,
+		FailOnSeverityCount:   *failOnSeverityCount,
+		MaskCveIds:            *maskCveIds,
 	}
 
 	if *mode == util.ModeLocal {

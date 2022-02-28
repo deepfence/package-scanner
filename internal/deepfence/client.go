@@ -2,20 +2,28 @@ package deepfence
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/deepfence/package-scanner/util"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
 
+const (
+	MethodGet  = "GET"
+	MethodPost = "POST"
+)
+
 type Client struct {
 	config         util.Config
 	httpClient     *http.Client
 	mgmtConsoleUrl string
+	accessToken    string
 }
 
 func NewClient(config util.Config) (*Client, error) {
@@ -27,7 +35,13 @@ func NewClient(config util.Config) (*Client, error) {
 	if mgmtConsoleUrl == "" {
 		return nil, fmt.Errorf("management console url is required")
 	}
-	return &Client{config: config, httpClient: httpClient, mgmtConsoleUrl: mgmtConsoleUrl}, nil
+	c := &Client{config: config, httpClient: httpClient, mgmtConsoleUrl: mgmtConsoleUrl}
+	accessToken, err := c.GetApiAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	c.accessToken = accessToken
+	return c, nil
 }
 
 func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
@@ -35,7 +49,121 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	postReader := bytes.NewReader([]byte(scanLog))
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=cve-scan")
-	return c.SendDocumentToConsole(ingestScanStatusAPI, postReader)
+	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil)
+	return err
+}
+
+func (c *Client) GetApiAccessToken() (string, error) {
+	resp, err := c.HttpRequest(MethodPost,
+		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/users/auth",
+		bytes.NewReader([]byte(`{"api_key":"`+c.config.DeepfenceKey+`"}`)),
+		nil)
+	if err != nil {
+		return "", err
+	}
+	var dfApiAuthResponse dfApiAuthResponse
+	err = json.Unmarshal(resp, &dfApiAuthResponse)
+	if err != nil {
+		return "", err
+	}
+	if dfApiAuthResponse.Success == false {
+		return "", errors.New(dfApiAuthResponse.Error.Message)
+	}
+	return dfApiAuthResponse.Data.AccessToken, nil
+}
+
+func (c *Client) getVulnerabilityScanStatus() (string, error) {
+	resp, err := c.HttpRequest(MethodGet,
+		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/cve-scan/"+url.PathEscape(c.config.NodeId),
+		nil, map[string]string{"Authorization": "Bearer " + c.accessToken})
+	if err != nil {
+		return "", err
+	}
+	var vulnerabilityScanStatusResponse vulnerabilityScanStatus
+	err = json.Unmarshal(resp, &vulnerabilityScanStatusResponse)
+	if err != nil {
+		return "", err
+	}
+	if vulnerabilityScanStatusResponse.Success == false {
+		return "", errors.New(vulnerabilityScanStatusResponse.Error.Message)
+	}
+	return vulnerabilityScanStatusResponse.Data.Action, err
+}
+
+func (c *Client) WaitForScanToComplete() error {
+	retryCount := 0
+	for {
+		status, err := c.getVulnerabilityScanStatus()
+		if err != nil {
+			return err
+		}
+		if status == "COMPLETED" || status == "ERROR" {
+			break
+		}
+		retryCount += 1
+		time.Sleep(10 * time.Second)
+		if retryCount > 100 {
+			return errors.New("retry limit exceeded")
+		}
+	}
+	return nil
+}
+
+func (c *Client) GetVulnerabilityScanSummary() (*VulnerabilityScanDetail, error) {
+	resp, err := c.HttpRequest(MethodPost,
+		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/vulnerabilities/image_report?lucene_query=&number=30&time_unit=day",
+		bytes.NewReader([]byte(`{"filters":{"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"}}`)),
+		map[string]string{"Authorization": "Bearer " + c.accessToken})
+	if err != nil {
+		return nil, err
+	}
+	var vulnerabilityScanSummary VulnerabilityScanSummary
+	err = json.Unmarshal(resp, &vulnerabilityScanSummary)
+	if err != nil {
+		return nil, err
+	}
+	if vulnerabilityScanSummary.Success == false {
+		return nil, errors.New(vulnerabilityScanSummary.Error.Message)
+	}
+	for _, scanSummary := range vulnerabilityScanSummary.Data.Data {
+		for _, scan := range scanSummary.Scans {
+			if scan.ScanID == c.config.ScanId {
+				return &scan, err
+			}
+		}
+	}
+	return nil, errors.New("not found")
+}
+
+func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
+	var vulnerabilities Vulnerabilities
+	var err error
+	pageSize := 1000
+	from := 0
+	total := 0
+	totalResp := 0
+	for {
+		var resp []byte
+		resp, err = c.HttpRequest(MethodPost,
+			fmt.Sprintf("https://%s/deepfence/v1.5/search?from=%d&size=%d&lucene_query=&number=1&time_unit=hour", c.mgmtConsoleUrl, from, pageSize),
+			bytes.NewReader([]byte(`{"_type":"cve","_source":[],"filters":{"masked":"false","type":["cve"],"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"},"node_filters":{}}`)),
+			map[string]string{"Authorization": "Bearer " + c.accessToken})
+		var vuln Vulnerabilities
+		err = json.Unmarshal(resp, &vuln)
+		if err != nil || vuln.Success == false || len(vuln.Data.Hits) == 0 {
+			break
+		}
+		if totalResp == 0 {
+			totalResp = vuln.Data.Total
+		}
+		total += vuln.Data.Total
+		vulnerabilities.Data.Hits = append(vulnerabilities.Data.Hits, vuln.Data.Hits...)
+		if total >= totalResp {
+			break
+		}
+		from += pageSize
+	}
+	return &vulnerabilities, err
 }
 
 func (c *Client) SendSBOMtoConsole(sbom []byte) error {
@@ -50,39 +178,47 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
-	return c.SendDocumentToConsole(requestUrl, bytes.NewReader(sbom))
+	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil)
+	return err
 }
 
-func (c *Client) SendDocumentToConsole(requestUrl string, postReader io.Reader) error {
+func (c *Client) HttpRequest(method string, requestUrl string, postReader io.Reader, header map[string]string) ([]byte, error) {
 	retryCount := 0
-	httpClient, err := buildHttpClient()
-	if err != nil {
-		return err
-	}
+	var response []byte
 	for {
-		httpReq, err := http.NewRequest("POST", requestUrl, postReader)
+		httpReq, err := http.NewRequest(method, requestUrl, postReader)
 		if err != nil {
-			return err
+			return response, err
 		}
 		httpReq.Close = true
 		httpReq.Header.Add("deepfence-key", c.config.DeepfenceKey)
-		resp, err := httpClient.Do(httpReq)
+		httpReq.Header.Set("Content-Type", "application/json")
+		if header != nil {
+			for k, v := range header {
+				httpReq.Header.Add(k, v)
+			}
+		}
+		resp, err := c.httpClient.Do(httpReq)
 		if err != nil {
-			return err
+			return response, err
 		}
 		if resp.StatusCode == 200 {
+			response, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return response, err
+			}
 			resp.Body.Close()
 			break
 		} else {
-			if retryCount > 2 {
+			if retryCount > 4 {
 				errMsg := fmt.Sprintf("Unable to complete request. Got %d ", resp.StatusCode)
 				resp.Body.Close()
-				return errors.New(errMsg)
+				return response, errors.New(errMsg)
 			}
 			resp.Body.Close()
 			retryCount += 1
 			time.Sleep(5 * time.Second)
 		}
 	}
-	return nil
+	return response, nil
 }
