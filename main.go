@@ -101,7 +101,7 @@ func main() {
 	if *mode == util.ModeLocal {
 		runOnce(config)
 	} else if *mode == util.ModeGrpcServer {
-		err := package_sbom.RunServer(PluginName, config)
+		err := package_sbom.RunGrpcServer(PluginName, config)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return

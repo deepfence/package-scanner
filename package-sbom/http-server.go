@@ -20,6 +20,8 @@ var (
 	registryChannelCount      int
 	registryChannelCountMutex sync.Mutex
 	scanConcurrency           int
+	managementConsoleUrl      string
+	managementConsolePort     string
 )
 
 func init() {
@@ -27,6 +29,11 @@ func init() {
 	scanConcurrency, err = strconv.Atoi(os.Getenv("PACKAGE_SCAN_CONCURRENCY"))
 	if err != nil {
 		scanConcurrency = 5
+	}
+	managementConsoleUrl = os.Getenv("MGMT_CONSOLE_URL")
+	managementConsolePort = os.Getenv("MGMT_CONSOLE_PORT")
+	if managementConsolePort == "" {
+		managementConsolePort = "443"
 	}
 }
 
@@ -86,9 +93,27 @@ func decrementRegistryChannelProcessCount() {
 	registryChannelCountMutex.Unlock()
 }
 
-func processRegistryMessage(registryMessage registryChannelMessage) {
+func processRegistryMessage(r registryChannelMessage) {
 	defer decrementRegistryChannelProcessCount()
-	_, err := GenerateSBOM(registryMessage.config)
+	config := util.Config{
+		Output:                "",
+		Quiet:                 true,
+		ManagementConsoleUrl:  managementConsoleUrl,
+		ManagementConsolePort: managementConsolePort,
+		DeepfenceKey:          r.config.DeepfenceKey,
+		Source:                r.config.Source,
+		ScanType:              r.config.ScanType,
+		VulnerabilityScan:     true,
+		ScanId:                r.config.ScanId,
+		NodeType:              r.config.NodeType,
+		NodeId:                r.config.NodeId,
+		HostName:              r.config.HostName,
+		ImageId:               r.config.ImageId,
+		ContainerName:         r.config.ContainerName,
+		KubernetesClusterName: r.config.KubernetesClusterName,
+		RegistryId:            r.config.RegistryId,
+	}
+	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
 		return

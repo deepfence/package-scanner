@@ -23,7 +23,7 @@ type gRPCServer struct {
 	pb.UnimplementedAgentPluginServer
 }
 
-func RunServer(pluginName string, config util.Config) error {
+func RunGrpcServer(pluginName string, config util.Config) error {
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
