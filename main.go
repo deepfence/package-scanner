@@ -106,6 +106,12 @@ func main() {
 			log.Errorf("error: %v", err)
 			return
 		}
+	} else if *mode == util.ModeHttpServer {
+		err := package_sbom.RunHttpServer(config)
+		if err != nil {
+			log.Errorf("Error running http server: %v", err)
+			return
+		}
 	} else {
 		log.Errorf("invalid mode")
 		return

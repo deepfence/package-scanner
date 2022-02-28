@@ -1,6 +1,7 @@
 package package_sbom
 
 import (
+	"fmt"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
@@ -59,12 +60,18 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
+	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		// TODO: registry
+		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
+		if err != nil {
+			return nil, err
+		}
+		cmd.Env = os.Environ()
+		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
 	}
 
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
-	cmd := exec.Command("syft", syftArgs...)
 	sbom, err := cmd.Output()
 	if err != nil {
 		if config.VulnerabilityScan == true {
