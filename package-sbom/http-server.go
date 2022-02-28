@@ -3,10 +3,11 @@ package package_sbom
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"os"
+	"strconv"
 	"sync"
 )
 
@@ -14,10 +15,20 @@ type registryChannelMessage struct {
 	config util.Config
 }
 
-var registryChannel chan registryChannelMessage
-var registryChannelCount int
-var registryChannelCountMutex sync.Mutex
-var deepfenceClient *deepfence.Client
+var (
+	registryChannel           chan registryChannelMessage
+	registryChannelCount      int
+	registryChannelCountMutex sync.Mutex
+	scanConcurrency           int
+)
+
+func init() {
+	var err error
+	scanConcurrency, err = strconv.Atoi(os.Getenv("PACKAGE_SCAN_CONCURRENCY"))
+	if err != nil {
+		scanConcurrency = 5
+	}
+}
 
 func RunHttpServer(config util.Config) error {
 	if config.Port == "" {
@@ -46,7 +57,7 @@ func createRegistryMessageChannel() error {
 
 func receiveRegistryMessages(ch chan registryChannelMessage) {
 	for {
-		if getRegistryChannelProcessCount() >= 5 {
+		if getRegistryChannelProcessCount() >= scanConcurrency {
 			continue
 		}
 		registryMessage, ok := <-ch
@@ -97,7 +108,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("Unable to decode input JSON request:", err)
 	}
 	if config.Source == "" {
-		config.Source = fmt.Sprintf("registry:%s", config.ImageId)
+		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
 	}
 
 	regMessage := registryChannelMessage{config: config}

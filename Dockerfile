@@ -15,10 +15,10 @@ FROM alpine:3.15
 MAINTAINER Deepfence Inc
 LABEL deepfence.role=system
 
-RUN apk add gcompat
+ENV PACKAGE_SCAN_CONCURRENCY=5
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/syft/syftCli /usr/local/bin/syft
-RUN apk add --no-cache --update bash
+RUN apk add --no-cache --update bash gcompat
 EXPOSE 8002 8005
 ENTRYPOINT ["/usr/local/bin/package-scanner", "--mode", "grpc-server", "--port", "8002"]
