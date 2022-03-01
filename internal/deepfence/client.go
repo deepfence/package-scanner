@@ -36,11 +36,6 @@ func NewClient(config util.Config) (*Client, error) {
 		return nil, fmt.Errorf("management console url is required")
 	}
 	c := &Client{config: config, httpClient: httpClient, mgmtConsoleUrl: mgmtConsoleUrl}
-	accessToken, err := c.GetApiAccessToken()
-	if err != nil {
-		return nil, err
-	}
-	c.accessToken = accessToken
 	return c, nil
 }
 
@@ -51,6 +46,18 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=cve-scan")
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil)
 	return err
+}
+
+func (c *Client) getApiAccessToken() string {
+	if c.accessToken != "" {
+		return c.accessToken
+	}
+	accessToken, err := c.GetApiAccessToken()
+	if err != nil {
+		return ""
+	}
+	c.accessToken = accessToken
+	return c.accessToken
 }
 
 func (c *Client) GetApiAccessToken() (string, error) {
@@ -75,7 +82,7 @@ func (c *Client) GetApiAccessToken() (string, error) {
 func (c *Client) getVulnerabilityScanStatus() (string, error) {
 	resp, err := c.HttpRequest(MethodGet,
 		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/cve-scan/"+url.PathEscape(c.config.NodeId),
-		nil, map[string]string{"Authorization": "Bearer " + c.accessToken})
+		nil, map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()})
 	if err != nil {
 		return "", err
 	}
@@ -113,7 +120,7 @@ func (c *Client) GetVulnerabilityScanSummary() (*VulnerabilityScanDetail, error)
 	resp, err := c.HttpRequest(MethodPost,
 		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/vulnerabilities/image_report?lucene_query=&number=30&time_unit=day",
 		bytes.NewReader([]byte(`{"filters":{"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"}}`)),
-		map[string]string{"Authorization": "Bearer " + c.accessToken})
+		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()})
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +154,7 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 		resp, err = c.HttpRequest(MethodPost,
 			fmt.Sprintf("https://%s/deepfence/v1.5/search?from=%d&size=%d&lucene_query=&number=1&time_unit=hour", c.mgmtConsoleUrl, from, pageSize),
 			bytes.NewReader([]byte(`{"_type":"cve","_source":[],"filters":{"masked":"false","type":["cve"],"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"},"node_filters":{}}`)),
-			map[string]string{"Authorization": "Bearer " + c.accessToken})
+			map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()})
 		var vuln Vulnerabilities
 		err = json.Unmarshal(resp, &vuln)
 		if err != nil || vuln.Success == false || len(vuln.Data.Hits) == 0 {
