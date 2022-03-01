@@ -100,7 +100,7 @@ func processRegistryMessage(r registryChannelMessage) {
 		Quiet:                 true,
 		ManagementConsoleUrl:  managementConsoleUrl,
 		ManagementConsolePort: managementConsolePort,
-		DeepfenceKey:          r.config.DeepfenceKey,
+		DeepfenceKey:          "",
 		Source:                r.config.Source,
 		ScanType:              r.config.ScanType,
 		VulnerabilityScan:     true,
