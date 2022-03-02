@@ -3,6 +3,7 @@ package package_sbom
 import (
 	"context"
 	"fmt"
+	"github.com/Jeffail/tunny"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -21,6 +23,20 @@ type gRPCServer struct {
 	config     util.Config
 	pb.UnimplementedPackageScannerServer
 	pb.UnimplementedAgentPluginServer
+}
+
+var (
+	scanConcurrencyGrpc int
+	grpcScanWorkerPool  *tunny.Pool
+)
+
+func init() {
+	var err error
+	scanConcurrencyGrpc, err = strconv.Atoi(os.Getenv("PACKAGE_SCAN_CONCURRENCY"))
+	if err != nil {
+		scanConcurrencyGrpc = DefaultPackageScanConcurrency
+	}
+	grpcScanWorkerPool = tunny.NewFunc(scanConcurrencyGrpc, processSbomGeneration)
 }
 
 func RunGrpcServer(pluginName string, config util.Config) error {
@@ -104,11 +120,21 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		RegistryId:            r.RegistryId,
 	}
 
-	go func() {
-		_, err := GenerateSBOM(config)
-		if err != nil {
-			log.Error(err)
-		}
-	}()
+	go grpcScanWorkerPool.Process(config)
+
 	return &pb.SBOMResult{Sbom: "sbom generation started"}, nil
+}
+
+func processSbomGeneration(configInterface interface{}) interface{} {
+	config, ok := configInterface.(util.Config)
+	if !ok {
+		log.Error("Error processing grpc input for generating SBOM")
+		return nil
+	}
+	_, err := GenerateSBOM(config)
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	return nil
 }

@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/Jeffail/tunny v0.1.4
 	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect

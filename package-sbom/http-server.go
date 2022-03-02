@@ -3,33 +3,30 @@ package package_sbom
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Jeffail/tunny"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
-	"sync"
 )
-
-type registryChannelMessage struct {
-	config util.Config
-}
 
 var (
-	registryChannel           chan registryChannelMessage
-	registryChannelCount      int
-	registryChannelCountMutex sync.Mutex
-	scanConcurrency           int
-	managementConsoleUrl      string
-	managementConsolePort     string
+	scanConcurrency       int
+	managementConsoleUrl  string
+	managementConsolePort string
+	workerPool            *tunny.Pool
 )
+
+const DefaultPackageScanConcurrency = 5
 
 func init() {
 	var err error
 	scanConcurrency, err = strconv.Atoi(os.Getenv("PACKAGE_SCAN_CONCURRENCY"))
 	if err != nil {
-		scanConcurrency = 5
+		scanConcurrency = DefaultPackageScanConcurrency
 	}
+	workerPool = tunny.NewFunc(scanConcurrency, processRegistryMessage)
 	managementConsoleUrl = os.Getenv("MGMT_CONSOLE_URL")
 	managementConsolePort = os.Getenv("MGMT_CONSOLE_PORT")
 	if managementConsolePort == "" {
@@ -41,83 +38,45 @@ func RunHttpServer(config util.Config) error {
 	if config.Port == "" {
 		return fmt.Errorf("http-server mode requires port to be set")
 	}
-	err := createRegistryMessageChannel()
-	if err != nil {
-		return err
-	}
 	http.HandleFunc("/registry", registryHandler)
 
 	fmt.Printf("Starting server at port %s\n", config.Port)
-	if err = http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil); err != nil {
 		return err
 	}
-	close(registryChannel)
 	return nil
 }
 
-func createRegistryMessageChannel() error {
-	registryChannel = make(chan registryChannelMessage)
-	registryChannelCount = 0
-	go receiveRegistryMessages(registryChannel)
-	return nil
-}
-
-func receiveRegistryMessages(ch chan registryChannelMessage) {
-	for {
-		if getRegistryChannelProcessCount() >= scanConcurrency {
-			continue
-		}
-		registryMessage, ok := <-ch
-		if ok {
-			incrementRegistryChannelProcessCount()
-			go processRegistryMessage(registryMessage)
-		}
+func processRegistryMessage(rInterface interface{}) interface{} {
+	r, ok := rInterface.(util.Config)
+	if !ok {
+		log.Error("Error processing input config")
+		return false
 	}
-}
-
-func getRegistryChannelProcessCount() int {
-	registryChannelCountMutex.Lock()
-	defer registryChannelCountMutex.Unlock()
-	return registryChannelCount
-}
-
-func incrementRegistryChannelProcessCount() {
-	registryChannelCountMutex.Lock()
-	registryChannelCount++
-	registryChannelCountMutex.Unlock()
-}
-
-func decrementRegistryChannelProcessCount() {
-	registryChannelCountMutex.Lock()
-	registryChannelCount--
-	registryChannelCountMutex.Unlock()
-}
-
-func processRegistryMessage(r registryChannelMessage) {
-	defer decrementRegistryChannelProcessCount()
 	config := util.Config{
 		Output:                "",
 		Quiet:                 true,
 		ManagementConsoleUrl:  managementConsoleUrl,
 		ManagementConsolePort: managementConsolePort,
 		DeepfenceKey:          "",
-		Source:                r.config.Source,
-		ScanType:              r.config.ScanType,
+		Source:                r.Source,
+		ScanType:              r.ScanType,
 		VulnerabilityScan:     true,
-		ScanId:                r.config.ScanId,
-		NodeType:              r.config.NodeType,
-		NodeId:                r.config.NodeId,
-		HostName:              r.config.HostName,
-		ImageId:               r.config.ImageId,
-		ContainerName:         r.config.ContainerName,
-		KubernetesClusterName: r.config.KubernetesClusterName,
-		RegistryId:            r.config.RegistryId,
+		ScanId:                r.ScanId,
+		NodeType:              r.NodeType,
+		NodeId:                r.NodeId,
+		HostName:              r.HostName,
+		ImageId:               r.ImageId,
+		ContainerName:         r.ContainerName,
+		KubernetesClusterName: r.KubernetesClusterName,
+		RegistryId:            r.RegistryId,
 	}
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
-		return
+		return false
 	}
+	return true
 }
 
 func registryHandler(w http.ResponseWriter, req *http.Request) {
@@ -136,8 +95,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
 	}
 
-	regMessage := registryChannelMessage{config: config}
-	registryChannel <- regMessage
+	go workerPool.Process(config)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Success"))
