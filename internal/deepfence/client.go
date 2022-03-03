@@ -189,6 +189,31 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	return err
 }
 
+func (c *Client) SendSBOMtoES(sbom []byte) error {
+	var sbomDoc = make(map[string]interface{})
+	sbomDoc["scan_id"] = c.config.ScanId
+	sbomDoc["node_id"] = c.config.NodeId
+	sbomDoc["scan_type"] = c.config.ScanType
+	sbomDoc["node_type"] = c.config.NodeType
+	sbomDoc["host_name"] = c.config.HostName
+	sbomDoc["image_id"] = c.config.ImageId
+	sbomDoc["container_name"] = c.config.ContainerName
+	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
+	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
+	sbomDoc["data"] = string(sbom)
+	docBytes, err := json.Marshal(sbom)
+	if err != nil {
+		return err
+	}
+	postReader := bytes.NewReader(docBytes)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-cve-scan")
+	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Client) HttpRequest(method string, requestUrl string, postReader io.Reader, header map[string]string) ([]byte, error) {
 	retryCount := 0
 	var response []byte

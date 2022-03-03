@@ -86,6 +86,10 @@ func (p *Publisher) GetVulnerabilityScanResults() (*deepfence.VulnerabilityScanD
 	return p.dfClient.GetVulnerabilityScanSummary()
 }
 
+func (p *Publisher) PublishSBOMtoES(sbom []byte) error {
+	return p.dfClient.SendSBOMtoES(sbom)
+}
+
 func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanDetail) error {
 	logrus.Infof("Total Vulnerabilities: %d\n", vulnerabilityScanDetail.Total)
 	logrus.Infof("Critical Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Critical)
