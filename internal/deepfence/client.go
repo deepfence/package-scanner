@@ -209,7 +209,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["artifacts"] = resultSBOM["artifacts"].([]interface{})
 	sbomDoc["source"] = resultSBOM["source"].(interface{})
 	sbomDoc["distro"] = resultSBOM["distro"].(interface{})
-	docBytes, err := json.Marshal(sbom)
+	docBytes, err := json.Marshal(sbomDoc)
 	if err != nil {
 		return err
 	}
