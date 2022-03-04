@@ -89,7 +89,8 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	var config util.Config
 	err := decoder.Decode(&config)
 	if err != nil {
-		fmt.Println("Unable to decode input JSON request:", err)
+		http.Error(w, "Unable to decode input JSON request", http.StatusBadRequest)
+		return
 	}
 	if config.Source == "" {
 		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
