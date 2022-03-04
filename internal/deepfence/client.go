@@ -214,8 +214,6 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
-	// TODO: remove log
-	fmt.Println("Sbom Doc:" + string(docBytes))
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-cve-scan")
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
