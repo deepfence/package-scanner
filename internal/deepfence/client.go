@@ -201,12 +201,21 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
 	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 	sbomDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
-	sbomDoc["data"] = string(sbom)
+	var resultSBOM map[string]interface{}
+	err := json.Unmarshal(sbom, &resultSBOM)
+	if err != nil {
+		return err
+	}
+	sbomDoc["artifacts"] = resultSBOM["artifacts"].([]interface{})
+	sbomDoc["source"] = resultSBOM["source"].(interface{})
+	sbomDoc["distro"] = resultSBOM["distro"].(interface{})
 	docBytes, err := json.Marshal(sbom)
 	if err != nil {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
+	// TODO: remove log
+	fmt.Println("Sbom Doc:" + string(docBytes))
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-cve-scan")
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
