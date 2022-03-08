@@ -195,6 +195,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["node_id"] = c.config.NodeId
 	sbomDoc["scan_type"] = c.config.ScanType
 	sbomDoc["node_type"] = c.config.NodeType
+	sbomDoc["masked"] = "false"
 	sbomDoc["host_name"] = c.config.HostName
 	sbomDoc["image_id"] = c.config.ImageId
 	sbomDoc["container_name"] = c.config.ContainerName

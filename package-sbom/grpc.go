@@ -133,7 +133,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	}
 	_, err := GenerateSBOM(config)
 	if err != nil {
-		log.Error(err)
+		log.Error("error in generating sbom: " + err.Error())
 		return nil
 	}
 	return nil

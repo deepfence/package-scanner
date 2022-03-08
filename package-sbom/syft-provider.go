@@ -55,6 +55,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	if config.VulnerabilityScan == true {
 		publisher, err = output.NewPublisher(config)
 		if err != nil {
+			log.Error("error in creating publisher")
 			return nil, err
 		}
 		publisher.PublishScanStatus("GENERATING_SBOM")
@@ -65,6 +66,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		// TODO: registry
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
 		if err != nil {
+			log.Error("error in getting authFilePath")
 			return nil, err
 		}
 		cmd.Env = os.Environ()
@@ -74,6 +76,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
 	sbom, err := cmd.Output()
 	if err != nil {
+		log.Error("error from syft command")
 		if config.VulnerabilityScan == true {
 			publisher.PublishScanError(err.Error())
 		}
@@ -91,6 +94,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 
 		vulnerabilityScanDetail, err := publisher.GetVulnerabilityScanResults()
 		if err != nil {
+			log.Error("error in getting vulnerability scan detail")
 			return sbom, err
 		}
 
