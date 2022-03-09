@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/mnt", "/run", "/proc", "/dev", "/boot", "/etc", "/sys", "/lost+found"}
+	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
@@ -76,7 +76,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
 	sbom, err := cmd.Output()
 	if err != nil {
-		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, ","))
+		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, " "))
 		log.Error("sbom output:" + string(sbom))
 		if config.VulnerabilityScan == true {
 			publisher.PublishScanError(err.Error())
