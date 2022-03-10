@@ -1,11 +1,13 @@
 package package_sbom
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 var (
 	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
+    mntDirs          = addNfsMountsToSkipDirs()
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
@@ -25,6 +28,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
 		}
+	}
+	for _, excludeDir := range mntDirs {
+		syftArgs = append(syftArgs, "--exclude", excludeDir)
 	}
 	if config.ScanType != "" && config.ScanType != "all" {
 		scanTypes := strings.Split(config.ScanType, ",")
@@ -134,4 +140,50 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	return sbom, nil
+}
+
+func addNfsMountsToSkipDirs() []string {
+
+	outputFileName := "/tmp/nfs-mounts.txt"
+	cmdFileName := "/tmp/get-nfs.sh"
+	nfsCmd := fmt.Sprintf("findmnt -l -t nfs4,tmpfs -n --output=TARGET > %s", outputFileName)
+	errVal := ioutil.WriteFile(cmdFileName, []byte(nfsCmd), 0600)
+	if errVal != nil {
+		fmt.Printf("Error while writing mount read command %s \n", errVal.Error())
+		return nil
+	}
+	cmdOutput, cmdErr := exec.Command("bash", cmdFileName).CombinedOutput()
+	if cmdErr != nil {
+		fileSize, _ := os.Stat(outputFileName)
+		if (string(cmdOutput) == "") && (fileSize.Size() == 0) {
+			fmt.Printf("No mount points detected \n")
+		} else {
+			fmt.Printf("Error getting mount points. %s %s \n", cmdErr.Error(), string(cmdOutput))
+		}
+		os.Remove(cmdFileName)
+		return nil
+	}
+	file, err := os.Open(outputFileName)
+	if err != nil {
+		fmt.Printf("Error while opening file %s\n", err.Error())
+		os.Remove(outputFileName)
+		os.Remove(cmdFileName)
+		return nil
+	}
+	defer file.Close()
+	var skipDirs []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if scanner.Err() != nil {
+			fmt.Println("Error while reading mounted files ", scanner.Err().Error())
+			os.Remove(outputFileName)
+			os.Remove(cmdFileName)
+			return nil
+		}
+		skipDirs = append(skipDirs, line)
+	}
+	os.Remove(outputFileName)
+	os.Remove(cmdFileName)
+	return skipDirs
 }
