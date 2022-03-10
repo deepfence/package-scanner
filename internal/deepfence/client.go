@@ -208,7 +208,11 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 		return err
 	}
 	sbomDoc["artifacts"] = resultSBOM["artifacts"].([]interface{})
-	sbomDoc["source"] = resultSBOM["source"].(interface{})
+	if c.config.NodeType == "host" {
+		sbomDoc["source_host"] = resultSBOM["source"].(interface{})
+	} else {
+		sbomDoc["source"] = resultSBOM["source"].(interface{})
+	}
 	sbomDoc["distro"] = resultSBOM["distro"].(interface{})
 	docBytes, err := json.Marshal(sbomDoc)
 	if err != nil {
