@@ -224,7 +224,11 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if err != nil {
 		return err
 	}
-	err = c.sendSBOMArtifactsToES(resultSBOM["artifacts"].([]map[string]interface{}))
+	artifacts := make([]map[string]interface{}, len(sbomDoc["artifacts"].([]interface{})))
+	for _, artifact := range sbomDoc["artifacts"].([]interface{}) {
+		artifacts = append(artifacts, artifact.(map[string]interface{}))
+	}
+	err = c.sendSBOMArtifactsToES(artifacts)
 	if err != nil {
 		return err
 	}
