@@ -224,6 +224,40 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if err != nil {
 		return err
 	}
+	err = c.sendSBOMArtifactsToES(resultSBOM["artifacts"].([]map[string]interface{}))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) sendSBOMArtifactsToES(artifacts []map[string]interface{}) error {
+	artifactDocs := make([]map[string]interface{}, len(artifacts))
+	for _, artifact := range artifacts {
+		artifactDoc := make(map[string]interface{})
+		artifactDoc["scan_id"] = c.config.ScanId
+		artifactDoc["node_id"] = c.config.NodeId
+		artifactDoc["node_type"] = c.config.NodeType
+		artifactDoc["masked"] = "false"
+		artifactDoc["name"] = artifact["name"]
+		artifactDoc["version"] = artifact["version"]
+		artifactDoc["locations"] = artifact["locations"]
+		artifactDoc["licenses"] = artifact["licenses"]
+		artifactDoc["language"] = artifact["language"]
+		artifactDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
+		artifactDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
+		artifactDocs = append(artifactDocs, artifactDoc)
+	}
+	docBytes, err := json.Marshal(artifactDocs)
+	if err != nil {
+		return err
+	}
+	postReader := bytes.NewReader(docBytes)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-artifact")
+	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
