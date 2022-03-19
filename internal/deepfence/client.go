@@ -26,6 +26,53 @@ type Client struct {
 	accessToken    string
 }
 
+type SBOMDocument struct {
+	Artifacts []Artifact   `json:"artifacts"` // Artifacts is the list of packages discovered and placed into the catalog
+	Source    Source       `json:"source"`    // Source represents the original object that was cataloged
+	Distro    LinuxRelease `json:"distro"`    // Distro represents the Linux distribution that was detected from the source
+}
+
+type Source struct {
+	Type   string      `json:"type"`
+	Target interface{} `json:"target"`
+}
+
+type IDLikes []string
+
+type LinuxRelease struct {
+	PrettyName       string  `json:"prettyName,omitempty"`
+	Name             string  `json:"name,omitempty"`
+	ID               string  `json:"id,omitempty"`
+	IDLike           IDLikes `json:"idLike,omitempty"`
+	Version          string  `json:"version,omitempty"`
+	VersionID        string  `json:"versionID,omitempty"`
+	Variant          string  `json:"variant,omitempty"`
+	VariantID        string  `json:"variantID,omitempty"`
+	HomeURL          string  `json:"homeURL,omitempty"`
+	SupportURL       string  `json:"supportURL,omitempty"`
+	BugReportURL     string  `json:"bugReportURL,omitempty"`
+	PrivacyPolicyURL string  `json:"privacyPolicyURL,omitempty"`
+	CPEName          string  `json:"cpeName,omitempty"`
+}
+
+type Artifact struct {
+	ID        string        `json:"id"`
+	Name      string        `json:"name"`
+	Version   string        `json:"version"`
+	Type      string        `json:"type"`
+	FoundBy   string        `json:"foundBy"`
+	Locations []Coordinates `json:"locations"`
+	Licenses  []string      `json:"licenses"`
+	Language  string        `json:"language"`
+	CPEs      []string      `json:"cpes"`
+	PURL      string        `json:"purl"`
+}
+
+type Coordinates struct {
+	RealPath     string `json:"path"`              // The path where all path ancestors have no hardlinks / symlinks
+	FileSystemID string `json:"layerID,omitempty"` // An ID representing the filesystem. For container images, this is a layer digest. For directories or a root filesystem, this is blank.
+}
+
 func NewClient(config util.Config) (*Client, error) {
 	httpClient, err := buildHttpClient()
 	if err != nil {
@@ -202,18 +249,18 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
 	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 	sbomDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
-	var resultSBOM map[string]interface{}
+	var resultSBOM SBOMDocument
 	err := json.Unmarshal(sbom, &resultSBOM)
 	if err != nil {
 		return err
 	}
-	sbomDoc["artifacts"] = resultSBOM["artifacts"].([]interface{})
+	sbomDoc["artifacts"] = resultSBOM.Artifacts
 	if c.config.NodeType == "host" {
-		sbomDoc["source_host"] = resultSBOM["source"].(interface{})
+		sbomDoc["source_host"] = resultSBOM.Source
 	} else {
-		sbomDoc["source"] = resultSBOM["source"].(interface{})
+		sbomDoc["source"] = resultSBOM.Source
 	}
-	sbomDoc["distro"] = resultSBOM["distro"].(interface{})
+	sbomDoc["distro"] = resultSBOM.Distro
 	docBytes, err := json.Marshal(sbomDoc)
 	if err != nil {
 		return err
@@ -224,18 +271,14 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if err != nil {
 		return err
 	}
-	artifacts := make([]map[string]interface{}, len(sbomDoc["artifacts"].([]interface{})))
-	for _, artifact := range sbomDoc["artifacts"].([]interface{}) {
-		artifacts = append(artifacts, artifact.(map[string]interface{}))
-	}
-	err = c.sendSBOMArtifactsToES(artifacts)
+	err = c.sendSBOMArtifactsToES(resultSBOM.Artifacts)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) sendSBOMArtifactsToES(artifacts []map[string]interface{}) error {
+func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	artifactDocs := make([]map[string]interface{}, len(artifacts))
 	for _, artifact := range artifacts {
 		artifactDoc := make(map[string]interface{})
@@ -243,11 +286,11 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []map[string]interface{}) error
 		artifactDoc["node_id"] = c.config.NodeId
 		artifactDoc["node_type"] = c.config.NodeType
 		artifactDoc["masked"] = "false"
-		artifactDoc["name"] = artifact["name"]
-		artifactDoc["version"] = artifact["version"]
-		artifactDoc["locations"] = artifact["locations"]
-		artifactDoc["licenses"] = artifact["licenses"]
-		artifactDoc["language"] = artifact["language"]
+		artifactDoc["name"] = artifact.Name
+		artifactDoc["version"] = artifact.Version
+		artifactDoc["locations"] = artifact.Locations
+		artifactDoc["licenses"] = artifact.Licenses
+		artifactDoc["language"] = artifact.Language
 		artifactDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 		artifactDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
 		artifactDocs = append(artifactDocs, artifactDoc)
