@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -24,10 +25,16 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
-		if mntDirs != nil {
-			for _, excludeDir := range mntDirs {
-				syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
+		var scanDir = config.Source
+		if strings.HasPrefix(config.Source, "dir:") {
+			scanDir = strings.Split(scanDir, ":")[1]
+		}
+		scanDir, _ = filepath.Abs(scanDir)
+		for _, excludeDir := range mntDirs {
+			if strings.Index(excludeDir, scanDir) == 0 {
+				excludeDir = strings.Replace(excludeDir, scanDir, "/", 1)
 			}
+			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
 		for _, excludeDir := range linuxExcludeDirs {
