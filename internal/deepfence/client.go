@@ -5,18 +5,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/deepfence/package-scanner/util"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/deepfence/package-scanner/util"
 )
 
 const (
 	MethodGet  = "GET"
 	MethodPost = "POST"
+)
+
+var (
+	cveScanLogsIndexName     = "cve-scan"
+	sbomCveScanLogsIndexName = "sbom-cve-scan"
+	sbomArtifactsIndexName   = "sbom-artifact"
 )
 
 type Client struct {
@@ -73,6 +81,15 @@ type Coordinates struct {
 	FileSystemID string `json:"layerID,omitempty"` // An ID representing the filesystem. For container images, this is a layer digest. For directories or a root filesystem, this is blank.
 }
 
+func init() {
+	customerUniqueId := os.Getenv("CUSTOMER_UNIQUE_ID")
+	if customerUniqueId != "" {
+		cveScanLogsIndexName += fmt.Sprintf("-%s", customerUniqueId)
+		sbomCveScanLogsIndexName += fmt.Sprintf("-%s", customerUniqueId)
+		sbomArtifactsIndexName += fmt.Sprintf("-%s", customerUniqueId)
+	}
+}
+
 func NewClient(config util.Config) (*Client, error) {
 	httpClient, err := buildHttpClient()
 	if err != nil {
@@ -90,7 +107,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
 	scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	postReader := bytes.NewReader([]byte(scanLog))
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=cve-scan")
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=" + cveScanLogsIndexName)
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil)
 	return err
 }
@@ -266,7 +283,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-cve-scan")
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=" + sbomCveScanLogsIndexName)
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
 		return err
@@ -300,7 +317,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=sbom-artifact")
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=" + sbomArtifactsIndexName)
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
 		return err
