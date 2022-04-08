@@ -95,7 +95,10 @@ func NewClient(config util.Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	mgmtConsoleUrl := config.ManagementConsoleUrl + ":" + config.ManagementConsolePort
+	mgmtConsoleUrl := config.ManagementConsoleUrl
+	if config.ManagementConsolePort != "" && config.ManagementConsolePort != "443" {
+		mgmtConsoleUrl += ":" + config.ManagementConsolePort
+	}
 	if mgmtConsoleUrl == "" {
 		return nil, fmt.Errorf("management console url is required")
 	}
