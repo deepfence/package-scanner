@@ -286,7 +286,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=" + sbomCveScanLogsIndexName)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=" + sbomCveScanLogsIndexName)
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
 		return err
@@ -320,7 +320,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 		return err
 	}
 	postReader := bytes.NewReader(docBytes)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.config.ManagementConsoleUrl + ":" + c.config.ManagementConsolePort + "/df-api/ingest?doc_type=" + sbomArtifactsIndexName)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=" + sbomArtifactsIndexName)
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil)
 	if err != nil {
 		return err
