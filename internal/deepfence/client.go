@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -17,11 +16,8 @@ import (
 )
 
 const (
-	MethodGet  = "GET"
-	MethodPost = "POST"
-)
-
-var (
+	MethodGet                = "GET"
+	MethodPost               = "POST"
 	cveScanLogsIndexName     = "cve-scan"
 	sbomCveScanLogsIndexName = "sbom-cve-scan"
 	sbomArtifactsIndexName   = "sbom-artifact"
@@ -79,15 +75,6 @@ type Artifact struct {
 type Coordinates struct {
 	RealPath     string `json:"path"`              // The path where all path ancestors have no hardlinks / symlinks
 	FileSystemID string `json:"layerID,omitempty"` // An ID representing the filesystem. For container images, this is a layer digest. For directories or a root filesystem, this is blank.
-}
-
-func init() {
-	customerUniqueId := os.Getenv("CUSTOMER_UNIQUE_ID")
-	if customerUniqueId != "" {
-		cveScanLogsIndexName += fmt.Sprintf("-%s", customerUniqueId)
-		sbomCveScanLogsIndexName += fmt.Sprintf("-%s", customerUniqueId)
-		sbomArtifactsIndexName += fmt.Sprintf("-%s", customerUniqueId)
-	}
 }
 
 func NewClient(config util.Config) (*Client, error) {
