@@ -287,7 +287,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 
 func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	artifactDocs := make([]map[string]interface{}, len(artifacts))
-	for _, artifact := range artifacts {
+	for i, artifact := range artifacts {
 		artifactDoc := make(map[string]interface{})
 		artifactDoc["scan_id"] = c.config.ScanId
 		artifactDoc["node_id"] = c.config.NodeId
@@ -300,7 +300,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 		artifactDoc["language"] = artifact.Language
 		artifactDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 		artifactDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
-		artifactDocs = append(artifactDocs, artifactDoc)
+		artifactDocs[i] = artifactDoc
 	}
 	docBytes, err := json.Marshal(artifactDocs)
 	if err != nil {
