@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/deepfence/package-scanner/util"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -163,8 +164,7 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 	}
 }
 
-func getDefaultDockerCredentials(registryData map[string]interface{}, registryUrlKey, registryUsernameKey,
-	registryPasswordKey string) (string, string, string){
+func getDefaultDockerCredentials(registryData map[string]interface{}, registryUrlKey, registryUsernameKey, registryPasswordKey string) (string, string, string) {
 	var dockerUsername, dockerPassword, dockerRegistryUrl string
 	var ok bool
 	if dockerUsername, ok = registryData[registryUsernameKey].(string); !ok {
@@ -180,7 +180,7 @@ func getDefaultDockerCredentials(registryData map[string]interface{}, registryUr
 }
 
 func createAuthFile(registryId, registryUrl, username, password string) (string, error) {
-	authFilePath := "/tmp/auth_" + registryId
+	authFilePath := "/tmp/auth_" + registryId + "_" + util.RandomString(12)
 	if _, err := os.Stat(authFilePath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(authFilePath, os.ModePerm)
 		if err != nil {
@@ -189,13 +189,13 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 	}
 	if password == "" {
 		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\"} } }")
-		err := os.WriteFile(authFilePath + "/config.json", configJson, 0644)
+		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
 			return "", err
 		}
 	} else {
 		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"username\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\", \"password\": \"" + strings.ReplaceAll(password, "\"", "\\\"") + "\"} } }")
-		err := os.WriteFile(authFilePath + "/config.json", configJson, 0644)
+		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
 			return "", err
 		}

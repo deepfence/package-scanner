@@ -78,18 +78,18 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 
 	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
-		// TODO: registry
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
 		if err != nil {
 			log.Error("error in getting authFilePath")
 			return nil, err
 		}
+		defer os.RemoveAll(authFilePath)
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
 	}
 
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
-	sbom, err := cmd.Output()
+	sbom, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, " "))
 		log.Error("sbom output:" + string(sbom))
