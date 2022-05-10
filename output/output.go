@@ -44,7 +44,7 @@ func (p *Publisher) PublishScanError(errMsg string) {
 }
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
-	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil)
+	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil, "application/vnd.kafka.json.v2+json")
 	return err
 }
 
