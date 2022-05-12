@@ -95,8 +95,21 @@ func NewClient(config util.Config) (*Client, error) {
 
 func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
-	scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
-	postReader := bytes.NewReader([]byte(scanLog))
+	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
+	scanLog := map[string]interface{}{
+		"scan_id":                 c.config.ScanId,
+		"time_stamp":              util.GetIntTimestamp(),
+		"cve_scan_message":        vulnerabilityScanMsg,
+		"action":                  status,
+		"type":                    "cve-scan",
+		"node_type":               c.config.NodeType,
+		"node_id":                 c.config.NodeId,
+		"scan_type":               c.config.ScanType,
+		"host_name":               c.config.HostName,
+		"host":                    c.config.HostName,
+		"kubernetes_cluster_name": c.config.KubernetesClusterName,
+	}
+	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
 
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
@@ -269,11 +282,12 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 		sbomDoc["source"] = resultSBOM.Source
 	}
 	sbomDoc["distro"] = resultSBOM.Distro
-	docBytes, err := json.Marshal(sbomDoc)
-	if err != nil {
-		return err
-	}
-	postReader := bytes.NewReader(docBytes)
+	// docBytes, err := json.Marshal(sbomDoc)
+	// if err != nil {
+	// 	return err
+	// }
+	// postReader := bytes.NewReader(docBytes)
+	postReader := util.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
 
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
@@ -304,13 +318,14 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 		artifactDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
 		artifactDocs[i] = artifactDoc
 	}
-	docBytes, err := json.Marshal(artifactDocs)
-	if err != nil {
-		return err
-	}
-	postReader := bytes.NewReader(docBytes)
+	// docBytes, err := json.Marshal(artifactDocs)
+	// if err != nil {
+	// 	return err
+	// }
+	// postReader := bytes.NewReader(docBytes)
+	postReader := util.ToKafkaRestFormat(artifactDocs)
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics" + sbomArtifactsIndexName)
-	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
+	_, err := c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
 		return err
 	}
