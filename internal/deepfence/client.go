@@ -324,7 +324,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	// }
 	// postReader := bytes.NewReader(docBytes)
 	postReader := util.ToKafkaRestFormat(artifactDocs)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics" + sbomArtifactsIndexName)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomArtifactsIndexName)
 	_, err := c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
 		return err
