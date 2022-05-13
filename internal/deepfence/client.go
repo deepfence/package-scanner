@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/deepfence/package-scanner/util"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -113,6 +114,9 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
 
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
+	if err != nil {
+		log.Errorf("SendScanStatustoConsole error: %s", err)
+	}
 	return err
 }
 
@@ -254,6 +258,9 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("container_name", c.config.ContainerName)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
 	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil, "")
+	if err != nil {
+		log.Errorf("SendSBOMtoConsole error: %s", err)
+	}
 	return err
 }
 
@@ -292,10 +299,12 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
+		log.Errorf("SendSBOMtoES error: %s", err)
 		return err
 	}
 	err = c.sendSBOMArtifactsToES(resultSBOM.Artifacts)
 	if err != nil {
+		log.Errorf("sendSBOMArtifactsToES error: %s", err)
 		return err
 	}
 	return nil
@@ -327,6 +336,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomArtifactsIndexName)
 	_, err := c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
+		log.Errorf("sendSBOMArtifactsToES error: %s", err)
 		return err
 	}
 	return nil

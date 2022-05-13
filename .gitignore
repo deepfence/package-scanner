@@ -3,3 +3,4 @@ package-scanner
 .idea
 vendor
 proto
+.vscode/
