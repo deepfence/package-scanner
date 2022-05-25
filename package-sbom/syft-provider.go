@@ -3,7 +3,6 @@ package package_sbom
 import (
 	"bufio"
 	"fmt"
-	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
@@ -125,16 +124,16 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 					os.Exit(1)
 				}
 			}
-			if config.FailOnSeverityCount == "" {
+			if config.FailOnCount >= vulnerabilityScanDetail.Total {
 				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
-			} else if config.FailOnSeverityCount == deepfence.CriticalSeverity {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCount)
-			} else if config.FailOnSeverityCount == deepfence.HighSeverity {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnCount)
-			} else if config.FailOnSeverityCount == deepfence.MediumSeverity {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnCount)
-			} else if config.FailOnSeverityCount == deepfence.LowSeverity {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnCount)
+			} else if config.FailOnCriticalCount >= vulnerabilityScanDetail.Severity.Critical {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
+			} else if config.FailOnHighCount >= vulnerabilityScanDetail.Severity.High {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
+			} else if config.FailOnMediumCount >= vulnerabilityScanDetail.Severity.Medium {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
+			} else if config.FailOnLowCount >= vulnerabilityScanDetail.Severity.Low {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
 			}
 		}
 		if config.FailOnScore > 0.0 {
