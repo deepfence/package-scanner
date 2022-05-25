@@ -124,15 +124,15 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 					os.Exit(1)
 				}
 			}
-			if config.FailOnCount >= vulnerabilityScanDetail.Total {
+			if vulnerabilityScanDetail.Total >= config.FailOnCount  {
 				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
-			} else if config.FailOnCriticalCount >= vulnerabilityScanDetail.Severity.Critical {
+			} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {				
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
-			} else if config.FailOnHighCount >= vulnerabilityScanDetail.Severity.High {
+			} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount  {				
 				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
-			} else if config.FailOnMediumCount >= vulnerabilityScanDetail.Severity.Medium {
+			} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {				
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
-			} else if config.FailOnLowCount >= vulnerabilityScanDetail.Severity.Low {
+			} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {				
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
 			}
 		}
