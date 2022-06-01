@@ -59,6 +59,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				syftArgs = append(syftArgs, "--enable-cataloger", "java-cataloger")
 			} else if scanType == "rust" {
 				syftArgs = append(syftArgs, "--enable-cataloger", "rust-cataloger")
+			} else if scanType == "dotnet" {
+				syftArgs = append(syftArgs, "--enable-cataloger", "dotnet-deps-cataloger")
 			}
 		}
 	}
@@ -124,15 +126,15 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 					os.Exit(1)
 				}
 			}
-			if vulnerabilityScanDetail.Total >= config.FailOnCount  {
+			if vulnerabilityScanDetail.Total >= config.FailOnCount {
 				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
-			} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {				
+			} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
-			} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount  {				
+			} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount {
 				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
-			} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {				
+			} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
-			} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {				
+			} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {
 				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
 			}
 		}

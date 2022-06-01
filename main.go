@@ -24,13 +24,13 @@ var (
 	vulnerabilityScan     = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
 	deepfenceKey          = flag.String("deepfence-key", "", "Deepfence key for auth")
 	source                = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
-	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang", "base,java,python,ruby,php,javascript,rust,golang")
+	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang,dotnet", "base,java,python,ruby,php,javascript,rust,golang,dotnet")
 	scanId                = flag.String("scan-id", "", "(Optional) Scan id")
 	failOnCount           = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
-	failOnCriticalCount           = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
-	failOnHighCount           = flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high vulnerabilities found is >= this value (Default: -1)")
-	failOnMediumCount           = flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium vulnerabilities found is >= this value (Default: -1)")
-	failOnLowCount           = flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low vulnerabilities found is >= this value (Default: -1)")
+	failOnCriticalCount   = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
+	failOnHighCount       = flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high vulnerabilities found is >= this value (Default: -1)")
+	failOnMediumCount     = flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium vulnerabilities found is >= this value (Default: -1)")
+	failOnLowCount        = flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low vulnerabilities found is >= this value (Default: -1)")
 	failOnSeverityCount   = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
 	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
@@ -98,10 +98,10 @@ func main() {
 		ScanId:                *scanId,
 		FailOnScore:           *failOnScore,
 		FailOnCount:           *failOnCount,
-		FailOnCriticalCount:           *failOnCriticalCount,
-		FailOnHighCount:           *failOnHighCount,
-		FailOnMediumCount:           *failOnMediumCount,
-		FailOnLowCount:           *failOnLowCount,
+		FailOnCriticalCount:   *failOnCriticalCount,
+		FailOnHighCount:       *failOnHighCount,
+		FailOnMediumCount:     *failOnMediumCount,
+		FailOnLowCount:        *failOnLowCount,
 		FailOnSeverityCount:   *failOnSeverityCount,
 		MaskCveIds:            *maskCveIds,
 	}
