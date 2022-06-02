@@ -21,6 +21,10 @@ type Config struct {
 	KubernetesClusterName string  `json:"kubernetes_cluster_name,omitempty"`
 	RegistryId            string  `json:"registry_id,omitempty"`
 	FailOnCount           int     `json:"fail_on_count,omitempty"`
+	FailOnCriticalCount   int     `json:"fail_on_critical_count,omitempty"`
+	FailOnHighCount       int     `json:"fail_on_high_count,omitempty"`
+	FailOnMediumCount     int     `json:"fail_on_medium_count,omitempty"`
+	FailOnLowCount        int     `json:"fail_on_low_count,omitempty"`
 	FailOnSeverityCount   string  `json:"fail_on_severity_count,omitempty"`
 	FailOnScore           float64 `json:"fail_on_score,omitempty"`
 	MaskCveIds            string  `json:"mask_cve_ids,omitempty"`

@@ -7,7 +7,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
     && make \
     && cd /go \
-    && git clone https://github.com/deepfence/syft \
+    && git clone --depth 1 -b v0.44.1 https://github.com/deepfence/syft \
     && cd /go/syft \
     && go build -v -o syftCli .
 
