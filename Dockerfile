@@ -1,6 +1,6 @@
-FROM golang:1.18-alpine3.15 AS build
-RUN apk add --no-cache git \
-    && apk add gcc libc-dev libffi-dev bash make protoc
+FROM golang:1.18-bullseye AS build
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git gcc libc-dev libffi-dev bash make protobuf-compiler
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
@@ -11,7 +11,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && cd /go/syft/cmd/syft \
     && go build -v -o syftCli .
 
-FROM alpine:3.15
+FROM debian:bullseye-slim
 MAINTAINER Deepfence Inc
 LABEL deepfence.role=system
 
@@ -19,6 +19,7 @@ ENV PACKAGE_SCAN_CONCURRENCY=5
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/syft/cmd/syft/syftCli /usr/local/bin/syft
-RUN apk add --no-cache --update bash gcompat findmnt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bash util-linux ca-certificates
 EXPOSE 8002 8005
 ENTRYPOINT ["/usr/local/bin/package-scanner", "--mode", "grpc-server", "--port", "8002"]
