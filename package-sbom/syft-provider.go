@@ -41,7 +41,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
 		}
 		if util.ContainerRuntimeInterface != nil {
-			// This means the underlying container runtime is contaionerd
+			// This means the underlying container runtime is containerd
 			// in case of image scan, we need to generate image tar file and
 			// feed it to syft, since syft does not support listing images from containerd
 			// ref: https://github.com/anchore/syft/issues/1048
@@ -104,7 +104,6 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
-	log.Infof("syft args: %v", syftArgs)
 	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
