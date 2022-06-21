@@ -20,17 +20,6 @@ var (
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	// if util.ContainerRuntimeInterface != nil {
-	// 	// This means the underlying container runtime is contaionerd
-	// 	// in case of image scan, we need to generate image tar file and
-	// 	// feed it to syft, since syft does not support listing images from containerd
-	// 	// ref: https://github.com/anchore/syft/issues/1048
-	// 	//
-	// 	// TODO : Remove this commit after anchore/syft#1048 is resolved
-	// 	//
-	// 	if config.ScanType {
-	// }
-
 	syftArgs := []string{"packages", config.Source, "-o", "json", "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
