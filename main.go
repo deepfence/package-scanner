@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/deepfence/package-scanner/package-sbom"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+
+	package_sbom "github.com/deepfence/package-scanner/package-sbom"
+	"github.com/deepfence/package-scanner/util"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -35,6 +37,11 @@ var (
 	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 )
+
+func init() {
+	// Auto-detects and sets underlying container runtime
+	util.SetContainerRuntimeInterface()
+}
 
 func runOnce(config util.Config) {
 	if config.Source == "" {
