@@ -4,11 +4,18 @@ import (
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/deepfence/vessel"
+	vesselConstants "github.com/deepfence/vessel/constants"
+	containerdRuntime "github.com/deepfence/vessel/containerd"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
 	charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
+
+var ContainerRuntimeInterface vessel.Runtime
 
 func GetIntTimestamp() int64 {
 	return time.Now().UTC().UnixNano() / 1000000
@@ -41,4 +48,19 @@ func RandomStringWithCharset(length int, charset string) string {
 
 func RandomString(length int) string {
 	return RandomStringWithCharset(length, charset)
+}
+
+func SetContainerRuntimeInterface(containerdSock string) {
+	containerRuntime, _, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		log.Errorf("Error detecting container runtime: %v", err)
+		log.Warn("falling back to default (docker) runtime")
+		return
+	}
+	log.Debugf("Detected container runtime: %s", containerRuntime)
+
+	switch containerRuntime {
+	case vesselConstants.CONTAINERD:
+		ContainerRuntimeInterface = containerdRuntime.New(containerdSock)
+	}
 }

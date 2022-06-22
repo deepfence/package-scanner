@@ -3,14 +3,15 @@ package package_sbom
 import (
 	"bufio"
 	"fmt"
-	"github.com/deepfence/package-scanner/output"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/deepfence/package-scanner/output"
+	"github.com/deepfence/package-scanner/util"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -38,6 +39,32 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	} else {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
+		}
+		if util.ContainerRuntimeInterface != nil {
+			// This means the underlying container runtime is containerd
+			// in case of image scan, we need to generate image tar file and
+			// feed it to syft, since syft does not support listing images from containerd
+			// ref: https://github.com/anchore/syft/issues/1048
+			//
+			// TODO : Remove this commit after anchore/syft#1048 is resolved
+			//
+
+			// create a temp directory for tar
+			tmpDir, err := ioutil.TempDir("", "syft-")
+			if err != nil {
+				log.Errorf("Error creating temp directory: %v", err)
+				return nil, err
+			}
+			defer os.RemoveAll(tmpDir)
+			// create a tar file for the image
+			tarFile := filepath.Join(tmpDir, "image.tar")
+			_, err = util.ContainerRuntimeInterface.Save(config.Source, tarFile)
+			if err != nil {
+				log.Errorf("Error creating tar file: %v", err)
+				return nil, err
+			}
+			// feed the tar file to syft
+			syftArgs[1] = "oci-archive:" + tarFile
 		}
 	}
 	if config.ScanType != "" && config.ScanType != "all" {
