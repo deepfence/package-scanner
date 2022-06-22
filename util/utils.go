@@ -54,7 +54,8 @@ func SetContainerRuntimeInterface(containerdSock string) {
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	if err != nil {
 		log.Errorf("Error detecting container runtime: %v", err)
-		os.Exit(1)
+		log.Warn("falling back to default (docker) runtime")
+		return
 	}
 	log.Debugf("Detected container runtime: %s", containerRuntime)
 
