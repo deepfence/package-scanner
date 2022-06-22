@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,10 @@ import (
 
 const (
 	PluginName = "PackageScanner"
+)
+
+var (
+	ContainerdSock = "unix:///run/containerd/containerd.sock"
 )
 
 var (
@@ -39,8 +44,13 @@ var (
 )
 
 func init() {
+	// Read containerd sock from env
+	if os.Getenv("CONTAINERD_SOCK_PATH") != "" {
+		ContainerdSock = os.Getenv("CONTAINERD_SOCK_PATH")
+	}
+
 	// Auto-detects and sets underlying container runtime
-	util.SetContainerRuntimeInterface()
+	util.SetContainerRuntimeInterface(ContainerdSock)
 }
 
 func runOnce(config util.Config) {

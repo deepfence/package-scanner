@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	charset        = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	containerdSock = "unix:///run/containerd/containerd.sock"
+	charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 )
 
 var ContainerRuntimeInterface vessel.Runtime
@@ -51,7 +50,7 @@ func RandomString(length int) string {
 	return RandomStringWithCharset(length, charset)
 }
 
-func SetContainerRuntimeInterface() {
+func SetContainerRuntimeInterface(containerdSock string) {
 	containerRuntime, _, err := vessel.AutoDetectRuntime()
 	if err != nil {
 		log.Errorf("Error detecting container runtime: %v", err)
