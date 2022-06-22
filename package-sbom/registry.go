@@ -6,14 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/deepfence/package-scanner/util"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/deepfence/package-scanner/util"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
 )
@@ -96,7 +98,7 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 	}
 	switch registryType {
 	case "ecr":
-		var awsAccessKey, awsSecret, awsRegionName, registryId string
+		var awsAccessKey, awsSecret, awsRegionName, registryId, targetAccountRoleARN string
 		var useIAMRole bool
 		if awsAccessKey, ok = registryData["aws_access_key_id"].(string); !ok {
 			awsAccessKey = ""
@@ -113,7 +115,10 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 		if useIAMRole, ok = registryData["use_iam_role"].(bool); !ok {
 			useIAMRole = false
 		}
-		ecrProxyUrl, ecrAuth := getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId, useIAMRole)
+		if targetAccountRoleARN, ok = registryData["target_account_role_arn"].(string); !ok {
+			targetAccountRoleARN = ""
+		}
+		ecrProxyUrl, ecrAuth := getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId, useIAMRole, targetAccountRoleARN)
 		return ecrProxyUrl, ecrAuth, ""
 	case "docker_hub":
 		var dockerUsername, dockerPassword string
@@ -203,13 +208,26 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 	return authFilePath, nil
 }
 
-func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId string, useIAMRole bool) (string, string) {
+func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId string, useIAMRole bool, targetAccountRoleARN string) (string, string) {
 	var awsConfig aws.Config
+	var svc *ecr.ECR
+	var creds *credentials.Credentials
+
 	if !useIAMRole {
 		awsConfig.WithCredentials(credentials.NewStaticCredentials(awsAccessKey, awsSecret, ""))
 	}
 	mySession := session.Must(session.NewSession(&awsConfig))
-	svc := ecr.New(mySession, aws.NewConfig().WithRegion(awsRegionName))
+
+	if useIAMRole {
+		creds = stscreds.NewCredentials(mySession, targetAccountRoleARN)
+		svc = ecr.New(mySession, &aws.Config{
+			Credentials: creds,
+			Region:      &awsRegionName,
+		})
+	} else {
+		svc = ecr.New(mySession, aws.NewConfig().WithRegion(awsRegionName))
+	}
+
 	var authorizationTokenRequestInput ecr.GetAuthorizationTokenInput
 	if registryId != "" {
 		authorizationTokenRequestInput.SetRegistryIds([]*string{&registryId})
