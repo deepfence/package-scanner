@@ -2,22 +2,20 @@ package main
 
 import (
 	"flag"
-	"os"
+	"github.com/deepfence/vessel"
 	"strconv"
 	"strings"
 
 	package_sbom "github.com/deepfence/package-scanner/package-sbom"
 	"github.com/deepfence/package-scanner/util"
-
+	vesselConstants "github.com/deepfence/vessel/constants"
+	containerdRuntime "github.com/deepfence/vessel/containerd"
+	dockerRuntime "github.com/deepfence/vessel/docker"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	PluginName = "PackageScanner"
-)
-
-var (
-	ContainerdSock = "unix:///run/containerd/containerd.sock"
 )
 
 var (
@@ -42,16 +40,6 @@ var (
 	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 )
-
-func init() {
-	// Read containerd sock from env
-	if os.Getenv("CONTAINERD_SOCK_PATH") != "" {
-		ContainerdSock = os.Getenv("CONTAINERD_SOCK_PATH")
-	}
-
-	// Auto-detects and sets underlying container runtime
-	util.SetContainerRuntimeInterface(ContainerdSock)
-}
 
 func runOnce(config util.Config) {
 	if config.Source == "" {
@@ -100,6 +88,13 @@ func main() {
 	log.SetFormatter(customFormatter)
 	customFormatter.FullTimestamp = true
 
+	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		log.Errorf("Error detecting container runtime: %v", err)
+		return
+	}
+	log.Debugf("Detected container runtime: %s", containerRuntime)
+
 	config := util.Config{
 		Mode:                  *mode,
 		SocketPath:            *socketPath,
@@ -121,6 +116,13 @@ func main() {
 		FailOnLowCount:        *failOnLowCount,
 		FailOnSeverityCount:   *failOnSeverityCount,
 		MaskCveIds:            *maskCveIds,
+		ContainerRuntimeName:  containerRuntime,
+	}
+
+	if containerRuntime == vesselConstants.DOCKER {
+		config.ContainerRuntime = dockerRuntime.New()
+	} else if containerRuntime == vesselConstants.CONTAINERD {
+		config.ContainerRuntime = containerdRuntime.New(endpoint)
 	}
 
 	if *mode == util.ModeLocal {
