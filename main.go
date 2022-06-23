@@ -91,9 +91,9 @@ func main() {
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
 	if err != nil {
 		log.Errorf("Error detecting container runtime: %v", err)
-		return
+	} else {
+		log.Debugf("Detected container runtime: %s", containerRuntime)
 	}
-	log.Debugf("Detected container runtime: %s", containerRuntime)
 
 	config := util.Config{
 		Mode:                  *mode,
