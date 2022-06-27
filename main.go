@@ -2,11 +2,16 @@ package main
 
 import (
 	"flag"
-	"github.com/deepfence/package-scanner/package-sbom"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
+	"github.com/deepfence/vessel"
 	"strconv"
 	"strings"
+
+	package_sbom "github.com/deepfence/package-scanner/package-sbom"
+	"github.com/deepfence/package-scanner/util"
+	vesselConstants "github.com/deepfence/vessel/constants"
+	containerdRuntime "github.com/deepfence/vessel/containerd"
+	dockerRuntime "github.com/deepfence/vessel/docker"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -83,6 +88,13 @@ func main() {
 	log.SetFormatter(customFormatter)
 	customFormatter.FullTimestamp = true
 
+	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		log.Errorf("Error detecting container runtime: %v", err)
+	} else {
+		log.Debugf("Detected container runtime: %s", containerRuntime)
+	}
+
 	config := util.Config{
 		Mode:                  *mode,
 		SocketPath:            *socketPath,
@@ -104,6 +116,13 @@ func main() {
 		FailOnLowCount:        *failOnLowCount,
 		FailOnSeverityCount:   *failOnSeverityCount,
 		MaskCveIds:            *maskCveIds,
+		ContainerRuntimeName:  containerRuntime,
+	}
+
+	if containerRuntime == vesselConstants.DOCKER {
+		config.ContainerRuntime = dockerRuntime.New()
+	} else if containerRuntime == vesselConstants.CONTAINERD {
+		config.ContainerRuntime = containerdRuntime.New(endpoint)
 	}
 
 	if *mode == util.ModeLocal {
