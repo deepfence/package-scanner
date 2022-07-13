@@ -120,24 +120,15 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
-	stat, err := cmd.CombinedOutput()
+	sbom, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, " "))
-		log.Error("sbom output:" + string(stat))
+		log.Error("sbom output:" + string(sbom))
 		if config.VulnerabilityScan == true {
 			publisher.PublishScanError(err.Error())
 		}
 		return nil, err
 	}
-
-	sbom, err := ioutil.ReadFile(jsonFile)
-	if err != nil {
-		log.Error("error reading internal file",err)
-		return nil, err
-	}
-	defer os.RemoveAll(jsonFile)
-
-	
 
 	if config.VulnerabilityScan == true {
 		publisher.StopPublishScanStatus()
