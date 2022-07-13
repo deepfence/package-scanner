@@ -21,7 +21,8 @@ var (
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	syftArgs := []string{"packages", config.Source, "-o", "json", "-q"}
+	jsonFile := filepath.Join("/var/tmp", util.RandomString(12)+"output.json")
+	syftArgs := []string{"packages", config.Source, "-o", "json","--file",jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
@@ -119,15 +120,24 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	//logrus.Infof("Generating SBOM: %s - syft %v", config.Source, syftArgs)
-	sbom, err := cmd.CombinedOutput()
+	stat, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, " "))
-		log.Error("sbom output:" + string(sbom))
+		log.Error("sbom output:" + string(stat))
 		if config.VulnerabilityScan == true {
 			publisher.PublishScanError(err.Error())
 		}
 		return nil, err
 	}
+
+	sbom, err := ioutil.ReadFile(jsonFile)
+	if err != nil {
+		log.Error("error reading internal file",err)
+		return nil, err
+	}
+	defer os.RemoveAll(jsonFile)
+
+	
 
 	if config.VulnerabilityScan == true {
 		publisher.StopPublishScanStatus()
