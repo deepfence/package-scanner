@@ -21,7 +21,7 @@ var (
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	jsonFile := filepath.Join("/var/tmp", util.RandomString(12)+"output.json")
+	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
