@@ -1,9 +1,14 @@
 package util
 
 import (
+	"bytes"
+	"encoding/json"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,4 +46,19 @@ func RandomStringWithCharset(length int, charset string) string {
 
 func RandomString(length int) string {
 	return RandomStringWithCharset(length, charset)
+}
+
+// data needs to be in this format for kafka rest proxy
+// {"records":[{"value":<record1>},{"value":record2}]}
+func ToKafkaRestFormat(data []map[string]interface{}) *bytes.Buffer {
+	values := make([]string, len(data))
+	for i, d := range data {
+		encoded, err := json.Marshal(&d)
+		if err != nil {
+			log.Errorf("failed to encode doc: %s", err)
+			continue
+		}
+		values[i] = "{\"value\":" + string(encoded) + "}"
+	}
+	return bytes.NewBuffer([]byte("{\"records\":[" + strings.Join(values, ",") + "]}"))
 }
