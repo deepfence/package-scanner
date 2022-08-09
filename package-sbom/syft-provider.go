@@ -3,16 +3,14 @@ package package_sbom
 import (
 	"bufio"
 	"fmt"
+	"github.com/deepfence/package-scanner/output"
+	"github.com/deepfence/package-scanner/util"
 	vesselConstants "github.com/deepfence/vessel/constants"
-	"io/ioutil"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/deepfence/package-scanner/output"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -52,7 +50,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				// TODO : Remove this commit after anchore/syft#1048 is resolved
 				//
 				// create a temp directory for tar
-				tmpDir, err := ioutil.TempDir("", "syft-")
+				tmpDir, err := os.MkdirTemp("", "syft-")
 				if err != nil {
 					log.Errorf("Error creating temp directory: %v", err)
 					return nil, err
@@ -118,21 +116,19 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
 	}
-
-	//logrus.Infof("Generating SBOM : %s - syft %v", config.Source, syftArgs)
-	stat, err := cmd.CombinedOutput()
+	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Error("error from syft command for syftArgs:" + strings.Join(syftArgs, " "))
-		log.Error("sbom output:" + string(stat))
+		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
+		log.Error("output:" + string(stdout) + " " + err.Error())
 		if config.VulnerabilityScan == true {
 			publisher.PublishScanError(err.Error())
 		}
 		return nil, err
 	}
 
-	sbom, err := ioutil.ReadFile(jsonFile)
+	sbom, err := os.ReadFile(jsonFile)
 	if err != nil {
-		log.Error("error reading internal file",err)
+		log.Error("error reading internal file", err)
 		return nil, err
 	}
 	defer os.RemoveAll(jsonFile)
@@ -193,7 +189,7 @@ func getNfsMountsDirs() []string {
 	outputFileName := "/tmp/nfs-mounts.txt"
 	cmdFileName := "/tmp/get-nfs.sh"
 	nfsCmd := fmt.Sprintf("findmnt -l -t nfs4,tmpfs -n --output=TARGET > %s", outputFileName)
-	errVal := ioutil.WriteFile(cmdFileName, []byte(nfsCmd), 0600)
+	errVal := os.WriteFile(cmdFileName, []byte(nfsCmd), 0600)
 	if errVal != nil {
 		log.Warnf("Error while writing mount read command %s \n", errVal.Error())
 		return nil

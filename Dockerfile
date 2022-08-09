@@ -23,8 +23,8 @@ COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-sca
 COPY --from=build /go/syft/cmd/syft/syftCli /usr/local/bin/syft
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl bash util-linux ca-certificates \
-    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.21.0/nerdctl-0.21.0-linux-amd64.tar.gz \
-    && tar Cxzvvf /usr/local/bin nerdctl-0.21.0-linux-amd64.tar.gz \
-    && rm nerdctl-0.21.0-linux-amd64.tar.gz
+    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.22.2/nerdctl-0.22.2-linux-amd64.tar.gz \
+    && tar Cxzvvf /usr/local/bin nerdctl-0.22.2-linux-amd64.tar.gz \
+    && rm nerdctl-0.22.2-linux-amd64.tar.gz
 EXPOSE 8002 8005
 ENTRYPOINT ["/usr/local/bin/package-scanner", "--mode", "grpc-server", "--port", "8002"]
