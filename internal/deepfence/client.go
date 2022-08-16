@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -368,7 +367,7 @@ func (c *Client) HttpRequest(method string, requestUrl string, postReader io.Rea
 			return response, err
 		}
 		if resp.StatusCode == 200 {
-			response, err = ioutil.ReadAll(resp.Body)
+			response, err = io.ReadAll(resp.Body)
 			if err != nil {
 				return response, err
 			}
