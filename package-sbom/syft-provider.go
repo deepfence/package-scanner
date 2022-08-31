@@ -107,8 +107,11 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
+	log.Info(config.RegistryId,config.NodeType, syftArgs)
 	cmd := exec.Command("syft", syftArgs...)
+	log.Info(config.RegistryId,config.NodeType)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
+		log.Info("it came to the outer condition")
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
 		if err != nil {
 			log.Error("error in getting authFilePath")
