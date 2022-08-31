@@ -79,7 +79,7 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 	registryUrl, username, password := GetDockerCredentials(registryData.Data)
 
 	log.Info(registryUrl, "mukul")
-	if strings.Contains("http:", registryUrl) {
+	if strings.Contains(registryUrl, "http:") {
 		log.Info(registryUrl)
 		isRegistryInsecure = true
 	}
