@@ -108,7 +108,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	isRegistrySecure(config.RegistryId)
-	if strings.Contains("registry:",syftArgs[1]){
+	log.Info(strings.Contains(syftArgs[1], "registry:"), "secure")
+	if strings.Contains(syftArgs[1], "registry:"){
 		syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
 	}
 
