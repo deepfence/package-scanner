@@ -130,8 +130,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		log.Info(isRegistryInsecure)
 		if isRegistryInsecure {
 			log.Info("it has come inside the the condition that means it is working fine")
-			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", true))
-			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", true))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
 	stdout, err := cmd.CombinedOutput()
