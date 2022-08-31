@@ -21,9 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var {
+var (
 	isRegistryInsecure = false
-}
+)
 
 type registryCredentialResponse struct {
 	Data    map[string]interface{} `json:"data,omitempty"`
