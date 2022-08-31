@@ -21,6 +21,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var {
+	isRegistryInsecure = false
+}
+
 type registryCredentialResponse struct {
 	Data    map[string]interface{} `json:"data,omitempty"`
 	Error   interface{}            `json:"error,omitempty"`
@@ -74,6 +78,10 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 	}
 	registryUrl, username, password := GetDockerCredentials(registryData.Data)
 	log.Info(registryUrl)
+	if strings.Contains("http:", registryUrl) {
+		log.Info(registryUrl)
+		isRegistryInsecure = true
+	}
 	if username == "" {
 		return "", "", "", fmt.Errorf("unable to get credentials for specified registry")
 	}
