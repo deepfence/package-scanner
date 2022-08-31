@@ -77,7 +77,8 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 		return "", "", "", fmt.Errorf("invalid registry credentials obtained from API")
 	}
 	registryUrl, username, password := GetDockerCredentials(registryData.Data)
-	log.Info(registryUrl)
+
+	log.Info(registryUrl, "mukul")
 	if strings.Contains("http:", registryUrl) {
 		log.Info(registryUrl)
 		isRegistryInsecure = true
