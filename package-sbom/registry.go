@@ -56,6 +56,23 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 	return registryCredentialsOutput, err
 }
 
+func isRegistrySecure(registryId string) {
+	registryData, err := callRegistryCredentialApi(registryId)
+	if err != nil || !registryData.Success {
+		log.Error("unable to get registry credentials")
+	}
+	if registryData.Data == nil {
+		log.Error("invalid registry credentials obtained from API")
+	}
+	registryUrl, username, password := GetDockerCredentials(registryData.Data)
+
+	log.Info(registryUrl, "mukul")
+	if strings.Contains(registryUrl, "http:") {
+		log.Info(registryUrl)
+		isRegistryInsecure = true
+	}
+}
+
 func GetConfigFileFromRegistry(registryId string) (string, error) {
 	registryUrl, username, password, err := GetCredentialsFromRegistry(registryId)
 	if username == "" {
@@ -78,11 +95,6 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 	}
 	registryUrl, username, password := GetDockerCredentials(registryData.Data)
 
-	log.Info(registryUrl, "mukul")
-	if strings.Contains(registryUrl, "http:") {
-		log.Info(registryUrl)
-		isRegistryInsecure = true
-	}
 	if username == "" {
 		return "", "", "", fmt.Errorf("unable to get credentials for specified registry")
 	}
