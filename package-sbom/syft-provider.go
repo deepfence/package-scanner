@@ -105,6 +105,11 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
+	insecureRegistry := isRegistryInsecure(config.RegistryId)
+	if strings.Contains(syftArgs[1], "registry:") && insecureRegistry {
+		syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
+	}
+
 	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
@@ -115,6 +120,10 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		defer os.RemoveAll(authFilePath)
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		if insecureRegistry {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
+		}
 	}
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
