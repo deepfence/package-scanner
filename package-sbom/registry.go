@@ -21,10 +21,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	isRegistryInsecure = false
-)
-
 type registryCredentialResponse struct {
 	Data    map[string]interface{} `json:"data,omitempty"`
 	Error   interface{}            `json:"error,omitempty"`
@@ -56,19 +52,22 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 	return registryCredentialsOutput, err
 }
 
-func isRegistrySecure(registryId string) {
+func isRegistrySecure(registryId string) bool {
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
 		log.Error("unable to get registry credentials")
+		return false
 	}
 	if registryData.Data == nil {
 		log.Error("invalid registry credentials obtained from API")
+		return false
 	}
 	registryUrl, _, _ := GetDockerCredentials(registryData.Data)
 
 	if strings.Contains(registryUrl, "http:") {
-		isRegistryInsecure = true
+		return true
 	}
+	return false
 }
 
 func GetConfigFileFromRegistry(registryId string) (string, error) {

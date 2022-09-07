@@ -105,8 +105,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
-	isRegistrySecure(config.RegistryId)
-	if strings.Contains(syftArgs[1], "registry:"){
+	isRegistryInsecure := isRegistrySecure(config.RegistryId)
+	if strings.Contains(syftArgs[1], "registry:") && isRegistryInsecure {
 		syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
 	}
 
