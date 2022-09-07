@@ -52,7 +52,7 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 	return registryCredentialsOutput, err
 }
 
-func isRegistrySecure(registryId string) bool {
+func isRegistryInsecure(registryId string) bool {
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
 		log.Error("unable to get registry credentials")
