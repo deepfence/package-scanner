@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	log "github.com/sirupsen/logrus"
 )
 
 type registryCredentialResponse struct {
@@ -51,6 +52,24 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 	return registryCredentialsOutput, err
 }
 
+func isRegistryInsecure(registryId string) bool {
+	registryData, err := callRegistryCredentialApi(registryId)
+	if err != nil || !registryData.Success {
+		log.Error("unable to get registry credentials")
+		return false
+	}
+	if registryData.Data == nil {
+		log.Error("invalid registry credentials obtained from API")
+		return false
+	}
+	registryUrl, _, _ := GetDockerCredentials(registryData.Data)
+
+	if strings.Contains(registryUrl, "http:") {
+		return true
+	}
+	return false
+}
+
 func GetConfigFileFromRegistry(registryId string) (string, error) {
 	registryUrl, username, password, err := GetCredentialsFromRegistry(registryId)
 	if username == "" {
@@ -72,6 +91,7 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 		return "", "", "", fmt.Errorf("invalid registry credentials obtained from API")
 	}
 	registryUrl, username, password := GetDockerCredentials(registryData.Data)
+
 	if username == "" {
 		return "", "", "", fmt.Errorf("unable to get credentials for specified registry")
 	}
