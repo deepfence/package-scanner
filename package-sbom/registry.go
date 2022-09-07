@@ -214,7 +214,6 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 	}
 	if password == "" {
 		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\"} } }")
-		log.Info("cred file", username)
 		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
 			return "", err
