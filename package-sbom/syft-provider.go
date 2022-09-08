@@ -130,7 +130,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
 		log.Error("output:" + string(stdout) + " " + err.Error())
 		if config.VulnerabilityScan == true {
-			publisher.PublishScanError(err.Error())
+			publisher.PublishScanError(string(stdout) + " " + err.Error())
 		}
 		return nil, err
 	}
