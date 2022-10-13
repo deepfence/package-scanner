@@ -1,7 +1,6 @@
 package package_sbom
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
@@ -32,7 +31,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		scanDir, _ = filepath.Abs(scanDir)
 		for _, excludeDir := range mntDirs {
 			if strings.Index(excludeDir, scanDir) == 0 {
-				excludeDir = strings.Replace(excludeDir, scanDir, "/", 1)
+				excludeDir = strings.Replace(excludeDir, scanDir, "", 1)
 			}
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
@@ -195,46 +194,16 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 }
 
 func getNfsMountsDirs() []string {
-	outputFileName := "/tmp/nfs-mounts.txt"
-	cmdFileName := "/tmp/get-nfs.sh"
-	nfsCmd := fmt.Sprintf("findmnt -l -t nfs4,tmpfs -n --output=TARGET > %s", outputFileName)
-	errVal := os.WriteFile(cmdFileName, []byte(nfsCmd), 0600)
-	if errVal != nil {
-		log.Warnf("Error while writing mount read command %s \n", errVal.Error())
-		return nil
-	}
-	cmdOutput, cmdErr := exec.Command("bash", cmdFileName).CombinedOutput()
-	if cmdErr != nil {
-		fileSize, _ := os.Stat(outputFileName)
-		if (string(cmdOutput) == "") && (fileSize.Size() == 0) {
-			log.Infoln("No mount points detected")
-		} else {
-			log.Warnf("Error getting mount points. %s %s \n", cmdErr.Error(), string(cmdOutput))
-		}
-		os.Remove(cmdFileName)
-		return nil
-	}
-	file, err := os.Open(outputFileName)
+	cmdOutput, err := exec.Command("findmnt", "-l", "-t", "nfs4,tmpfs", "-n", "--output=TARGET").CombinedOutput()
 	if err != nil {
-		log.Warnf("Error while opening file %s\n", err.Error())
-		os.Remove(outputFileName)
-		os.Remove(cmdFileName)
 		return nil
 	}
-	defer file.Close()
-	var skipDirs []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if scanner.Err() != nil {
-			log.Warnf("Error while reading mounted files %s", scanner.Err().Error())
-			os.Remove(outputFileName)
-			os.Remove(cmdFileName)
-			return nil
+	dirs := strings.Split(string(cmdOutput), "\n")
+	var mountDirs []string
+	for _, i := range dirs {
+		if strings.TrimSpace(i) != "" {
+			mountDirs = append(mountDirs, i)
 		}
-		skipDirs = append(skipDirs, line)
 	}
-	os.Remove(outputFileName)
-	os.Remove(cmdFileName)
-	return skipDirs
+	return mountDirs
 }
