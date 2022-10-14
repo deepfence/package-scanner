@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
+	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/var/lib/containers", "/var/lib/crio", "/var/run/containers", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
 	mntDirs          = getNfsMountsDirs()
 )
 
