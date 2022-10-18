@@ -5,13 +5,14 @@ go 1.18
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.44.98
-	// github.com/deepfence/vessel v0.7.0
-	github.com/deepfence/vessel v0.7.1-0.20221018085942-23f7e3e2f830
+	github.com/deepfence/vessel v0.7.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.0
 	google.golang.org/grpc v1.49.0
 	google.golang.org/protobuf v1.28.1
 )
+
+replace github.com/deepfence/vessel v0.7.0 => github.com/deepfence/vessel cri-o
 
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
