@@ -40,7 +40,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
 		}
 		if !strings.HasPrefix(config.Source, "registry:") {
-			if config.ContainerRuntimeName == vesselConstants.CONTAINERD && config.ContainerRuntime != nil {
+			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD
+				|| config.ContainerRuntimeName == vesselConstants.CRIO)
+				&& config.ContainerRuntime != nil {
 				// This means the underlying container runtime is containerd
 				// in case of image scan, we need to generate image tar file and
 				// feed it to syft, since syft does not support listing images from containerd
