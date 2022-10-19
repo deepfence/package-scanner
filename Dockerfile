@@ -22,7 +22,7 @@ ENV PACKAGE_SCAN_CONCURRENCY=5
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/syft/cmd/syft/syftCli /usr/local/bin/syft
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl bash util-linux ca-certificates \
+    && apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.23.0/nerdctl-0.23.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.23.0-linux-amd64.tar.gz \
     && rm nerdctl-0.23.0-linux-amd64.tar.gz
