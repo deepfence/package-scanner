@@ -1,11 +1,13 @@
 package package_sbom
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -135,7 +137,14 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		//pullImage(config.NodeId)
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
-		fmt.Println(os.ReadFile(authFilePath + "/config.json"))
+		if err != nil {
+			log.Error("error in getting authFilePath")
+			return nil, err
+		}
+		var data interface{}
+		plan, _ := ioutil.ReadFile(authFilePath + "/config.json")
+		err = json.Unmarshal(plan, &data)
+		fmt.Println("the config is", data)
 		if err != nil {
 			log.Error("error in getting authFilePath")
 			return nil, err
