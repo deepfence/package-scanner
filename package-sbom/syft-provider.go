@@ -17,6 +17,28 @@ var (
 	mntDirs          = getNfsMountsDirs()
 )
 
+//func pullImage(imageNameWithTag string, outputFolder string, authFilePath string) error {
+//	if imageNameWithTag != "" {
+//		return nil
+//	} else {
+//		imgName := imageNameWithTag
+//		savePath := outputFolder
+//		tmpDir, err := os.MkdirTemp("", savePath) //mkdir_recursive(save_path)
+//		if err != nil {
+//			log.Errorf("Error creating temp directory: %v", err)
+//			return err
+//		}
+//		defer os.RemoveAll(tmpDir)
+//		cmdOutput, err := exec.Command("skopeo", "--insecure-policy", "copy", "--authfile", authFilePath, "docker://"+imgName, "docker-archive://"+tmpDir+"/save-output.tar").CombinedOutput()
+//		if err != nil {
+//			return nil
+//		} else {
+//			fmt.Println("the output is", cmdOutput)
+//			return nil
+//		}
+//	}
+//}
+
 func GenerateSBOM(config util.Config) ([]byte, error) {
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
@@ -111,8 +133,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 
 	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
+		//pullImage(config.NodeId)
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
-		fmt.Println(os.ReadFile(authFilePath))
+		fmt.Println(os.ReadFile(authFilePath + "/config.json"))
 		if err != nil {
 			log.Error("error in getting authFilePath")
 			return nil, err
@@ -121,6 +144,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
 		if insecureRegistry {
+			fmt.Println("it is insecure and reached here")
+
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
