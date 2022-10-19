@@ -112,6 +112,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	cmd := exec.Command("syft", syftArgs...)
 	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
+		fmt.Println(os.ReadFile(authFilePath))
 		if err != nil {
 			log.Error("error in getting authFilePath")
 			return nil, err

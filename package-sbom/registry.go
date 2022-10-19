@@ -107,6 +107,7 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 		username = splitCredentials[0]
 		password = splitCredentials[1]
 	}
+	fmt.Println("test username", username, password)
 	return registryUrl, username, password, nil
 }
 
@@ -213,12 +214,14 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 		}
 	}
 	if password == "" {
+		fmt.Println("reached here")
 		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\"} } }")
 		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
 			return "", err
 		}
 	} else {
+		fmt.Println("reached config", registryId, registryUrl, username, password)
 		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"username\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\", \"password\": \"" + strings.ReplaceAll(password, "\"", "\\\"") + "\"} } }")
 		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
