@@ -12,7 +12,7 @@ require (
 	google.golang.org/protobuf v1.28.1
 )
 
-replace github.com/deepfence/vessel v0.7.0 => github.com/deepfence/vessel v0.7.1-0.20221019033652-a6bc0c128ca6
+replace github.com/deepfence/vessel v0.7.0 => github.com/deepfence/vessel v0.7.1-0.20221019124346-9e10268c6639
 
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect

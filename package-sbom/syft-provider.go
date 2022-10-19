@@ -66,7 +66,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 					return nil, err
 				}
 				// feed the tar file to syft
-				syftArgs[1] = "oci-archive:" + tarFile
+				switch config.ContainerRuntimeName {
+				case vesselConstants.CONTAINERD:
+					syftArgs[1] = "oci-archive:" + tarFile
+				case vesselConstants.CRIO:
+					syftArgs[1] = "docker-archive:" + tarFile
+				}
 			}
 		}
 	}
