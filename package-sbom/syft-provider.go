@@ -2,14 +2,15 @@ package package_sbom
 
 import (
 	"fmt"
-	"github.com/deepfence/package-scanner/output"
-	"github.com/deepfence/package-scanner/util"
-	vesselConstants "github.com/deepfence/vessel/constants"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/deepfence/package-scanner/output"
+	"github.com/deepfence/package-scanner/util"
+	vesselConstants "github.com/deepfence/vessel/constants"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -40,9 +41,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
 		}
 		if !strings.HasPrefix(config.Source, "registry:") {
-			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD
-				|| config.ContainerRuntimeName == vesselConstants.CRIO)
-				&& config.ContainerRuntime != nil {
+			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
+				config.ContainerRuntimeName == vesselConstants.CRIO) &&
+				config.ContainerRuntime != nil {
 				// This means the underlying container runtime is containerd
 				// in case of image scan, we need to generate image tar file and
 				// feed it to syft, since syft does not support listing images from containerd
