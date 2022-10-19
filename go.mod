@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.44.98
-	github.com/deepfence/vessel v0.7.0
+	github.com/deepfence/vessel v0.8.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.0
 	google.golang.org/grpc v1.49.0

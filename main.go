@@ -2,14 +2,16 @@ package main
 
 import (
 	"flag"
-	"github.com/deepfence/vessel"
 	"strconv"
 	"strings"
+
+	"github.com/deepfence/vessel"
 
 	package_sbom "github.com/deepfence/package-scanner/package-sbom"
 	"github.com/deepfence/package-scanner/util"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
+	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
 	log "github.com/sirupsen/logrus"
 )
@@ -123,6 +125,8 @@ func main() {
 		config.ContainerRuntime = dockerRuntime.New()
 	} else if containerRuntime == vesselConstants.CONTAINERD {
 		config.ContainerRuntime = containerdRuntime.New(endpoint)
+	} else if containerRuntime == vesselConstants.CRIO {
+		config.ContainerRuntime = crioRuntime.New(endpoint)
 	}
 
 	if *mode == util.ModeLocal {
