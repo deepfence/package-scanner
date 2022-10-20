@@ -222,7 +222,8 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 		}
 	} else {
 		fmt.Println("reached config", registryId, registryUrl, username, password)
-		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"username\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\", \"password\": \"" + strings.ReplaceAll(password, "\"", "\\\"") + "\"} } }")
+		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + base64.StdEncoding.EncodeToString([]byte(username+":"+password)) + "\"} } }")
+		// configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"username\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\", \"password\": \"" + strings.ReplaceAll(password, "\"", "\\\"") + "\"} } }")
 		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
 		if err != nil {
 			return "", err
