@@ -73,7 +73,7 @@ func isRegistryInsecure(registryId string) bool {
 func GetConfigFileFromRegistry(registryId string) (string, error) {
 	registryUrl, username, password, err := GetCredentialsFromRegistry(registryId)
 	if username == "" {
-		return "", fmt.Errorf("unable to get credentials for specified registry")
+		return "", nil
 	}
 	authFile, err := createAuthFile(registryId, registryUrl, username, password)
 	if err != nil {

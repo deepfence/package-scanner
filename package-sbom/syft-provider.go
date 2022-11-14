@@ -126,7 +126,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 		defer os.RemoveAll(authFilePath)
 		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		if authFilePath != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		}
 		if insecureRegistry {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
