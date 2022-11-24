@@ -19,6 +19,7 @@ var (
 )
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
+	log.Error("here now we are in package scanner library")
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
@@ -134,6 +135,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
+
+	log.Error("here now we are in package scanner library")
+	log.Infof("all the syft arguments are here %v", syftArgs)
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
