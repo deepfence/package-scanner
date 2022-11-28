@@ -2,7 +2,6 @@ package package_sbom
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -66,16 +65,47 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	return nil
 }
 
-func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	errorOnRun := cmd.Run()
-	if errorOnRun != nil {
-		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
+// Execute the specified command and return the output
+// @parameters
+// name - Command to be executed
+// args - all the arguments to be passed to the command
+// @returns
+// string - contents of standard output
+// string - contents of standard error
+// int - exit code of the executed command
+func runCommand(name string, args ...string) (stdout string, stderr string, exitCode int) {
+	var defaultFailedCode = 1
+	var outbuf, errbuf bytes.Buffer
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+
+	err := cmd.Run()
+	stdout = outbuf.String()
+	stderr = errbuf.String()
+
+	if err != nil {
+		// try to get the exit code
+		if exitError, ok := err.(*exec.ExitError); ok {
+			ws := exitError.Sys().(syscall.WaitStatus)
+			exitCode = ws.ExitStatus()
+		} else {
+			// This will happen (in OSX) if `name` is not available in $PATH,
+			// in this situation, exit code could not be get, and stderr will be
+			// empty string very likely, so we use the default fail code, and format err
+			// to string and set to stderr
+			log.Printf("Could not get exit code for failed program: %v, %v", name, args)
+			exitCode = defaultFailedCode
+			if stderr == "" {
+				stderr = err.Error()
+			}
+		}
+	} else {
+		// success, exitCode should be 0 if go is ok
+		ws := cmd.ProcessState.Sys().(syscall.WaitStatus)
+		exitCode = ws.ExitStatus()
 	}
-	return &out, nil
+	return
 }
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
