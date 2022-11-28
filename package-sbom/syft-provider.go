@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"errors"
 
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
