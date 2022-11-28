@@ -74,7 +74,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		return err
 	}
 
-	runCommand("rm", containerScan.tempDir+".tar")
+	// runCommand("rm", containerScan.tempDir+".tar")
 	return nil
 }
 
