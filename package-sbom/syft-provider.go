@@ -69,6 +69,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
+		log.Info("come 1")
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
@@ -84,10 +85,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
+		log.Info("come 2")
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", excludeDir)
 		}
 		if !strings.HasPrefix(config.Source, "registry:") {
+			log.Info("come 3")
 			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
 				config.ContainerRuntimeName == vesselConstants.CRIO) &&
 				config.ContainerRuntime != nil {
@@ -106,42 +109,39 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				}
 				defer os.RemoveAll(tmpDir)
 				// create a tar file for the image
-				if config.ContainerName != "" {
-					log.Info("it has come to the container name if ")
-					tarFile := filepath.Join(tmpDir, "filesystem.tar")
-					log.Infof("final path is %v", tarFile)
-					containerScan := ContainerScan{containerId: config.ContainerName, tempPath: tarFile, namespace: "default"}
-					err = containerScan.exportFileSystemTar()
-
-					if err != nil {
-						log.Info("it has come to the error part while exporting file system")
-						return nil, err
-					}
-
-					syftArgs[1] = "oci-archive:" + tarFile
-					// feed the tar file to syft
-					// switch config.ContainerRuntimeName {
-					// case vesselConstants.CONTAINERD:
-					// 	syftArgs[1] = "oci-archive:" + tarFile
-					// case vesselConstants.CRIO:
-					// 	syftArgs[1] = "docker-archive:" + tarFile
-					// }
-				} else {
-					tarFile := filepath.Join(tmpDir, "image.tar")
-					_, err = config.ContainerRuntime.Save(config.Source, tarFile)
-					if err != nil {
-						log.Errorf("Error creating tar file: %v", err)
-						return nil, err
-					}
-					// feed the tar file to syft
-					switch config.ContainerRuntimeName {
-					case vesselConstants.CONTAINERD:
-						syftArgs[1] = "oci-archive:" + tarFile
-					case vesselConstants.CRIO:
-						syftArgs[1] = "docker-archive:" + tarFile
-					}
+				tarFile := filepath.Join(tmpDir, "image.tar")
+				_, err = config.ContainerRuntime.Save(config.Source, tarFile)
+				if err != nil {
+					log.Errorf("Error creating tar file: %v", err)
+					return nil, err
 				}
+				// feed the tar file to syft
+				switch config.ContainerRuntimeName {
+				case vesselConstants.CONTAINERD:
+					syftArgs[1] = "oci-archive:" + tarFile
+				case vesselConstants.CRIO:
+					syftArgs[1] = "docker-archive:" + tarFile
+				}
+			}
 
+			if config.ContainerName != "" {
+				tmpDir, err := os.MkdirTemp("", "syft-")
+				if err != nil {
+					log.Errorf("Error creating temp directory: %v", err)
+					return nil, err
+				}
+				defer os.RemoveAll(tmpDir)
+				log.Info("it has come to the container name if ")
+				tarFile := filepath.Join(tmpDir, "filesystem.tar")
+				log.Infof("final path is %v", tarFile)
+				containerScan := ContainerScan{containerId: config.ContainerName, tempPath: tarFile, namespace: "default"}
+				err = containerScan.exportFileSystemTar()
+
+				if err != nil {
+					log.Info("it has come to the error part while exporting file system")
+					return nil, err
+				}
+				syftArgs[1] = "oci-archive:" + tarFile
 			}
 		}
 	}
