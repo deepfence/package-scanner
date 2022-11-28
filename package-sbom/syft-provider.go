@@ -58,11 +58,18 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	if err != nil {
 		return err
 	}
-	runCommand("mkdir", containerScan.tempDir)
-	_, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C "+containerScan.tempDir)
+	_, stdErr, retVal := runCommand("mkdir","-p", containerScan.tempDir)
+	log.Error(containerScan.tempDir)
+	if retVal != 0 {
+		log.Error("inside the error")
+		return errors.New(stdErr)
+	}
+
+	_, stdErr, retVal = runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C "+containerScan.tempDir)
 	if retVal != 0 {
 		return errors.New(stdErr)
 	}
+
 	runCommand("rm", containerScan.tempDir+".tar")
 	return nil
 }
