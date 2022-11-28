@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
@@ -69,7 +68,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	// 	return errors.New(stdErr)
 	// }
 
-	_, err := runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
+	_, err = runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
 	if err != nil {
 		log.Error(err)
 		return err
