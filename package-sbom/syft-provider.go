@@ -9,6 +9,7 @@ import (
 
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,8 +19,42 @@ var (
 	mntDirs          = getNfsMountsDirs()
 )
 
+func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
+	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
+	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
+}
+
+func ContainerFileSystemPath(containerName string, namespace string) string {
+	// containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
+	containerRuntime, _, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		log.Error("came into error")
+	}
+	switch containerRuntime {
+	case vesselConstants.DOCKER:
+		log.Infof("it is inside the docker env")
+		containerPath, err := GetFileSystemPathsForContainer(containerName, namespace)
+		if err != nil {
+			log.Error("it is inside the error")
+			fmt.Println("the error here is", err)
+			return "error occured"
+		}
+		if strings.Contains(string(containerPath), "\"MergedDir\":") {
+			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
+				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
+				fmt.Println("Container Scan Path", containerPathToScan)
+				log.Infof("containerPathToScan %v", containerPathToScan)
+				return containerPathToScan
+			}
+		}
+	}
+	return "path is found is this"
+}
+
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	log.Error("here now we are in package scanner library")
+	log.Errorf("container name is %v", config.ContainerName)
+	pathtoscan := ContainerFileSystemPath(config.ContainerName, "default")
+	log.Infof("path to scan is %v", pathtoscan)
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
