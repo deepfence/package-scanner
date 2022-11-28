@@ -58,7 +58,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	if err != nil {
 		return err
 	}
-	_, stdErr, retVal := runCommand("mkdir","-p", containerScan.tempDir)
+	_, stdErr, retVal := runCommand("mkdir", "-p", containerScan.tempDir)
 	log.Error(containerScan.tempDir)
 	if retVal != 0 {
 		log.Error("inside the error")
@@ -67,6 +67,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 
 	_, stdErr, retVal = runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C "+containerScan.tempDir)
 	if retVal != 0 {
+		log.Error(errors.New(stdErr))
 		return errors.New(stdErr)
 	}
 
@@ -183,7 +184,10 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 					log.Errorf("Error creating temp directory: %v", err)
 					return nil, err
 				}
+
 				defer os.RemoveAll(tmpDir)
+				defer log.Error("defer is being called")
+
 				log.Info("it has come to the container name if ")
 				// tarFile := filepath.Join(tmpDir, "filesystem.tar")
 				log.Infof("final path is %v", tmpDir)
