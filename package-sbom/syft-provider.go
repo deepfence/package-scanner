@@ -67,8 +67,8 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
 	log.Errorf("container name is %#v", config)
-	pathtoscan := ContainerFileSystemPath(config.ContainerName, "default")
-	log.Infof("path to scan is %v", pathtoscan)
+	id := uuid.New()
+    log.Infof("Generated UUID: %v", id.String())
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
