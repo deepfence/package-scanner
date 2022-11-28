@@ -64,6 +64,18 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	return nil
 }
 
+func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	errorOnRun := cmd.Run()
+	if errorOnRun != nil {
+		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
+	}
+	return &out, nil
+}
+
 func GenerateSBOM(config util.Config) ([]byte, error) {
 	log.Errorf("container name is %#v", config)
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
