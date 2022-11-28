@@ -50,22 +50,26 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		fmt.Println("Error: Could not detect container runtime")
 		os.Exit(1)
 	}
+
+	log.Info("extracting")
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
 		containerScan.containerId, containerScan.namespace,
 		containerScan.tempDir+".tar", endpoint,
 	)
+	log.Info("extracted")
 
 	if err != nil {
+		log.Error("erroed")
 		return err
 	}
-	_, stdErr, retVal := runCommand("mkdir", "-p", containerScan.tempDir)
-	log.Error(containerScan.tempDir)
-	if retVal != 0 {
-		log.Error("inside the error")
-		return errors.New(stdErr)
-	}
+	// _, stdErr, retVal := runCommand("mkdir", "-p", containerScan.tempDir)
+	// log.Error(containerScan.tempDir)
+	// if retVal != 0 {
+	// 	log.Error("inside the error")
+	// 	return errors.New(stdErr)
+	// }
 
-	_, stdErr, retVal = runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C "+containerScan.tempDir)
+	_, stdErr, retVal = runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C"+containerScan.tempDir)
 	if retVal != 0 {
 		log.Error(errors.New(stdErr))
 		return errors.New(stdErr)
