@@ -14,7 +14,6 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +24,7 @@ var (
 
 type ContainerScan struct {
 	containerId string
-	tempDir     string
+	tempPath    string
 	namespace   string
 }
 
@@ -50,7 +49,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	}
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
 		containerScan.containerId, containerScan.namespace,
-		containerScan.tempDir+".tar", endpoint,
+		containerScan.tempPath, endpoint,
 	)
 
 	if err != nil {
@@ -67,8 +66,6 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
 	log.Errorf("container name is %#v", config)
-	id := uuid.New()
-    log.Infof("Generated UUID: %v", id.String())
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
@@ -109,19 +106,42 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				}
 				defer os.RemoveAll(tmpDir)
 				// create a tar file for the image
-				tarFile := filepath.Join(tmpDir, "image.tar")
-				_, err = config.ContainerRuntime.Save(config.Source, tarFile)
-				if err != nil {
-					log.Errorf("Error creating tar file: %v", err)
-					return nil, err
-				}
-				// feed the tar file to syft
-				switch config.ContainerRuntimeName {
-				case vesselConstants.CONTAINERD:
+				if config.ContainerName != "" {
+					log.Info("it has come to the container name if ")
+					tarFile := filepath.Join(tmpDir, "filesystem.tar")
+					log.Infof("final path is %v", tarFile)
+					containerScan := ContainerScan{containerId: config.ContainerName, tempPath: tarFile, namespace: "default"}
+					err = containerScan.exportFileSystemTar()
+
+					if err != nil {
+						log.Info("it has come to the error part while exporting file system")
+						return nil, err
+					}
+
 					syftArgs[1] = "oci-archive:" + tarFile
-				case vesselConstants.CRIO:
-					syftArgs[1] = "docker-archive:" + tarFile
+					// feed the tar file to syft
+					// switch config.ContainerRuntimeName {
+					// case vesselConstants.CONTAINERD:
+					// 	syftArgs[1] = "oci-archive:" + tarFile
+					// case vesselConstants.CRIO:
+					// 	syftArgs[1] = "docker-archive:" + tarFile
+					// }
+				} else {
+					tarFile := filepath.Join(tmpDir, "image.tar")
+					_, err = config.ContainerRuntime.Save(config.Source, tarFile)
+					if err != nil {
+						log.Errorf("Error creating tar file: %v", err)
+						return nil, err
+					}
+					// feed the tar file to syft
+					switch config.ContainerRuntimeName {
+					case vesselConstants.CONTAINERD:
+						syftArgs[1] = "oci-archive:" + tarFile
+					case vesselConstants.CRIO:
+						syftArgs[1] = "docker-archive:" + tarFile
+					}
 				}
+
 			}
 		}
 	}
