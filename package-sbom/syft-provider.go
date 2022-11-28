@@ -1,6 +1,8 @@
 package package_sbom
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,7 +26,7 @@ var (
 
 type ContainerScan struct {
 	containerId string
-	tempDir    string
+	tempDir     string
 	namespace   string
 }
 
