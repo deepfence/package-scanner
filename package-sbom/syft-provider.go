@@ -24,7 +24,7 @@ var (
 
 type ContainerScan struct {
 	containerId string
-	tempPath    string
+	tempDir    string
 	namespace   string
 }
 
@@ -49,18 +49,18 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	}
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
 		containerScan.containerId, containerScan.namespace,
-		containerScan.tempPath, endpoint,
+		containerScan.tempDir+".tar", endpoint,
 	)
 
 	if err != nil {
 		return err
 	}
-	// runCommand("mkdir", containerScan.tempDir)
-	// _, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C"+containerScan.tempDir)
-	// if retVal != 0 {
-	// 	return errors.New(stdErr)
-	// }
-	// runCommand("rm", containerScan.tempDir+".tar")
+	runCommand("mkdir", containerScan.tempDir)
+	_, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C "+containerScan.tempDir)
+	if retVal != 0 {
+		return errors.New(stdErr)
+	}
+	runCommand("rm", containerScan.tempDir+".tar")
 	return nil
 }
 
@@ -132,16 +132,16 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				}
 				defer os.RemoveAll(tmpDir)
 				log.Info("it has come to the container name if ")
-				tarFile := filepath.Join(tmpDir, "filesystem.tar")
-				log.Infof("final path is %v", tarFile)
-				containerScan := ContainerScan{containerId: config.ContainerName, tempPath: tarFile, namespace: "default"}
+				// tarFile := filepath.Join(tmpDir, "filesystem.tar")
+				log.Infof("final path is %v", tmpDir)
+				containerScan := ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				err = containerScan.exportFileSystemTar()
 
 				if err != nil {
 					log.Info("it has come to the error part while exporting file system")
 					return nil, err
 				}
-				syftArgs[1] = "oci-archive:" + tarFile
+				syftArgs[1] = "dir:" + tmpDir
 			}
 		}
 	}
