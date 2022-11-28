@@ -2,13 +2,13 @@ package package_sbom
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
-	"errors"
 
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
@@ -181,10 +181,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				// tarFile := filepath.Join(tmpDir, "filesystem.tar")
 				log.Infof("final path is %v", tmpDir)
 				containerScan := ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
+				log.Infof("container name %v dir path %v", config.ContainerName, tmpDir)
 				err = containerScan.exportFileSystemTar()
 
 				if err != nil {
 					log.Info("it has come to the error part while exporting file system")
+					log.Error(err)
 					return nil, err
 				}
 				syftArgs[1] = "dir:" + tmpDir
