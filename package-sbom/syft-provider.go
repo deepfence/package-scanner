@@ -11,6 +11,10 @@ import (
 	"github.com/deepfence/package-scanner/util"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
+	containerdRuntime "github.com/deepfence/vessel/containerd"
+	crioRuntime "github.com/deepfence/vessel/crio"
+	dockerRuntime "github.com/deepfence/vessel/docker"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,40 +23,50 @@ var (
 	mntDirs          = getNfsMountsDirs()
 )
 
-func GetFileSystemPathsForContainer(containerId string, namespace string) ([]byte, error) {
-	// fmt.Println(append([]string{"docker"},  "|", "jq" , "-r" , "'map([.Name, .GraphDriver.Data.MergedDir]) | .[] | \"\\(.[0])\\t\\(.[1])\"'"))
-	return exec.Command("docker", "inspect", strings.TrimSpace(containerId)).Output()
+type ContainerScan struct {
+	containerId string
+	tempDir     string
+	namespace   string
 }
 
-func ContainerFileSystemPath(containerName string, namespace string) string {
-	// containerScan := ContainerScan{containerId: containerId, tempDir: tempDir, namespace: namespace}
-	containerRuntime, _, err := vessel.AutoDetectRuntime()
+func (containerScan *ContainerScan) exportFileSystemTar() error {
+	// Auto-detect underlying container runtime
+	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
 	if err != nil {
-		log.Error("came into error")
+		return err
 	}
+	var containerRuntimeInterface vessel.Runtime
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		log.Infof("it is inside the docker env")
-		containerPath, err := GetFileSystemPathsForContainer(containerName, namespace)
-		if err != nil {
-			log.Error("it is inside the error")
-			fmt.Println("the error here is", err)
-			return "error occured"
-		}
-		if strings.Contains(string(containerPath), "\"MergedDir\":") {
-			if strings.Contains(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"") {
-				containerPathToScan := strings.Split(strings.Split(string(containerPath), "\"MergedDir\": \"")[1], "/merged\"")[0] + "/merged"
-				fmt.Println("Container Scan Path", containerPathToScan)
-				log.Infof("containerPathToScan %v", containerPathToScan)
-				return containerPathToScan
-			}
-		}
+		containerRuntimeInterface = dockerRuntime.New()
+	case vesselConstants.CONTAINERD:
+		containerRuntimeInterface = containerdRuntime.New(endpoint)
+	case vesselConstants.CRIO:
+		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
-	return "path is found is this"
+	if containerRuntimeInterface == nil {
+		fmt.Println("Error: Could not detect container runtime")
+		os.Exit(1)
+	}
+	err = containerRuntimeInterface.ExtractFileSystemContainer(
+		containerScan.containerId, containerScan.namespace,
+		containerScan.tempDir+".tar", endpoint,
+	)
+
+	if err != nil {
+		return err
+	}
+	// runCommand("mkdir", containerScan.tempDir)
+	// _, stdErr, retVal := runCommand("tar", "-xf", containerScan.tempDir+".tar", "-C"+containerScan.tempDir)
+	// if retVal != 0 {
+	// 	return errors.New(stdErr)
+	// }
+	// runCommand("rm", containerScan.tempDir+".tar")
+	return nil
 }
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	log.Errorf("container name is %v", config.ContainerName)
+	log.Errorf("container name is %#v", config)
 	pathtoscan := ContainerFileSystemPath(config.ContainerName, "default")
 	log.Infof("path to scan is %v", pathtoscan)
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
