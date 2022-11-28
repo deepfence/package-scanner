@@ -112,9 +112,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 	} else {
 		log.Info("come 2")
-		for _, excludeDir := range linuxExcludeDirs {
-			syftArgs = append(syftArgs, "--exclude", excludeDir)
+		if config.ContainerName == "" {
+			for _, excludeDir := range linuxExcludeDirs {
+				syftArgs = append(syftArgs, "--exclude", excludeDir)
+			}
 		}
+
 		if !strings.HasPrefix(config.Source, "registry:") {
 			log.Info("come 3")
 			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
