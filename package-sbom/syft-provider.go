@@ -164,9 +164,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				log.Infof("final path is %v", tmpDir)
 				var containerScan ContainerScan
 				if config.KubernetesClusterName != "" {
-					containerHashId := strings.Replace(config.NodeId, ":<none>", "", 1)
-					containerInfoslice := strings.Split(config.ContainerName, "/")
-					containerScan = ContainerScan{containerId: containerHashId, tempDir: tmpDir, namespace: containerInfoslice[0]}
+					// containerInfoslice := strings.Split(config.ContainerName, "/")
+					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
 				} else {
 					containerScan = ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				}
