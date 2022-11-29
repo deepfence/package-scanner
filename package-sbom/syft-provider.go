@@ -162,12 +162,13 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				log.Info("it has come to the container name if ")
 				// tarFile := filepath.Join(tmpDir, "filesystem.tar")
 				log.Infof("final path is %v", tmpDir)
+				var containerScan ContainerScan
 				if config.KubernetesClusterName != "" {
 					containerHashId := strings.Replace(config.NodeId, ":<none>", "", 1)
 					containerInfoslice := strings.Split(config.ContainerName, "/")
-					containerScan := ContainerScan{containerId: containerHashId, tempDir: tmpDir, namespace: containerInfoslice[0]}
+					containerScan = ContainerScan{containerId: containerHashId, tempDir: tmpDir, namespace: containerInfoslice[0]}
 				} else {
-					containerScan := ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
+					containerScan = ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				}
 				log.Infof("container name %v dir path %v", config.ContainerName, tmpDir)
 				err = containerScan.exportFileSystemTar()
