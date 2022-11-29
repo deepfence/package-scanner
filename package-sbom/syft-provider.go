@@ -105,7 +105,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 	} else {
 		log.Info("come 2")
-		if config.ContainerName != util.NodeTypeContainer {
+		if config.NodeType != util.NodeTypeContainer {
 			for _, excludeDir := range linuxExcludeDirs {
 				syftArgs = append(syftArgs, "--exclude", excludeDir)
 			}
