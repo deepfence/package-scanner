@@ -35,11 +35,12 @@ type Config struct {
 }
 
 const (
-	ModeLocal      = "local"
-	ModeGrpcServer = "grpc-server"
-	ModeHttpServer = "http-server"
-	JsonOutput     = "json"
-	TableOutput    = "table"
-	NodeTypeHost   = "host"
-	NodeTypeImage  = "container_image"
+	ModeLocal         = "local"
+	ModeGrpcServer    = "grpc-server"
+	ModeHttpServer    = "http-server"
+	JsonOutput        = "json"
+	TableOutput       = "table"
+	NodeTypeHost      = "host"
+	NodeTypeImage     = "container_image"
+	NodeTypeContainer = "container"
 )

@@ -61,12 +61,6 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		log.Error("erroed")
 		return err
 	}
-	// _, stdErr, retVal := runCommand("mkdir", "-p", containerScan.tempDir)
-	// log.Error(containerScan.tempDir)
-	// if retVal != 0 {
-	// 	log.Error("inside the error")
-	// 	return errors.New(stdErr)
-	// }
 
 	_, err = runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
 	if err != nil {
@@ -74,7 +68,6 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		return err
 	}
 
-	// runCommand("rm", containerScan.tempDir+".tar")
 	return nil
 }
 
@@ -112,7 +105,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 	} else {
 		log.Info("come 2")
-		if config.ContainerName == "" {
+		if config.ContainerName != util.NodeTypeContainer {
 			for _, excludeDir := range linuxExcludeDirs {
 				syftArgs = append(syftArgs, "--exclude", excludeDir)
 			}
@@ -151,9 +144,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				case vesselConstants.CRIO:
 					syftArgs[1] = "docker-archive:" + tarFile
 				}
-			}
-
-			if config.ContainerName != "" {
+			} else if config.NodeType == util.NodeTypeContainer {
 				tmpDir, err := os.MkdirTemp("", "syft-")
 				if err != nil {
 					log.Errorf("Error creating temp directory: %v", err)
@@ -161,6 +152,8 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				}
 
 				defer os.RemoveAll(tmpDir)
+				defer log.Error("defer is being called")
+				defer os.Remove(tmpDir + ".tar")
 				defer log.Error("defer is being called")
 
 				log.Info("it has come to the container name if ")
