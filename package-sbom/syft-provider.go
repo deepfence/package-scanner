@@ -169,7 +169,6 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				} else {
 					containerScan := ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				}
-				containerScan := ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				log.Infof("container name %v dir path %v", config.ContainerName, tmpDir)
 				err = containerScan.exportFileSystemTar()
 
