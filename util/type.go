@@ -32,14 +32,16 @@ type Config struct {
 	MaskCveIds            string         `json:"mask_cve_ids,omitempty"`
 	ContainerRuntimeName  string         `json:"container_runtime_name,omitempty"`
 	ContainerRuntime      vessel.Runtime `json:"container_runtime,omitempty"`
+	ContainerID           string         `json:"container_id,omitempty"`
 }
 
 const (
-	ModeLocal      = "local"
-	ModeGrpcServer = "grpc-server"
-	ModeHttpServer = "http-server"
-	JsonOutput     = "json"
-	TableOutput    = "table"
-	NodeTypeHost   = "host"
-	NodeTypeImage  = "container_image"
+	ModeLocal         = "local"
+	ModeGrpcServer    = "grpc-server"
+	ModeHttpServer    = "http-server"
+	JsonOutput        = "json"
+	TableOutput       = "table"
+	NodeTypeHost      = "host"
+	NodeTypeImage     = "container_image"
+	NodeTypeContainer = "container"
 )

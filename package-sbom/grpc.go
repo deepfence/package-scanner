@@ -95,6 +95,9 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
 		nodeId = r.HostName
 		nodeType = util.NodeTypeHost
+	} else if r.NodeType == util.NodeTypeContainer {
+		nodeId = r.Source
+		nodeType = util.NodeTypeContainer
 	} else {
 		nodeId = r.Source
 		nodeType = util.NodeTypeImage
@@ -118,6 +121,7 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
+		ContainerID:           r.ContainerId,
 	}
 
 	go grpcScanWorkerPool.Process(config)
