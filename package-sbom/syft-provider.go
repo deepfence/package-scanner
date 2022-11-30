@@ -50,15 +50,10 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		os.Exit(1)
 	}
 
-	log.Info("extracting")
-	log.Info(containerScan.containerId)
-	log.Info(containerScan.namespace)
-	log.Info(containerScan.tempDir+".tar")
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
 		containerScan.containerId, containerScan.namespace,
 		containerScan.tempDir+".tar", endpoint,
 	)
-	log.Info("extracted")
 
 	if err != nil {
 		log.Error("erroed")
@@ -87,11 +82,9 @@ func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
 }
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
-	log.Errorf("container name is %#v", config)
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		log.Info("come 1")
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
@@ -107,7 +100,6 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
-		log.Info("come 2")
 		if config.NodeType != util.NodeTypeContainer {
 			for _, excludeDir := range linuxExcludeDirs {
 				syftArgs = append(syftArgs, "--exclude", excludeDir)
@@ -115,7 +107,6 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 
 		if !strings.HasPrefix(config.Source, "registry:") {
-			log.Info("come 3")
 			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
 				config.ContainerRuntimeName == vesselConstants.CRIO) &&
 				config.ContainerRuntime != nil {
@@ -155,25 +146,17 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				}
 
 				defer os.RemoveAll(tmpDir)
-				defer log.Error("defer is being called")
 				defer os.Remove(tmpDir + ".tar")
-				defer log.Error("defer is being called")
 
-				log.Info("it has come to the container name if ")
-				// tarFile := filepath.Join(tmpDir, "filesystem.tar")
-				log.Infof("final path is %v", tmpDir)
 				var containerScan ContainerScan
 				if config.KubernetesClusterName != "" {
-					// containerInfoslice := strings.Split(config.ContainerName, "/")
 					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
 				} else {
 					containerScan = ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
 				}
-				log.Infof("container name %v dir path %v", config.ContainerName, tmpDir)
 				err = containerScan.exportFileSystemTar()
 
 				if err != nil {
-					log.Info("it has come to the error part while exporting file system")
 					log.Error(err)
 					return nil, err
 				}
