@@ -224,8 +224,6 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 	}
 
-	log.Error("here now we are in package scanner library")
-	log.Infof("all the syft arguments are here %v", syftArgs)
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
