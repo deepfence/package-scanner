@@ -94,7 +94,7 @@ func NewClient(config util.Config) (*Client, error) {
 
 func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
-	scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
+	scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\",\"node_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName, c.config.NodeName)
 	postReader := bytes.NewReader([]byte(scanLog))
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/df-api/ingest?doc_type=" + cveScanLogsIndexName)
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil)
@@ -246,6 +246,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	var sbomDoc = make(map[string]interface{})
 	sbomDoc["scan_id"] = c.config.ScanId
 	sbomDoc["node_id"] = c.config.NodeId
+	sbomDoc["node_name"] = c.config.NodeName
 	sbomDoc["scan_type"] = c.config.ScanType
 	sbomDoc["node_type"] = c.config.NodeType
 	sbomDoc["masked"] = "false"
@@ -290,6 +291,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 		artifactDoc := make(map[string]interface{})
 		artifactDoc["scan_id"] = c.config.ScanId
 		artifactDoc["node_id"] = c.config.NodeId
+		artifactDoc["node_name"] = c.config.NodeName
 		artifactDoc["node_type"] = c.config.NodeType
 		artifactDoc["masked"] = "false"
 		artifactDoc["name"] = artifact.Name

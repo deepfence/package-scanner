@@ -65,6 +65,7 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		ScanId:                r.ScanId,
 		NodeType:              r.NodeType,
 		NodeId:                r.NodeId,
+		NodeName:              r.NodeName,
 		HostName:              r.HostName,
 		ImageId:               r.ImageId,
 		ContainerName:         r.ContainerName,

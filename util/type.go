@@ -17,6 +17,7 @@ type Config struct {
 	ScanId                string         `json:"scan_id,omitempty"`
 	NodeType              string         `json:"node_type,omitempty"`
 	NodeId                string         `json:"node_id,omitempty"`
+	NodeName              string         `json:"node_name,omitempty"`
 	HostName              string         `json:"host_name,omitempty"`
 	ImageId               string         `json:"image_id,omitempty"`
 	ContainerName         string         `json:"container_name,omitempty"`
