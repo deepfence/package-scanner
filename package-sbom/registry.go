@@ -55,7 +55,7 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 func isRegistryInsecure(registryId string) bool {
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
-		log.Error("unable to get registry credentials")
+		log.Error("unable to get registry credentials 1")
 		return false
 	}
 	if registryData.Data == nil {
@@ -73,7 +73,7 @@ func isRegistryInsecure(registryId string) bool {
 func GetConfigFileFromRegistry(registryId string) (string, error) {
 	registryUrl, username, password, err := GetCredentialsFromRegistry(registryId)
 	if username == "" {
-		return "", fmt.Errorf("unable to get credentials for specified registry")
+		return "", nil
 	}
 	authFile, err := createAuthFile(registryId, registryUrl, username, password)
 	if err != nil {
@@ -85,7 +85,7 @@ func GetConfigFileFromRegistry(registryId string) (string, error) {
 func GetCredentialsFromRegistry(registryId string) (string, string, string, error) {
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
-		return "", "", "", fmt.Errorf("unable to get registry credentials")
+		return "", "", "", fmt.Errorf("unable to get registry credentials 2")
 	}
 	if registryData.Data == nil {
 		return "", "", "", fmt.Errorf("invalid registry credentials obtained from API")

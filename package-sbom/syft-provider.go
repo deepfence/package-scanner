@@ -1,6 +1,8 @@
 package package_sbom
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +11,11 @@ import (
 
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
+	containerdRuntime "github.com/deepfence/vessel/containerd"
+	crioRuntime "github.com/deepfence/vessel/crio"
+	dockerRuntime "github.com/deepfence/vessel/docker"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,6 +23,63 @@ var (
 	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/var/lib/containers", "/var/lib/crio", "/var/run/containers", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
 	mntDirs          = getNfsMountsDirs()
 )
+
+type ContainerScan struct {
+	containerId string
+	tempDir     string
+	namespace   string
+}
+
+func (containerScan *ContainerScan) exportFileSystemTar() error {
+	// Auto-detect underlying container runtime
+	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
+	if err != nil {
+		return err
+	}
+	var containerRuntimeInterface vessel.Runtime
+	switch containerRuntime {
+	case vesselConstants.DOCKER:
+		containerRuntimeInterface = dockerRuntime.New()
+	case vesselConstants.CONTAINERD:
+		containerRuntimeInterface = containerdRuntime.New(endpoint)
+	case vesselConstants.CRIO:
+		containerRuntimeInterface = crioRuntime.New(endpoint)
+	}
+	if containerRuntimeInterface == nil {
+		fmt.Println("Error: Could not detect container runtime")
+		os.Exit(1)
+	}
+
+	err = containerRuntimeInterface.ExtractFileSystemContainer(
+		containerScan.containerId, containerScan.namespace,
+		containerScan.tempDir+".tar", endpoint,
+	)
+
+	if err != nil {
+		log.Error("erroed")
+		return err
+	}
+
+	_, err = runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	errorOnRun := cmd.Run()
+	if errorOnRun != nil {
+		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
+	}
+	return &out, nil
+}
 
 func GenerateSBOM(config util.Config) ([]byte, error) {
 	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
@@ -37,9 +100,12 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
-		for _, excludeDir := range linuxExcludeDirs {
-			syftArgs = append(syftArgs, "--exclude", excludeDir)
+		if config.NodeType != util.NodeTypeContainer {
+			for _, excludeDir := range linuxExcludeDirs {
+				syftArgs = append(syftArgs, "--exclude", excludeDir)
+			}
 		}
+
 		if !strings.HasPrefix(config.Source, "registry:") {
 			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
 				config.ContainerRuntimeName == vesselConstants.CRIO) &&
@@ -72,6 +138,29 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				case vesselConstants.CRIO:
 					syftArgs[1] = "docker-archive:" + tarFile
 				}
+			} else if config.NodeType == util.NodeTypeContainer {
+				tmpDir, err := os.MkdirTemp("", "syft-")
+				if err != nil {
+					log.Errorf("Error creating temp directory: %v", err)
+					return nil, err
+				}
+
+				defer os.RemoveAll(tmpDir)
+				defer os.Remove(tmpDir + ".tar")
+
+				var containerScan ContainerScan
+				if config.KubernetesClusterName != "" {
+					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
+				} else {
+					containerScan = ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
+				}
+				err = containerScan.exportFileSystemTar()
+
+				if err != nil {
+					log.Error(err)
+					return nil, err
+				}
+				syftArgs[1] = "dir:" + tmpDir
 			}
 		}
 	}
@@ -126,12 +215,15 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		}
 		defer os.RemoveAll(authFilePath)
 		cmd.Env = os.Environ()
-		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		if authFilePath != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		}
 		if insecureRegistry {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
+
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))

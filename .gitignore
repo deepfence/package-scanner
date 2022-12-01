@@ -4,3 +4,4 @@ package-scanner
 vendor
 proto
 .vscode/
+.DS_Store
