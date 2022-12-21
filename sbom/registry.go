@@ -1,4 +1,4 @@
-package package_sbom
+package sbom
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/utils"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -205,7 +205,7 @@ func getDefaultDockerCredentials(registryData map[string]interface{}, registryUr
 }
 
 func createAuthFile(registryId, registryUrl, username, password string) (string, error) {
-	authFilePath := "/tmp/auth_" + registryId + "_" + util.RandomString(12)
+	authFilePath := "/tmp/auth_" + registryId + "_" + utils.RandomString(12)
 	if _, err := os.Stat(authFilePath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(authFilePath, os.ModePerm)
 		if err != nil {

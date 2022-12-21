@@ -1,4 +1,4 @@
-package package_sbom
+package sbom
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/deepfence/package-scanner/output"
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/utils"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
@@ -20,8 +20,11 @@ import (
 )
 
 var (
-	linuxExcludeDirs = []string{"/var/lib/docker", "/var/lib/containerd", "/var/lib/containers", "/var/lib/crio", "/var/run/containers", "/mnt", "/run", "/proc", "/dev", "/boot", "/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
-	mntDirs          = getNfsMountsDirs()
+	linuxExcludeDirs = []string{"/var/lib/docker",
+		"/var/lib/containerd", "/var/lib/containers", "/var/lib/crio",
+		"/var/run/containers", "/mnt", "/run", "/proc", "/dev", "/boot",
+		"/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
+	mntDirs = getNfsMountsDirs()
 )
 
 type ContainerScan struct {
@@ -81,8 +84,8 @@ func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
 	return &out, nil
 }
 
-func GenerateSBOM(config util.Config) ([]byte, error) {
-	jsonFile := filepath.Join("/tmp", util.RandomString(12)+"output.json")
+func GenerateSBOM(config utils.Config) ([]byte, error) {
+	jsonFile := filepath.Join("/tmp", utils.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
@@ -100,7 +103,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
-		if config.NodeType != util.NodeTypeContainer {
+		if config.NodeType != utils.NodeTypeContainer {
 			for _, excludeDir := range linuxExcludeDirs {
 				syftArgs = append(syftArgs, "--exclude", excludeDir)
 			}
@@ -138,7 +141,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 				case vesselConstants.CRIO:
 					syftArgs[1] = "docker-archive:" + tarFile
 				}
-			} else if config.NodeType == util.NodeTypeContainer {
+			} else if config.NodeType == utils.NodeTypeContainer {
 				tmpDir, err := os.MkdirTemp("", "syft-")
 				if err != nil {
 					log.Errorf("Error creating temp directory: %v", err)
@@ -207,7 +210,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 	}
 
 	cmd := exec.Command("syft", syftArgs...)
-	if config.RegistryId != "" && config.NodeType == util.NodeTypeImage {
+	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
 		if err != nil {
 			log.Error("error in getting authFilePath")

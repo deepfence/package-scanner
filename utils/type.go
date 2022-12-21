@@ -1,4 +1,4 @@
-package util
+package utils
 
 import "github.com/deepfence/vessel"
 
@@ -39,6 +39,7 @@ const (
 	ModeLocal         = "local"
 	ModeGrpcServer    = "grpc-server"
 	ModeHttpServer    = "http-server"
+	ModeScannerOnly   = "scanner-only"
 	JsonOutput        = "json"
 	TableOutput       = "table"
 	NodeTypeHost      = "host"

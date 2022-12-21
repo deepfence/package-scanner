@@ -1,14 +1,15 @@
-package package_sbom
+package sbom
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Jeffail/tunny"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -34,7 +35,7 @@ func init() {
 	}
 }
 
-func RunHttpServer(config util.Config) error {
+func RunHttpServer(config utils.Config) error {
 	if config.Port == "" {
 		return fmt.Errorf("http-server mode requires port to be set")
 	}
@@ -48,12 +49,12 @@ func RunHttpServer(config util.Config) error {
 }
 
 func processRegistryMessage(rInterface interface{}) interface{} {
-	r, ok := rInterface.(util.Config)
+	r, ok := rInterface.(utils.Config)
 	if !ok {
 		log.Error("Error processing input config")
 		return false
 	}
-	config := util.Config{
+	config := utils.Config{
 		Output:                "",
 		Quiet:                 true,
 		ManagementConsoleUrl:  managementConsoleUrl,
@@ -86,7 +87,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	decoder := json.NewDecoder(req.Body)
-	var config util.Config
+	var config utils.Config
 	err := decoder.Decode(&config)
 	if err != nil {
 		http.Error(w, "Unable to decode input JSON request", http.StatusBadRequest)

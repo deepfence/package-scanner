@@ -16,3 +16,7 @@ proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
 	go build -buildvcs=false -v .
 
 .PHONY: clean
+
+.PHONY: docker
+docker: 
+	docker build -t deepfenceio/package-scanner:latest .

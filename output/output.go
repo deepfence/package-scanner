@@ -3,23 +3,24 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepfence/package-scanner/internal/deepfence"
-	"github.com/deepfence/package-scanner/util"
-	"github.com/olekukonko/tablewriter"
-	"github.com/sirupsen/logrus"
 	"io"
+	"net/http"
 	"os"
 	"time"
+
+	"github.com/deepfence/package-scanner/utils"
+	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 )
 
 type Publisher struct {
-	config         util.Config
-	dfClient       *deepfence.Client
+	config         utils.Config
+	dfClient       *Client
 	stopScanStatus chan bool
 }
 
-func NewPublisher(config util.Config) (*Publisher, error) {
-	dfClient, err := deepfence.NewClient(config)
+func NewPublisher(config utils.Config) (*Publisher, error) {
+	dfClient, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,8 @@ func (p *Publisher) PublishScanError(errMsg string) {
 }
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
-	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil, "application/vnd.kafka.json.v2+json")
+	_, err := p.dfClient.HttpRequest(http.MethodPost, requestUrl,
+		postReader, nil, "application/vnd.kafka.json.v2+json")
 	return err
 }
 
@@ -78,7 +80,7 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	}
 }
 
-func (p *Publisher) GetVulnerabilityScanResults() (*deepfence.VulnerabilityScanDetail, error) {
+func (p *Publisher) GetVulnerabilityScanResults() (*VulnerabilityScanDetail, error) {
 	err := p.dfClient.WaitForScanToComplete()
 	if err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func (p *Publisher) PublishSBOMtoES(sbom []byte) error {
 	return p.dfClient.SendSBOMtoES(sbom)
 }
 
-func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanDetail) error {
+func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) error {
 	logrus.Infof("Total Vulnerabilities: %d\n", vulnerabilityScanDetail.Total)
 	logrus.Infof("Critical Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Critical)
 	logrus.Infof("High Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.High)
@@ -105,7 +107,7 @@ func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanD
 	if len(vulnerabilities.Data.Hits) > 0 {
 		fmt.Print("\nVulnerabilities\n\n")
 	}
-	if p.config.Output == util.JsonOutput {
+	if p.config.Output == utils.JsonOutput {
 		var vuln []byte
 		for _, cve := range vulnerabilities.Data.Hits {
 			vuln, err = json.MarshalIndent(cve, "", "  ")
@@ -113,7 +115,7 @@ func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanD
 				fmt.Println(string(vuln))
 			}
 		}
-	} else if p.config.Output == util.TableOutput {
+	} else if p.config.Output == utils.TableOutput {
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
 		table.SetHeaderLine(true)
@@ -130,7 +132,8 @@ func (p *Publisher) Output(vulnerabilityScanDetail *deepfence.VulnerabilityScanD
 			if packageName == "" {
 				packageName = cve.Source.CveCausedByPackagePath
 			}
-			table.Append([]string{cve.Source.CveID, cve.Source.CveSeverity, packageName, cve.Source.CveDescription})
+			table.Append([]string{cve.Source.CveID, cve.Source.CveSeverity,
+				packageName, cve.Source.CveDescription})
 		}
 		table.Render()
 	}

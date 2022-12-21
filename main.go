@@ -1,18 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"os"
+	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/deepfence/vessel"
+	"github.com/gin-gonic/gin"
 
-	package_sbom "github.com/deepfence/package-scanner/package-sbom"
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/sbom"
+	"github.com/deepfence/package-scanner/scanner/grype"
+	"github.com/deepfence/package-scanner/scanner/router"
+	"github.com/deepfence/package-scanner/utils"
 	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,10 +29,10 @@ const (
 )
 
 var (
-	mode                  = flag.String("mode", util.ModeLocal, util.ModeLocal+" or "+util.ModeGrpcServer)
+	mode                  = flag.String("mode", utils.ModeLocal, utils.ModeLocal+" or "+utils.ModeGrpcServer+" or "+utils.ModeHttpServer+" or "+utils.ModeScannerOnly)
 	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
 	port                  = flag.String("port", "", "Port for grpc server")
-	output                = flag.String("output", util.TableOutput, "Output format: json or table")
+	output                = flag.String("output", utils.TableOutput, "Output format: json or table")
 	quiet                 = flag.Bool("quiet", false, "Don't display any output in stdout")
 	managementConsoleUrl  = flag.String("mgmt-console-url", "", "Deepfence Management Console URL")
 	managementConsolePort = flag.Int("mgmt-console-port", 443, "Deepfence Management Console Port")
@@ -43,7 +51,7 @@ var (
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 )
 
-func runOnce(config util.Config) {
+func runOnce(config utils.Config) {
 	if config.Source == "" {
 		log.Error("Error: source is required")
 		return
@@ -52,52 +60,82 @@ func runOnce(config util.Config) {
 		log.Error("Error: fail-on-score should be between -1 and 10")
 		return
 	}
-	if config.Output != util.TableOutput && config.Output != util.JsonOutput {
-		log.Errorf("Error: output should be %s or %s", util.JsonOutput, util.TableOutput)
+	if config.Output != utils.TableOutput && config.Output != utils.JsonOutput {
+		log.Errorf("Error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
 		return
 	}
-	hostname := util.GetHostname()
+	hostname := utils.GetHostname()
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		hostname := util.GetHostname()
+		hostname := utils.GetHostname()
 		config.HostName = hostname
 		config.NodeId = hostname
-		config.NodeType = util.NodeTypeHost
+		config.NodeType = utils.NodeTypeHost
 		if config.ScanId == "" {
-			config.ScanId = hostname + "_" + util.GetDatetimeNow()
+			config.ScanId = hostname + "_" + utils.GetDatetimeNow()
 		}
 	} else {
 		config.NodeId = config.Source
 		config.HostName = hostname
-		config.NodeType = util.NodeTypeImage
+		config.NodeType = utils.NodeTypeImage
 		if config.ScanId == "" {
-			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
+			config.ScanId = config.Source + "_" + utils.GetDatetimeNow()
 		}
 	}
-	sbom, err := package_sbom.GenerateSBOM(config)
+	sbom, err := sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
-	if config.VulnerabilityScan == false && config.Quiet == false {
-		log.Info(string(sbom))
+	// create a temporary file to store the user input(SBOM)
+	file, err := utils.CreateTempFile(sbom)
+	if err != nil {
+		log.Errorf("error on CreateTempFile: %s", err.Error())
+		return
 	}
+
+	defer os.Remove(file.Name())
+
+	vulnerabilities, err := grype.Scan(file.Name())
+	if err != nil {
+		log.Errorf("error on grype.Scan: %s", err.Error())
+		return
+	}
+	report, err := grype.PopulateFinalReport(vulnerabilities, config)
+	if err != nil {
+		log.Errorf("error on generate report: %s", err.Error())
+	}
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		log.Error(err)
+	}
+	log.Info(string(data))
+
 }
 
 func main() {
+
+	// setup logger
+	log.SetOutput(os.Stdout)
+	log.SetReportCaller(true)
+	log.SetFormatter(&logrus.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+		PadLevelText:  true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
+		},
+	})
+
 	flag.Parse()
-	customFormatter := new(log.TextFormatter)
-	customFormatter.TimestampFormat = "2006-01-02 15:04:05"
-	log.SetFormatter(customFormatter)
-	customFormatter.FullTimestamp = true
 
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
 	if err != nil {
 		log.Errorf("Error detecting container runtime: %v", err)
 	} else {
-		log.Debugf("Detected container runtime: %s", containerRuntime)
+		log.Infof("Detected container runtime: %s", containerRuntime)
 	}
 
-	config := util.Config{
+	config := utils.Config{
 		Mode:                  *mode,
 		SocketPath:            *socketPath,
 		Port:                  *port,
@@ -129,20 +167,26 @@ func main() {
 		config.ContainerRuntime = crioRuntime.New(endpoint)
 	}
 
-	if *mode == util.ModeLocal {
+	if *mode == utils.ModeLocal {
 		runOnce(config)
-	} else if *mode == util.ModeGrpcServer {
-		err := package_sbom.RunGrpcServer(PluginName, config)
+	} else if *mode == utils.ModeGrpcServer {
+		err := sbom.RunGrpcServer(PluginName, config)
 		if err != nil {
 			log.Errorf("error: %v", err)
 			return
 		}
-	} else if *mode == util.ModeHttpServer {
-		err := package_sbom.RunHttpServer(config)
+	} else if *mode == utils.ModeHttpServer {
+		err := sbom.RunHttpServer(config)
 		if err != nil {
 			log.Errorf("Error running http server: %v", err)
 			return
 		}
+	} else if *mode == utils.ModeScannerOnly {
+		r := router.New()
+		r.Use(gin.Logger())
+		// Listen constantly on given port
+		log.Info("LISTENING ON PORT: ", port)
+		log.Fatal(r.Run(":" + *port))
 	} else {
 		log.Errorf("invalid mode")
 		return

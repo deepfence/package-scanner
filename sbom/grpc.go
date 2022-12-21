@@ -1,26 +1,27 @@
-package package_sbom
+package sbom
 
 import (
 	"context"
 	"fmt"
-	"github.com/Jeffail/tunny"
-	pb "github.com/deepfence/package-scanner/proto"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/Jeffail/tunny"
+	pb "github.com/deepfence/package-scanner/proto"
+	"github.com/deepfence/package-scanner/utils"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type gRPCServer struct {
 	socketPath string
 	pluginName string
-	config     util.Config
+	config     utils.Config
 	pb.UnimplementedPackageScannerServer
 	pb.UnimplementedAgentPluginServer
 }
@@ -39,7 +40,7 @@ func init() {
 	grpcScanWorkerPool = tunny.NewFunc(scanConcurrencyGrpc, processSbomGeneration)
 }
 
-func RunGrpcServer(pluginName string, config util.Config) error {
+func RunGrpcServer(pluginName string, config utils.Config) error {
 
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
@@ -94,15 +95,15 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 	var nodeType string
 	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
 		nodeId = r.HostName
-		nodeType = util.NodeTypeHost
-	} else if r.NodeType == util.NodeTypeContainer {
+		nodeType = utils.NodeTypeHost
+	} else if r.NodeType == utils.NodeTypeContainer {
 		nodeId = r.Source
-		nodeType = util.NodeTypeContainer
+		nodeType = utils.NodeTypeContainer
 	} else {
 		nodeId = r.Source
-		nodeType = util.NodeTypeImage
+		nodeType = utils.NodeTypeImage
 	}
-	config := util.Config{
+	config := utils.Config{
 		Mode:                  s.config.Mode,
 		SocketPath:            s.config.SocketPath,
 		Output:                "",
@@ -130,7 +131,7 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 }
 
 func processSbomGeneration(configInterface interface{}) interface{} {
-	config, ok := configInterface.(util.Config)
+	config, ok := configInterface.(utils.Config)
 	if !ok {
 		log.Error("Error processing grpc input for generating SBOM")
 		return nil

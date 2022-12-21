@@ -1,4 +1,4 @@
-package deepfence
+package output
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,7 +24,7 @@ const (
 )
 
 type Client struct {
-	config         util.Config
+	config         utils.Config
 	httpClient     *http.Client
 	mgmtConsoleUrl string
 	accessToken    string
@@ -77,7 +77,7 @@ type Coordinates struct {
 	FileSystemID string `json:"layerID,omitempty"` // An ID representing the filesystem. For container images, this is a layer digest. For directories or a root filesystem, this is blank.
 }
 
-func NewClient(config util.Config) (*Client, error) {
+func NewClient(config utils.Config) (*Client, error) {
 	httpClient, err := buildHttpClient()
 	if err != nil {
 		return nil, err
@@ -95,10 +95,10 @@ func NewClient(config util.Config) (*Client, error) {
 
 func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
-	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
+	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, utils.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	scanLog := map[string]interface{}{
 		"scan_id":                 c.config.ScanId,
-		"time_stamp":              util.GetIntTimestamp(),
+		"time_stamp":              utils.GetIntTimestamp(),
 		"cve_scan_message":        vulnerabilityScanMsg,
 		"action":                  status,
 		"type":                    "cve-scan",
@@ -109,7 +109,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"host":                    c.config.HostName,
 		"kubernetes_cluster_name": c.config.KubernetesClusterName,
 	}
-	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
+	postReader := utils.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
 
 	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
@@ -144,7 +144,7 @@ func (c *Client) GetApiAccessToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if dfApiAuthResponse.Success == false {
+	if !dfApiAuthResponse.Success {
 		return "", errors.New(dfApiAuthResponse.Error.Message)
 	}
 	return dfApiAuthResponse.Data.AccessToken, nil
@@ -162,7 +162,7 @@ func (c *Client) getVulnerabilityScanStatus() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if vulnerabilityScanStatusResponse.Success == false {
+	if !vulnerabilityScanStatusResponse.Success {
 		return "", errors.New(vulnerabilityScanStatusResponse.Error.Message)
 	}
 	return vulnerabilityScanStatusResponse.Data.Action, err
@@ -200,7 +200,7 @@ func (c *Client) GetVulnerabilityScanSummary() (*VulnerabilityScanDetail, error)
 	if err != nil {
 		return nil, err
 	}
-	if vulnerabilityScanSummary.Success == false {
+	if !vulnerabilityScanSummary.Success {
 		return nil, errors.New(vulnerabilityScanSummary.Error.Message)
 	}
 	for _, scanSummary := range vulnerabilityScanSummary.Data.Data {
@@ -228,7 +228,7 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 			map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 		var vuln Vulnerabilities
 		err = json.Unmarshal(resp, &vuln)
-		if err != nil || vuln.Success == false || len(vuln.Data.Hits) == 0 {
+		if err != nil || !vuln.Success || len(vuln.Data.Hits) == 0 {
 			break
 		}
 		if totalResp == 0 {
@@ -293,7 +293,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	// 	return err
 	// }
 	// postReader := bytes.NewReader(docBytes)
-	postReader := util.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
+	postReader := utils.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
 
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
@@ -331,7 +331,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	// 	return err
 	// }
 	// postReader := bytes.NewReader(docBytes)
-	postReader := util.ToKafkaRestFormat(artifactDocs)
+	postReader := utils.ToKafkaRestFormat(artifactDocs)
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomArtifactsIndexName)
 	_, err := c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
@@ -357,11 +357,10 @@ func (c *Client) HttpRequest(method string, requestUrl string, postReader io.Rea
 			httpReq.Header.Set("Content-Type", contentType)
 		}
 
-		if header != nil {
-			for k, v := range header {
-				httpReq.Header.Add(k, v)
-			}
+		for k, v := range header {
+			httpReq.Header.Add(k, v)
 		}
+
 		resp, err := c.httpClient.Do(httpReq)
 		if err != nil {
 			return response, err
