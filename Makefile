@@ -8,14 +8,13 @@ $(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
 	-rm -rf proto
 	cp -r agent-plugins-grpc/proto .
 
+.PHONY: clean
 clean:
 	(cd agent-plugins-grpc && make clean)
 	-rm -rf package-scanner proto
 
 proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
 	go build -buildvcs=false -v .
-
-.PHONY: clean
 
 .PHONY: docker
 docker: 

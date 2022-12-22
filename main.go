@@ -20,7 +20,6 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -117,7 +116,7 @@ func main() {
 	// setup logger
 	log.SetOutput(os.Stdout)
 	log.SetReportCaller(true)
-	log.SetFormatter(&logrus.TextFormatter{
+	log.SetFormatter(&log.TextFormatter{
 		ForceColors:   true,
 		FullTimestamp: true,
 		PadLevelText:  true,
@@ -131,8 +130,6 @@ func main() {
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
 	if err != nil {
 		log.Errorf("Error detecting container runtime: %v", err)
-	} else {
-		log.Infof("Detected container runtime: %s", containerRuntime)
 	}
 
 	config := utils.Config{
