@@ -118,7 +118,7 @@ func main() {
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
-		// ForceColors:   true,
+		ForceColors:   true,
 		FullTimestamp: true,
 		PadLevelText:  true,
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
