@@ -41,7 +41,7 @@ func RunHttpServer(config utils.Config) error {
 	}
 	http.HandleFunc("/registry", registryHandler)
 
-	fmt.Printf("Starting server at port %s\n", config.Port)
+	log.Infof("Starting server at port %s", config.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil); err != nil {
 		return err
 	}

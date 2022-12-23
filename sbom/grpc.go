@@ -48,7 +48,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(lis.Addr().String())
+	log.Info(lis.Addr().String())
 	s := grpc.NewServer()
 
 	go func() {

@@ -48,8 +48,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		fmt.Println("Error: Could not detect container runtime")
-		os.Exit(1)
+		log.Fatal("Error: Could not detect container runtime")
 	}
 
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
