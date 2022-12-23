@@ -10,7 +10,7 @@ import (
 
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/olekukonko/tablewriter"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type Publisher struct {
@@ -32,9 +32,9 @@ func NewPublisher(config utils.Config) (*Publisher, error) {
 }
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
-	err := p.dfClient.SendScanStatustoConsole(message, status)
+	err := p.dfClient.SendScanStatusToConsole(message, status)
 	if err != nil {
-		logrus.Error(p.config.ScanId, " ", err.Error())
+		log.Error(p.config.ScanId, " ", err.Error())
 	}
 }
 
@@ -46,7 +46,7 @@ func (p *Publisher) PublishScanError(errMsg string) {
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
 	_, err := p.dfClient.HttpRequest(http.MethodPost, requestUrl,
-		postReader, nil, "application/vnd.kafka.json.v2+json")
+		postReader, nil, "application/json")
 	return err
 }
 
@@ -73,10 +73,10 @@ func (p *Publisher) StopPublishScanStatus() {
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
-	err := p.dfClient.SendSBOMtoConsole(sbom)
+	err := p.dfClient.SendSbomToConsole(sbom)
 	if err != nil {
 		p.PublishScanError(err.Error())
-		logrus.Error(p.config.ScanId, " ", err.Error())
+		log.Error(p.config.ScanId, " ", err.Error())
 	}
 }
 
@@ -93,12 +93,12 @@ func (p *Publisher) PublishSBOMtoES(sbom []byte) error {
 }
 
 func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) error {
-	logrus.Infof("Total Vulnerabilities: %d\n", vulnerabilityScanDetail.Total)
-	logrus.Infof("Critical Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Critical)
-	logrus.Infof("High Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.High)
-	logrus.Infof("Medium Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Medium)
-	logrus.Infof("Low Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Low)
-	logrus.Infof("Vulnerability Score: %f\n", vulnerabilityScanDetail.CveScore)
+	log.Infof("Total Vulnerabilities: %d\n", vulnerabilityScanDetail.Total)
+	log.Infof("Critical Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Critical)
+	log.Infof("High Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.High)
+	log.Infof("Medium Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Medium)
+	log.Infof("Low Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Low)
+	log.Infof("Vulnerability Score: %f\n", vulnerabilityScanDetail.CveScore)
 
 	vulnerabilities, err := p.dfClient.GetVulnerabilities()
 	if err != nil {

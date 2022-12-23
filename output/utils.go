@@ -36,14 +36,13 @@ func buildHttpClient() (*http.Client, error) {
 }
 
 type dfApiAuthResponse struct {
-	Data struct {
+	Success     bool        `json:"success"`
+	Message     string      `json:"message"`
+	ErrorFields interface{} `json:"error_fields"`
+	Data        struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
 	} `json:"data"`
-	Error struct {
-		Message string `json:"message"`
-	} `json:"error"`
-	Success bool `json:"success"`
 }
 
 type vulnerabilityScanStatus struct {

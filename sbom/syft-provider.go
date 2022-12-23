@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
@@ -19,10 +20,11 @@ import (
 )
 
 var (
-	linuxExcludeDirs = []string{"/var/lib/docker",
-		"/var/lib/containerd", "/var/lib/containers", "/var/lib/crio",
-		"/var/run/containers", "/mnt", "/run", "/proc", "/dev", "/boot",
-		"/home/kubernetes/containerized_mounter", "/sys", "/lost+found"}
+	linuxExcludeDirs = []string{
+		"/var/lib/docker", "/var/lib/containerd", "/var/lib/containers",
+		"/var/lib/crio", "/var/run/containers", "/home/kubernetes/containerized_mounter",
+		"/mnt", "/run", "/proc", "/dev", "/boot", "/sys", "/lost+found",
+	}
 	mntDirs = getNfsMountsDirs()
 )
 
@@ -48,7 +50,8 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		log.Fatal("Error: Could not detect container runtime")
+		fmt.Println("Error: Could not detect container runtime")
+		os.Exit(1)
 	}
 
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
@@ -190,17 +193,17 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
-	// var publisher *output.Publisher
+	var publisher *output.Publisher
 	var err error
 
-	// if config.VulnerabilityScan == true {
-	// 	publisher, err = output.NewPublisher(config)
-	// 	if err != nil {
-	// 		log.Error("error in creating publisher")
-	// 		return nil, err
-	// 	}
-	// 	publisher.PublishScanStatus("GENERATING_SBOM")
-	// }
+	if config.VulnerabilityScan {
+		publisher, err = output.NewPublisher(config)
+		if err != nil {
+			log.Error("error in creating publisher")
+			return nil, err
+		}
+		publisher.PublishScanStatus("GENERATING_SBOM")
+	}
 
 	insecureRegistry := isRegistryInsecure(config.RegistryId)
 	if strings.Contains(syftArgs[1], "registry:") && insecureRegistry {
@@ -229,9 +232,9 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	if err != nil {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
 		log.Error("output:" + string(stdout) + " " + err.Error())
-		// if config.VulnerabilityScan == true {
-		// 	publisher.PublishScanError(string(stdout) + " " + err.Error())
-		// }
+		if config.VulnerabilityScan {
+			publisher.PublishScanError(string(stdout) + " " + err.Error())
+		}
 		return nil, err
 	}
 
@@ -242,54 +245,54 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	}
 	defer os.RemoveAll(jsonFile)
 
-	// if config.VulnerabilityScan == true {
-	// 	publisher.StopPublishScanStatus()
-	// 	// Send sbom to Deepfence Management Console for Vulnerability Scan
-	// 	publisher.RunVulnerabilityScan(sbom)
+	if config.VulnerabilityScan {
+		publisher.StopPublishScanStatus()
+		// Send sbom to Deepfence Management Console for Vulnerability Scan
+		publisher.RunVulnerabilityScan(sbom)
 
-	// 	if config.Quiet == true && config.FailOnScore <= 0 && config.FailOnCount <= 0 {
-	// 		return sbom, nil
-	// 	}
+		if config.Quiet && config.FailOnScore <= 0 && config.FailOnCount <= 0 {
+			return sbom, nil
+		}
 
-	// 	vulnerabilityScanDetail, err := publisher.GetVulnerabilityScanResults()
-	// 	if err != nil {
-	// 		log.Error("error in getting vulnerability scan detail")
-	// 		return sbom, err
-	// 	}
+		vulnerabilityScanDetail, err := publisher.GetVulnerabilityScanResults()
+		if err != nil {
+			log.Error("error in getting vulnerability scan detail")
+			return sbom, err
+		}
 
-	// 	if config.Quiet == false {
-	// 		_ = publisher.Output(vulnerabilityScanDetail)
-	// 	}
+		if !config.Quiet {
+			_ = publisher.Output(vulnerabilityScanDetail)
+		}
 
-	// 	if config.FailOnCount > 0 {
-	// 		exitOnSeverity := func(count int, failOnCount int) {
-	// 			if count >= failOnCount {
-	// 				log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).", count, failOnCount)
-	// 				os.Exit(1)
-	// 			}
-	// 		}
-	// 		if vulnerabilityScanDetail.Total >= config.FailOnCount {
-	// 			exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
-	// 		} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {
-	// 			exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
-	// 		} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount {
-	// 			exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
-	// 		} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {
-	// 			exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
-	// 		} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {
-	// 			exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
-	// 		}
-	// 	}
-	// 	if config.FailOnScore > 0.0 {
-	// 		exitOnSeverityScore := func(score float64, failOnScore float64) {
-	// 			if score >= failOnScore {
-	// 				log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).", score, failOnScore)
-	// 				os.Exit(1)
-	// 			}
-	// 		}
-	// 		exitOnSeverityScore(vulnerabilityScanDetail.CveScore, config.FailOnScore)
-	// 	}
-	// }
+		if config.FailOnCount > 0 {
+			exitOnSeverity := func(count int, failOnCount int) {
+				if count >= failOnCount {
+					log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).", count, failOnCount)
+					os.Exit(1)
+				}
+			}
+			if vulnerabilityScanDetail.Total >= config.FailOnCount {
+				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
+			} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
+			} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
+			} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
+			} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {
+				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
+			}
+		}
+		if config.FailOnScore > 0.0 {
+			exitOnSeverityScore := func(score float64, failOnScore float64) {
+				if score >= failOnScore {
+					log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).", score, failOnScore)
+					os.Exit(1)
+				}
+			}
+			exitOnSeverityScore(vulnerabilityScanDetail.CveScore, config.FailOnScore)
+		}
+	}
 
 	return sbom, nil
 }

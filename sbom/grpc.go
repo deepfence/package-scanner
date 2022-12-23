@@ -6,19 +6,16 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
+	"github.com/Jeffail/tunny"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-)
-
-var (
-	scanIdReplacer = strings.NewReplacer("/", "_", ":", "_", ".", "_")
 )
 
 type gRPCServer struct {
@@ -27,6 +24,20 @@ type gRPCServer struct {
 	config     utils.Config
 	pb.UnimplementedPackageScannerServer
 	pb.UnimplementedAgentPluginServer
+}
+
+var (
+	scanConcurrencyGrpc int
+	grpcScanWorkerPool  *tunny.Pool
+)
+
+func init() {
+	var err error
+	scanConcurrencyGrpc, err = strconv.Atoi(os.Getenv("PACKAGE_SCAN_CONCURRENCY"))
+	if err != nil {
+		scanConcurrencyGrpc = DefaultPackageScanConcurrency
+	}
+	grpcScanWorkerPool = tunny.NewFunc(scanConcurrencyGrpc, processSbomGeneration)
 }
 
 func RunGrpcServer(pluginName string, config utils.Config) error {
@@ -48,7 +59,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	if err != nil {
 		return err
 	}
-	log.Info(lis.Addr().String())
+	fmt.Println(lis.Addr().String())
 	s := grpc.NewServer()
 
 	go func() {
@@ -80,7 +91,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 }
 
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
-	log.Infof("generate sbom parameters: %+v", r)
+	log.Infof("SBOMRequest: %v", r)
 	var nodeId string
 	var nodeType string
 	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
@@ -115,16 +126,21 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		ContainerID:           r.ContainerId,
 	}
 
-	sbom, err := GenerateSBOM(config)
+	go grpcScanWorkerPool.Process(config)
+
+	return &pb.SBOMResult{SbomPath: ""}, nil
+}
+
+func processSbomGeneration(configInterface interface{}) interface{} {
+	config, ok := configInterface.(utils.Config)
+	if !ok {
+		log.Error("Error processing grpc input for generating SBOM")
+		return nil
+	}
+	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
-		return nil, err
+		return nil
 	}
-	path := filepath.Join("/tmp", scanIdReplacer.Replace(config.ScanId)+".json")
-	err = os.WriteFile(path, sbom, 0666)
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb.SBOMResult{SbomPath: path}, nil
+	return nil
 }

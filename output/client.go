@@ -16,18 +16,16 @@ import (
 )
 
 const (
-	MethodGet                = "GET"
-	MethodPost               = "POST"
 	cveScanLogsIndexName     = "cve-scan"
 	sbomCveScanLogsIndexName = "sbom-cve-scan"
 	sbomArtifactsIndexName   = "sbom-artifact"
 )
 
 type Client struct {
-	config         utils.Config
-	httpClient     *http.Client
-	mgmtConsoleUrl string
-	accessToken    string
+	config      utils.Config
+	httpClient  *http.Client
+	consoleUrl  string
+	accessToken string
 }
 
 type SBOMDocument struct {
@@ -89,19 +87,33 @@ func NewClient(config utils.Config) (*Client, error) {
 	if mgmtConsoleUrl == "" {
 		return nil, fmt.Errorf("management console url is required")
 	}
-	c := &Client{config: config, httpClient: httpClient, mgmtConsoleUrl: mgmtConsoleUrl}
+	c := &Client{config: config, httpClient: httpClient, consoleUrl: mgmtConsoleUrl}
 	return c, nil
 }
 
-func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
+func (c *Client) StatusAPI() string {
+	return "https://" + c.consoleUrl + "/deepfence/ingest/vulnerabilities-scan-logs"
+}
+
+func (c *Client) ResultAPI() string {
+	return "https://" + c.consoleUrl + "/deepfence/ingest/vulnerabilities"
+}
+
+func (c *Client) SbomAPI(query url.Values) string {
+	return "https://" + c.consoleUrl + "/deepfence/ingest/sbom?" + query.Encode()
+}
+
+func (c *Client) TokenAuthAPI() string {
+	return "https://" + c.consoleUrl + "/deepfence/auth/token"
+}
+
+func (c *Client) SendScanStatusToConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
-	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, utils.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	scanLog := map[string]interface{}{
 		"scan_id":                 c.config.ScanId,
 		"time_stamp":              utils.GetIntTimestamp(),
 		"cve_scan_message":        vulnerabilityScanMsg,
 		"action":                  status,
-		"type":                    "cve-scan",
 		"node_type":               c.config.NodeType,
 		"node_id":                 c.config.NodeId,
 		"scan_type":               c.config.ScanType,
@@ -109,14 +121,16 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"host":                    c.config.HostName,
 		"kubernetes_cluster_name": c.config.KubernetesClusterName,
 	}
-	postReader := utils.ToKafkaRestFormat([]map[string]interface{}{scanLog})
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
-
-	_, err := c.HttpRequest(MethodPost, ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
+	b, err := json.Marshal([]map[string]interface{}{scanLog})
 	if err != nil {
-		log.Errorf("SendScanStatustoConsole error: %s", err)
+		return err
 	}
-	return err
+	_, err = c.HttpRequest(http.MethodPost, c.StatusAPI(), bytes.NewBuffer(b),
+		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) getApiAccessToken() string {
@@ -132,27 +146,25 @@ func (c *Client) getApiAccessToken() string {
 }
 
 func (c *Client) GetApiAccessToken() (string, error) {
-	resp, err := c.HttpRequest(MethodPost,
-		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/users/auth",
-		bytes.NewReader([]byte(`{"api_key":"`+c.config.DeepfenceKey+`"}`)),
-		nil, "")
+	resp, err := c.HttpRequest(http.MethodPost, c.TokenAuthAPI(),
+		bytes.NewReader([]byte(`{"api_token":"`+c.config.DeepfenceKey+`"}`)), nil, "")
 	if err != nil {
 		return "", err
 	}
-	var dfApiAuthResponse dfApiAuthResponse
-	err = json.Unmarshal(resp, &dfApiAuthResponse)
+	var auth dfApiAuthResponse
+	err = json.Unmarshal(resp, &auth)
 	if err != nil {
 		return "", err
 	}
-	if !dfApiAuthResponse.Success {
-		return "", errors.New(dfApiAuthResponse.Error.Message)
+	if !auth.Success {
+		return "", errors.New(auth.Message)
 	}
-	return dfApiAuthResponse.Data.AccessToken, nil
+	return auth.Data.AccessToken, nil
 }
 
 func (c *Client) getVulnerabilityScanStatus() (string, error) {
-	resp, err := c.HttpRequest(MethodGet,
-		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/cve-scan/"+url.PathEscape(c.config.NodeId),
+	url := "https://" + c.consoleUrl + "/deepfence/v1.5/cve-scan/" + url.PathEscape(c.config.NodeId)
+	resp, err := c.HttpRequest(http.MethodGet, url,
 		nil, map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 	if err != nil {
 		return "", err
@@ -188,8 +200,8 @@ func (c *Client) WaitForScanToComplete() error {
 }
 
 func (c *Client) GetVulnerabilityScanSummary() (*VulnerabilityScanDetail, error) {
-	resp, err := c.HttpRequest(MethodPost,
-		"https://"+c.mgmtConsoleUrl+"/deepfence/v1.5/vulnerabilities/image_report?lucene_query=&number=30&time_unit=day",
+	url := "https://" + c.consoleUrl + "/deepfence/v1.5/vulnerabilities/image_report?lucene_query=&number=30&time_unit=day"
+	resp, err := c.HttpRequest(http.MethodPost, url,
 		bytes.NewReader([]byte(`{"filters":{"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"}}`)),
 		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 	if err != nil {
@@ -222,10 +234,13 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 	totalResp := 0
 	for {
 		var resp []byte
-		resp, err = c.HttpRequest(MethodPost,
-			fmt.Sprintf("https://%s/deepfence/v1.5/search?from=%d&size=%d&lucene_query=&number=1&time_unit=hour", c.mgmtConsoleUrl, from, pageSize),
+		url := fmt.Sprintf("https://%s/deepfence/v1.5/search?from=%d&size=%d&lucene_query=&number=1&time_unit=hour", c.consoleUrl, from, pageSize)
+		resp, err = c.HttpRequest(http.MethodPost, url,
 			bytes.NewReader([]byte(`{"_type":"cve","_source":[],"filters":{"masked":"false","type":["cve"],"cve_container_image":"`+c.config.NodeId+`","scan_id":"`+c.config.ScanId+`"},"node_filters":{}}`)),
 			map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
+		if err != nil {
+			return nil, err
+		}
 		var vuln Vulnerabilities
 		err = json.Unmarshal(resp, &vuln)
 		if err != nil || !vuln.Success || len(vuln.Data.Hits) == 0 {
@@ -244,7 +259,7 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 	return &vulnerabilities, err
 }
 
-func (c *Client) SendSBOMtoConsole(sbom []byte) error {
+func (c *Client) SendSbomToConsole(sbom []byte) error {
 	urlValues := url.Values{}
 	urlValues.Set("image_name", c.config.NodeId)
 	urlValues.Set("image_id", c.config.ImageId)
@@ -255,10 +270,10 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("node_type", c.config.NodeType)
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
-	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
-	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil, "")
+	_, err := c.HttpRequest(http.MethodPost, c.SbomAPI(urlValues), bytes.NewReader(sbom),
+		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 	if err != nil {
-		log.Errorf("SendSBOMtoConsole error: %s", err)
+		log.Errorf("SendSbomToConsole error: %s", err)
 	}
 	return err
 }
@@ -294,7 +309,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	// }
 	// postReader := bytes.NewReader(docBytes)
 	postReader := utils.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.consoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
 
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
@@ -332,7 +347,7 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	// }
 	// postReader := bytes.NewReader(docBytes)
 	postReader := utils.ToKafkaRestFormat(artifactDocs)
-	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomArtifactsIndexName)
+	ingestScanStatusAPI := fmt.Sprintf("https://" + c.consoleUrl + "/ingest/topics/" + sbomArtifactsIndexName)
 	_, err := c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
 		log.Errorf("sendSBOMArtifactsToES error: %s", err)
