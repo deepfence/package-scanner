@@ -53,6 +53,9 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 }
 
 func isRegistryInsecure(registryId string) bool {
+	if len(registryId) <= 0 {
+		return false
+	}
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
 		log.Error("unable to get registry credentials")
@@ -64,10 +67,7 @@ func isRegistryInsecure(registryId string) bool {
 	}
 	registryUrl, _, _ := GetDockerCredentials(registryData.Data)
 
-	if strings.Contains(registryUrl, "http:") {
-		return true
-	}
-	return false
+	return strings.Contains(registryUrl, "http:")
 }
 
 func GetConfigFileFromRegistry(registryId string) (string, error) {
