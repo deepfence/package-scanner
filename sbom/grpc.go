@@ -80,6 +80,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 }
 
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
+	log.Infof("generate sbom parameters: %+v", r)
 	var nodeId string
 	var nodeType string
 	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
