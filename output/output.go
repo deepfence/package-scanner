@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
@@ -137,5 +138,25 @@ func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) err
 		}
 		table.Render()
 	}
+	return nil
+}
+
+func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
+	table.SetHeaderLine(true)
+	table.SetBorder(true)
+	table.SetAutoWrapText(true)
+	table.SetAutoFormatHeaders(true)
+	table.SetColMinWidth(0, 15)
+	table.SetColMinWidth(1, 15)
+	table.SetColMinWidth(2, 15)
+	table.SetColMinWidth(3, 50)
+
+	for _, r := range *report {
+		table.Append([]string{r.CveId, r.CveSeverity, r.CveCausedByPackage, r.CveDescription})
+	}
+	table.Render()
 	return nil
 }

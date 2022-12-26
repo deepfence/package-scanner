@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -12,11 +13,12 @@ import (
 	"github.com/deepfence/vessel"
 	"github.com/gin-gonic/gin"
 
+	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom"
 	"github.com/deepfence/package-scanner/scanner/grype"
 	"github.com/deepfence/package-scanner/scanner/router"
 	"github.com/deepfence/package-scanner/utils"
-	vesselConstants "github.com/deepfence/vessel/constants"
+	vc "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
@@ -25,6 +27,10 @@ import (
 
 const (
 	PluginName = "PackageScanner"
+)
+
+var (
+	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO}
 )
 
 var (
@@ -48,20 +54,18 @@ var (
 	failOnSeverityCount   = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
 	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
+	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
 )
 
 func runOnce(config utils.Config) {
 	if config.Source == "" {
-		log.Error("Error: source is required")
-		return
+		log.Fatal("error: source is required")
 	}
 	if config.FailOnScore > 10.0 {
-		log.Error("Error: fail-on-score should be between -1 and 10")
-		return
+		log.Fatal("error: fail-on-score should be between -1 and 10")
 	}
 	if config.Output != utils.TableOutput && config.Output != utils.JsonOutput {
-		log.Errorf("Error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
-		return
+		log.Errorf("error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
 	}
 	hostname := utils.GetHostname()
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
@@ -96,41 +100,72 @@ func runOnce(config utils.Config) {
 
 	vulnerabilities, err := grype.Scan(file.Name())
 	if err != nil {
-		log.Errorf("error on grype.Scan: %s", err.Error())
-		return
+		log.Fatalf("error on grype.Scan: %s", err.Error())
 	}
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {
-		log.Errorf("error on generate report: %s", err.Error())
+		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
-	data, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		log.Error(err)
+	if *output != utils.JsonOutput {
+		out.TableOutput(&report)
+	} else {
+		data, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			log.Fatalf("error converting report to json, %s", err)
+		}
+		fmt.Println(string(data))
 	}
-	log.Info(string(data))
-
 }
 
 func main() {
 
 	// setup logger
-	log.SetOutput(os.Stdout)
+	log.SetOutput(os.Stderr)
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
 		ForceColors:   true,
 		FullTimestamp: true,
-		PadLevelText:  true,
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
 		},
 	})
 
+	// make sure logs come to stdout in other modes except local
+	// local logs go to stderr to keep stdout clean for redirecting to file
+	if *mode != utils.ModeLocal {
+		log.SetOutput(os.Stdout)
+	}
+
 	flag.Parse()
 
-	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
-	if err != nil {
-		log.Errorf("Error detecting container runtime: %v", err)
+	var (
+		containerRuntime string
+		endpoint         string
+		err              error
+	)
+
+	// no need to determine runtime if local directory
+	if !strings.HasPrefix(*source, "dir:") {
+		if *c_runtime != "auto" {
+			if !utils.Contains(supportedRuntime, *c_runtime) {
+				log.Fatalf("unsupported runtime has to be one of %s", strings.Join(supportedRuntime, "/"))
+			}
+			containerRuntime = *c_runtime
+			switch *c_runtime {
+			case vc.DOCKER:
+				endpoint = vc.DOCKER_SOCKET_URI
+			case vc.CONTAINERD:
+				endpoint = vc.CONTAINERD_SOCKET_URI
+			case vc.CRIO:
+				endpoint = vc.CRIO_SOCKET_URI
+			}
+		} else {
+			containerRuntime, endpoint, err = vessel.AutoDetectRuntime()
+			if err != nil {
+				log.Errorf("error detecting container runtime: %v", err)
+			}
+		}
 	}
 
 	config := utils.Config{
@@ -157,36 +192,34 @@ func main() {
 		ContainerRuntimeName:  containerRuntime,
 	}
 
-	if containerRuntime == vesselConstants.DOCKER {
+	if containerRuntime == vc.DOCKER {
 		config.ContainerRuntime = dockerRuntime.New()
-	} else if containerRuntime == vesselConstants.CONTAINERD {
+	} else if containerRuntime == vc.CONTAINERD {
 		config.ContainerRuntime = containerdRuntime.New(endpoint)
-	} else if containerRuntime == vesselConstants.CRIO {
+	} else if containerRuntime == vc.CRIO {
 		config.ContainerRuntime = crioRuntime.New(endpoint)
 	}
 
-	if *mode == utils.ModeLocal {
+	switch *mode {
+	case utils.ModeLocal:
 		runOnce(config)
-	} else if *mode == utils.ModeGrpcServer {
+	case utils.ModeGrpcServer:
 		err := sbom.RunGrpcServer(PluginName, config)
 		if err != nil {
-			log.Errorf("error: %v", err)
-			return
+			log.Fatalf("error running grpc server: %v", err)
 		}
-	} else if *mode == utils.ModeHttpServer {
+	case utils.ModeHttpServer:
 		err := sbom.RunHttpServer(config)
 		if err != nil {
-			log.Errorf("Error running http server: %v", err)
-			return
+			log.Fatalf("error running http server: %v", err)
 		}
-	} else if *mode == utils.ModeScannerOnly {
+	case utils.ModeScannerOnly:
 		r := router.New()
 		r.Use(gin.Logger())
-		// Listen constantly on given port
-		log.Info("LISTENING ON PORT: ", port)
+		if *port == "" {
+			*port = "8001"
+		}
+		log.Infof("listen on port: %s", *port)
 		log.Fatal(r.Run(":" + *port))
-	} else {
-		log.Errorf("invalid mode")
-		return
 	}
 }

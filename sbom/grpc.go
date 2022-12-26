@@ -49,10 +49,10 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 
 	var lis net.Listener
 	var err error
-	if config.Port != "" {
-		lis, err = net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", config.Port))
-	} else if config.SocketPath != "" {
+	if config.SocketPath != "" {
 		lis, err = net.Listen("unix", config.SocketPath)
+	} else if config.Port != "" {
+		lis, err = net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", config.Port))
 	} else {
 		return fmt.Errorf("grpc mode requires either socket-path or port to be set")
 	}

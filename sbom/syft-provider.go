@@ -196,13 +196,13 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	var publisher *output.Publisher
 	var err error
 
-	if config.VulnerabilityScan {
+	if config.VulnerabilityScan && config.Mode != utils.ModeLocal {
 		publisher, err = output.NewPublisher(config)
 		if err != nil {
 			log.Error("error in creating publisher")
 			return nil, err
 		}
-		publisher.PublishScanStatus("GENERATING_SBOM")
+		publisher.PublishScanStatus("IN_PROGRESS")
 	}
 
 	insecureRegistry := isRegistryInsecure(config.RegistryId)
@@ -228,11 +228,15 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
+	if config.Mode != utils.ModeLocal {
+		publisher.PublishScanStatus("GENERATING_SBOM")
+	}
+
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
 		log.Error("output:" + string(stdout) + " " + err.Error())
-		if config.VulnerabilityScan {
+		if config.VulnerabilityScan && config.Mode != utils.ModeLocal {
 			publisher.PublishScanError(string(stdout) + " " + err.Error())
 		}
 		return nil, err
@@ -245,7 +249,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	}
 	defer os.RemoveAll(jsonFile)
 
-	if config.VulnerabilityScan {
+	if config.VulnerabilityScan && config.Mode != utils.ModeLocal {
 		publisher.StopPublishScanStatus()
 		// Send sbom to Deepfence Management Console for Vulnerability Scan
 		publisher.RunVulnerabilityScan(sbom)
