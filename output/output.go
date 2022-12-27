@@ -10,7 +10,7 @@ import (
 
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
-	"github.com/olekukonko/tablewriter"
+	tw "github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -117,7 +117,7 @@ func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) err
 			}
 		}
 	} else if p.config.Output == utils.TableOutput {
-		table := tablewriter.NewWriter(os.Stdout)
+		table := tw.NewWriter(os.Stdout)
 		table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
 		table.SetHeaderLine(true)
 		table.SetBorder(true)
@@ -143,7 +143,7 @@ func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) err
 
 func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 
-	table := tablewriter.NewWriter(os.Stdout)
+	table := tw.NewWriter(os.Stdout)
 	table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
 	table.SetHeaderLine(true)
 	table.SetBorder(true)
@@ -159,4 +159,25 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 	}
 	table.Render()
 	return nil
+}
+
+func FilterBySeverity(
+	report *[]scanner.VulnerabilityScanReport,
+	severity []string,
+) []scanner.VulnerabilityScanReport {
+
+	// if there are no filters return original report
+	if len(severity) < 1 {
+		return *report
+	}
+
+	filtered := []scanner.VulnerabilityScanReport{}
+
+	for _, r := range *report {
+		if utils.Contains(severity, r.CveSeverity) {
+			filtered = append(filtered, r)
+		}
+	}
+
+	return filtered
 }

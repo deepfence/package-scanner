@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -31,10 +32,12 @@ const (
 
 var (
 	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO}
+	modes            = []string{utils.ModeLocal, utils.ModeGrpcServer, utils.ModeHttpServer, utils.ModeScannerOnly}
+	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
 )
 
 var (
-	mode                  = flag.String("mode", utils.ModeLocal, utils.ModeLocal+" or "+utils.ModeGrpcServer+" or "+utils.ModeHttpServer+" or "+utils.ModeScannerOnly)
+	mode                  = flag.String("mode", utils.ModeLocal, strings.Join(modes, "/"))
 	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
 	port                  = flag.String("port", "", "Port for grpc server")
 	output                = flag.String("output", utils.TableOutput, "Output format: json or table")
@@ -55,6 +58,7 @@ var (
 	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
+	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
 )
 
 func runOnce(config utils.Config) {
@@ -67,6 +71,14 @@ func runOnce(config utils.Config) {
 	if config.Output != utils.TableOutput && config.Output != utils.JsonOutput {
 		log.Errorf("error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
 	}
+	// trim any spaces from severities passed from command line
+	c_severity := []string{}
+	if len(*severity) > 0 {
+		for _, s := range strings.Split(*severity, ",") {
+			c_severity = append(c_severity, strings.TrimSpace(s))
+		}
+	}
+
 	hostname := utils.GetHostname()
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		hostname := utils.GetHostname()
@@ -74,42 +86,50 @@ func runOnce(config utils.Config) {
 		config.NodeId = hostname
 		config.NodeType = utils.NodeTypeHost
 		if config.ScanId == "" {
-			config.ScanId = hostname + "_" + utils.GetDatetimeNow()
+			config.ScanId = hostname + "_" + utils.GetDateTimeNow()
 		}
 	} else {
 		config.NodeId = config.Source
 		config.HostName = hostname
 		config.NodeType = utils.NodeTypeImage
 		if config.ScanId == "" {
-			config.ScanId = config.Source + "_" + utils.GetDatetimeNow()
+			config.ScanId = config.Source + "_" + utils.GetDateTimeNow()
 		}
 	}
+
 	sbom, err := sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
+
 	// create a temporary file to store the user input(SBOM)
 	file, err := utils.CreateTempFile(sbom)
 	if err != nil {
 		log.Errorf("error on CreateTempFile: %s", err.Error())
 		return
 	}
-
 	defer os.Remove(file.Name())
 
 	vulnerabilities, err := grype.Scan(file.Name())
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s", err.Error())
 	}
+
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {
 		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
+
+	filtered := out.FilterBySeverity(&report, c_severity)
+	sort.Slice(filtered[:], func(i, j int) bool {
+		return utils.SeverityToInt(filtered[i].CveSeverity) > utils.SeverityToInt(filtered[j].CveSeverity)
+	})
+
 	if *output != utils.JsonOutput {
-		out.TableOutput(&report)
+		out.TableOutput(&filtered)
 	} else {
-		data, err := json.MarshalIndent(report, "", "  ")
+		data, err := json.MarshalIndent(filtered, "", "  ")
 		if err != nil {
 			log.Fatalf("error converting report to json, %s", err)
 		}
@@ -192,12 +212,17 @@ func main() {
 		ContainerRuntimeName:  containerRuntime,
 	}
 
-	if containerRuntime == vc.DOCKER {
-		config.ContainerRuntime = dockerRuntime.New()
-	} else if containerRuntime == vc.CONTAINERD {
-		config.ContainerRuntime = containerdRuntime.New(endpoint)
-	} else if containerRuntime == vc.CRIO {
-		config.ContainerRuntime = crioRuntime.New(endpoint)
+	if !strings.HasPrefix(*source, "dir:") {
+		switch containerRuntime {
+		case vc.DOCKER:
+			config.ContainerRuntime = dockerRuntime.New()
+		case vc.CONTAINERD:
+			config.ContainerRuntime = containerdRuntime.New(endpoint)
+		case vc.CRIO:
+			config.ContainerRuntime = crioRuntime.New(endpoint)
+		default:
+			log.Fatalf("unsupported container runtime %s", containerRuntime)
+		}
 	}
 
 	switch *mode {
@@ -221,5 +246,7 @@ func main() {
 		}
 		log.Infof("listen on port: %s", *port)
 		log.Fatal(r.Run(":" + *port))
+	default:
+		log.Fatalf("unsupported mode %s", *mode)
 	}
 }

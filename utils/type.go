@@ -46,3 +46,32 @@ const (
 	NodeTypeImage     = "container_image"
 	NodeTypeContainer = "container"
 )
+
+// severity
+const (
+	CRITICAL   = "critical"
+	HIGH       = "high"
+	MEDIUM     = "medium"
+	LOW        = "low"
+	NEGLIGIBLE = "negligible"
+	UNKNOWN    = "unknown"
+)
+
+func SeverityToInt(severity string) int {
+	switch severity {
+	case CRITICAL:
+		return 5
+	case HIGH:
+		return 4
+	case MEDIUM:
+		return 3
+	case LOW:
+		return 2
+	case NEGLIGIBLE:
+		return 1
+	case UNKNOWN:
+		return 0
+	default:
+		return -1
+	}
+}
