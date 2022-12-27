@@ -1,22 +1,17 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/deepfence/vessel"
 	"github.com/gin-gonic/gin"
 
-	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom"
-	"github.com/deepfence/package-scanner/scanner/grype"
 	"github.com/deepfence/package-scanner/scanner/router"
 	"github.com/deepfence/package-scanner/utils"
 	vc "github.com/deepfence/vessel/constants"
@@ -60,82 +55,6 @@ var (
 	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
 	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
 )
-
-func runOnce(config utils.Config) {
-	if config.Source == "" {
-		log.Fatal("error: source is required")
-	}
-	if config.FailOnScore > 10.0 {
-		log.Fatal("error: fail-on-score should be between -1 and 10")
-	}
-	if config.Output != utils.TableOutput && config.Output != utils.JsonOutput {
-		log.Errorf("error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
-	}
-	// trim any spaces from severities passed from command line
-	c_severity := []string{}
-	if len(*severity) > 0 {
-		for _, s := range strings.Split(*severity, ",") {
-			c_severity = append(c_severity, strings.TrimSpace(s))
-		}
-	}
-
-	hostname := utils.GetHostname()
-	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		hostname := utils.GetHostname()
-		config.HostName = hostname
-		config.NodeId = hostname
-		config.NodeType = utils.NodeTypeHost
-		if config.ScanId == "" {
-			config.ScanId = hostname + "_" + utils.GetDateTimeNow()
-		}
-	} else {
-		config.NodeId = config.Source
-		config.HostName = hostname
-		config.NodeType = utils.NodeTypeImage
-		if config.ScanId == "" {
-			config.ScanId = config.Source + "_" + utils.GetDateTimeNow()
-		}
-	}
-
-	sbom, err := sbom.GenerateSBOM(config)
-	if err != nil {
-		log.Errorf("Error: %v", err)
-		return
-	}
-
-	// create a temporary file to store the user input(SBOM)
-	file, err := utils.CreateTempFile(sbom)
-	if err != nil {
-		log.Errorf("error on CreateTempFile: %s", err.Error())
-		return
-	}
-	defer os.Remove(file.Name())
-
-	vulnerabilities, err := grype.Scan(file.Name())
-	if err != nil {
-		log.Fatalf("error on grype.Scan: %s", err.Error())
-	}
-
-	report, err := grype.PopulateFinalReport(vulnerabilities, config)
-	if err != nil {
-		log.Fatalf("error on generate vulnerability report: %s", err.Error())
-	}
-
-	filtered := out.FilterBySeverity(&report, c_severity)
-	sort.Slice(filtered[:], func(i, j int) bool {
-		return utils.SeverityToInt(filtered[i].CveSeverity) > utils.SeverityToInt(filtered[j].CveSeverity)
-	})
-
-	if *output != utils.JsonOutput {
-		out.TableOutput(&filtered)
-	} else {
-		data, err := json.MarshalIndent(filtered, "", "  ")
-		if err != nil {
-			log.Fatalf("error converting report to json, %s", err)
-		}
-		fmt.Println(string(data))
-	}
-}
 
 func main() {
 
@@ -227,7 +146,7 @@ func main() {
 
 	switch *mode {
 	case utils.ModeLocal:
-		runOnce(config)
+		RunOnce(config)
 	case utils.ModeGrpcServer:
 		err := sbom.RunGrpcServer(PluginName, config)
 		if err != nil {

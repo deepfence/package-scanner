@@ -160,24 +160,3 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 	table.Render()
 	return nil
 }
-
-func FilterBySeverity(
-	report *[]scanner.VulnerabilityScanReport,
-	severity []string,
-) []scanner.VulnerabilityScanReport {
-
-	// if there are no filters return original report
-	if len(severity) < 1 {
-		return *report
-	}
-
-	filtered := []scanner.VulnerabilityScanReport{}
-
-	for _, r := range *report {
-		if utils.Contains(severity, r.CveSeverity) {
-			filtered = append(filtered, r)
-		}
-	}
-
-	return filtered
-}

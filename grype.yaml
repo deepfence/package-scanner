@@ -47,12 +47,12 @@ db:
   
   # URL of the vulnerability database
   # same as GRYPE_DB_UPDATE_URL env var
-  update-url: "http://deepfence-fetcher:8006/vulnerability-db/listing.json"
+  update-url: "https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
   # it ensures db build is no older than the max-allowed-built-age
   # set to false to disable check
   validate-age: false
-
+  
   # Max allowed age for vulnerability database,
   # age being the time since it was built
   # Default max age is 120h (or five days)
@@ -70,9 +70,3 @@ log:
   # location to write the log file (default is not to have a log file)
   # same as GRYPE_LOG_FILE env var
   file: ""
-
-external-sources:
-  enable: true
-  maven:
-    search-upstream-by-sha1: true
-    base-url: https://search.maven.org/solrsearch/select
