@@ -2,18 +2,27 @@ FROM golang:1.18-bullseye AS build
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     git gcc libc-dev libffi-dev bash make protobuf-compiler
+
+# install grype
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin v0.40.1 
+
+# build syft
+RUN cd /go \
+    && git clone https://github.com/anchore/syft \
+    && cd syft \
+    && git checkout 1d14f22e4538f03a1896b2d4e1d99a65e52b6f30 \
+    && cd /go/syft/cmd/syft \
+    && CGO_ENABLED=0 go build -v -o syftCli .
+
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
 RUN export CGO_ENABLED=0 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
-    && make \
-    && cd /go \
-    && git clone https://github.com/anchore/syft \
-    && cd syft \
-    && git checkout 1d14f22e4538f03a1896b2d4e1d99a65e52b6f30 \
-    && cd /go/syft/cmd/syft \
-    && go build -v -o syftCli .
+    && cp /go/syft/cmd/syft/syftCli syft \
+    && cp /usr/local/bin/grype grype \
+    && make
+
 
 FROM debian:bullseye-slim
 LABEL MAINTAINER="Deepfence Inc"
@@ -23,6 +32,7 @@ ENV PACKAGE_SCAN_CONCURRENCY=5
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/syft/cmd/syft/syftCli /usr/local/bin/syft
+COPY --from=build /usr/local/bin/grype /usr/local/bin/grype
 
 COPY grype.yaml /root/.grype.yaml
 COPY entrypoint.sh /entrypoint.sh
@@ -33,9 +43,8 @@ RUN apt-get update \
     && tar Cxzvvf /usr/local/bin nerdctl-0.23.0-linux-amd64.tar.gz \
     && rm nerdctl-0.23.0-linux-amd64.tar.gz
 
-RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin v0.40.1 \
-    # && echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
-    && RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
+#RUN echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
+RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
     && chmod +x /entrypoint.sh
 
 EXPOSE 8001 8002 8005
