@@ -9,6 +9,7 @@ import (
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -31,8 +32,9 @@ func init() {
 	}
 }
 
-func Scan(bomPath string) ([]byte, error) {
-	cmd := fmt.Sprintf("grype sbom:%s -o json", bomPath)
+func Scan(grypeBinPath, grypeConfigPath, bomPath string) ([]byte, error) {
+	cmd := fmt.Sprintf("%s -c %s sbom:%s -o json", grypeBinPath, grypeConfigPath, bomPath)
+	log.Debugf("grype command: %s", cmd)
 	return exec.Command("bash", "-c", cmd).Output()
 }
 

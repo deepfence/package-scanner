@@ -65,7 +65,7 @@ func RunOnce(config utils.Config) {
 	}
 	defer os.Remove(file.Name())
 
-	vulnerabilities, err := grype.Scan(file.Name())
+	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name())
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s", err.Error())
 	}
@@ -75,7 +75,9 @@ func RunOnce(config utils.Config) {
 		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
 
+	// filter by severity
 	filtered := FilterBySeverity(&report, c_severity)
+	// sort by severity
 	sort.Slice(filtered[:], func(i, j int) bool {
 		return severityToInt(filtered[i].CveSeverity) > severityToInt(filtered[j].CveSeverity)
 	})

@@ -210,7 +210,8 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
 	}
 
-	cmd := exec.Command("syft", syftArgs...)
+	cmd := exec.Command(config.SyftBinPath, syftArgs...)
+	log.Debugf("syft command: %s", cmd.String())
 	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
 		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
 		if err != nil {

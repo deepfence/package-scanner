@@ -4,7 +4,8 @@ RUN apt-get update \
     git gcc libc-dev libffi-dev bash make protobuf-compiler
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
+RUN export CGO_ENABLED=0 && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
     && make \
     && cd /go \

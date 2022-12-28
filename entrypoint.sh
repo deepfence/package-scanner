@@ -3,7 +3,8 @@
 sleep 60
 
 # Start crond service
-/usr/sbin/crond
+/usr/sbin/cron &
 
 /usr/local/bin/grype db update
 
+exec $@

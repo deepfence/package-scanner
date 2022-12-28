@@ -11,6 +11,8 @@ import (
 	"github.com/deepfence/vessel"
 	"github.com/gin-gonic/gin"
 
+	_ "embed"
+
 	"github.com/deepfence/package-scanner/sbom"
 	"github.com/deepfence/package-scanner/scanner/router"
 	"github.com/deepfence/package-scanner/utils"
@@ -22,13 +24,29 @@ import (
 )
 
 const (
-	PluginName = "PackageScanner"
+	PluginName            = "PackageScanner"
+	tmpPackageScannerPath = "/tmp/package-scanner"
 )
 
 var (
 	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO}
 	modes            = []string{utils.ModeLocal, utils.ModeGrpcServer, utils.ModeHttpServer, utils.ModeScannerOnly}
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
+)
+
+var (
+	//go:embed syft
+	syftBin []byte
+
+	//go:embed grype
+	grypeBin []byte
+
+	//go:embed grype.yaml
+	grypeYaml []byte
+
+	syftBinPath     string = path.Join(tmpPackageScannerPath, "syft")
+	grypeBinPath    string = path.Join(tmpPackageScannerPath, "grype")
+	grypeConfigPath string = path.Join(tmpPackageScannerPath, "grype.yaml")
 )
 
 var (
@@ -54,6 +72,7 @@ var (
 	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
 	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
 	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
+	systemBin             = flag.Bool("system-bin", false, "use system tools")
 )
 
 func main() {
@@ -69,6 +88,26 @@ func main() {
 			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
 		},
 	})
+
+	// extract embedded binaries
+	if err := os.MkdirAll(tmpPackageScannerPath, 0666); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.WriteFile(syftBinPath, syftBin, 0555); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.WriteFile(grypeBinPath, grypeBin, 0555); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0666); err != nil {
+		log.Fatal(err)
+	}
+	// remove on exit
+	defer func() {
+		if err := os.RemoveAll(tmpPackageScannerPath); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// make sure logs come to stdout in other modes except local
 	// local logs go to stderr to keep stdout clean for redirecting to file
@@ -129,6 +168,13 @@ func main() {
 		FailOnSeverityCount:   *failOnSeverityCount,
 		MaskCveIds:            *maskCveIds,
 		ContainerRuntimeName:  containerRuntime,
+		SyftBinPath:           "/usr/local/bin/syft",
+		GrypeBinPath:          "/usr/local/bin/grype",
+		GrypeConfigPath:       grypeConfigPath,
+	}
+	if !*systemBin {
+		config.SyftBinPath = syftBinPath
+		config.GrypeBinPath = grypeBinPath
 	}
 
 	if !strings.HasPrefix(*source, "dir:") {

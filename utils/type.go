@@ -33,6 +33,9 @@ type Config struct {
 	ContainerRuntimeName  string         `json:"container_runtime_name,omitempty"`
 	ContainerRuntime      vessel.Runtime `json:"container_runtime,omitempty"`
 	ContainerID           string         `json:"container_id,omitempty"`
+	SyftBinPath           string         `json:"syft_bin_path,omitempty"`
+	GrypeBinPath          string         `json:"grype_bin_path,omitempty"`
+	GrypeConfigPath       string         `json:"grype_config_path,omitempty"`
 }
 
 const (
