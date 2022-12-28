@@ -269,34 +269,8 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 			_ = publisher.Output(vulnerabilityScanDetail)
 		}
 
-		if config.FailOnCount > 0 {
-			exitOnSeverity := func(count int, failOnCount int) {
-				if count >= failOnCount {
-					log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).", count, failOnCount)
-					os.Exit(1)
-				}
-			}
-			if vulnerabilityScanDetail.Total >= config.FailOnCount {
-				exitOnSeverity(vulnerabilityScanDetail.Total, config.FailOnCount)
-			} else if vulnerabilityScanDetail.Severity.Critical >= config.FailOnCriticalCount {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Critical, config.FailOnCriticalCount)
-			} else if vulnerabilityScanDetail.Severity.High >= config.FailOnHighCount {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.High, config.FailOnHighCount)
-			} else if vulnerabilityScanDetail.Severity.Medium >= config.FailOnMediumCount {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Medium, config.FailOnMediumCount)
-			} else if vulnerabilityScanDetail.Severity.Low >= config.FailOnLowCount {
-				exitOnSeverity(vulnerabilityScanDetail.Severity.Low, config.FailOnLowCount)
-			}
-		}
-		if config.FailOnScore > 0.0 {
-			exitOnSeverityScore := func(score float64, failOnScore float64) {
-				if score >= failOnScore {
-					log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).", score, failOnScore)
-					os.Exit(1)
-				}
-			}
-			exitOnSeverityScore(vulnerabilityScanDetail.CveScore, config.FailOnScore)
-		}
+		// check if has to fail on counts/score
+		output.FailOn(&config, vulnerabilityScanDetail)
 	}
 
 	return sbom, nil

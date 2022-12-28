@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strings"
@@ -51,20 +52,22 @@ func RunOnce(config utils.Config) {
 		}
 	}
 
-	sbom, err := sbom.GenerateSBOM(config)
+	log.Infof("generating sbom for %s...", config.Source)
+	sbomResult, err := sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
 	}
 
 	// create a temporary file to store the user input(SBOM)
-	file, err := utils.CreateTempFile(sbom)
+	file, err := utils.CreateTempFile(sbomResult)
 	if err != nil {
 		log.Errorf("error on CreateTempFile: %s", err.Error())
 		return
 	}
 	defer os.Remove(file.Name())
 
+	log.Info("scanning sbom for vulnerabilities...")
 	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name())
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s", err.Error())
@@ -74,7 +77,14 @@ func RunOnce(config utils.Config) {
 	if err != nil {
 		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
-
+	// scan details
+	details := CountBySeverity(&report)
+	fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
+		details.Total,
+		utils.CRITICAL, details.Severity.Critical,
+		utils.HIGH, details.Severity.High,
+		utils.MEDIUM, details.Severity.Medium,
+		utils.LOW, details.Severity.Low)
 	// filter by severity
 	filtered := FilterBySeverity(&report, c_severity)
 	// sort by severity
@@ -91,6 +101,7 @@ func RunOnce(config utils.Config) {
 		}
 		fmt.Println(string(data))
 	}
+	out.FailOn(&config, details)
 }
 
 func severityToInt(severity string) int {
@@ -131,4 +142,29 @@ func FilterBySeverity(
 	}
 
 	return filtered
+}
+
+func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *out.VulnerabilityScanDetail {
+	detail := out.VulnerabilityScanDetail{}
+
+	cveScore := 0.0
+
+	for _, r := range *report {
+		detail.Total += 1
+		cveScore += r.CveOverallScore
+		switch r.CveSeverity {
+		case utils.CRITICAL:
+			detail.Severity.Critical += 1
+		case utils.HIGH:
+			detail.Severity.High += 1
+		case utils.MEDIUM:
+			detail.Severity.Medium += 1
+		case utils.LOW:
+			detail.Severity.Low += 1
+		}
+	}
+
+	detail.CveScore = math.Min((cveScore*10.0)/500.0, 10.0)
+
+	return &detail
 }

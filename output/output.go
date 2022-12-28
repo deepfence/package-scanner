@@ -155,8 +155,44 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 	table.SetColMinWidth(3, 50)
 
 	for _, r := range *report {
+		if r.CveCausedByPackage == "" {
+			r.CveCausedByPackage = r.CveCausedByPackagePath
+		}
 		table.Append([]string{r.CveId, r.CveSeverity, r.CveCausedByPackage, r.CveDescription})
 	}
 	table.Render()
 	return nil
+}
+
+func ExitOnSeverityScore(score float64, failOnScore float64) {
+	if score >= failOnScore {
+		log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).",
+			score, failOnScore)
+	}
+}
+
+func ExitOnSeverity(count int, failOnCount int) {
+	if count >= failOnCount {
+		log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).",
+			count, failOnCount)
+	}
+}
+
+func FailOn(cfg *utils.Config, details *VulnerabilityScanDetail) {
+	if cfg.FailOnCount > 0 {
+		if details.Total >= cfg.FailOnCount {
+			ExitOnSeverity(details.Total, cfg.FailOnCount)
+		} else if details.Severity.Critical >= cfg.FailOnCriticalCount {
+			ExitOnSeverity(details.Severity.Critical, cfg.FailOnCriticalCount)
+		} else if details.Severity.High >= cfg.FailOnHighCount {
+			ExitOnSeverity(details.Severity.High, cfg.FailOnHighCount)
+		} else if details.Severity.Medium >= cfg.FailOnMediumCount {
+			ExitOnSeverity(details.Severity.Medium, cfg.FailOnMediumCount)
+		} else if details.Severity.Low >= cfg.FailOnLowCount {
+			ExitOnSeverity(details.Severity.Low, cfg.FailOnLowCount)
+		}
+	}
+	if cfg.FailOnScore > 0.0 {
+		ExitOnSeverityScore(details.CveScore, cfg.FailOnScore)
+	}
 }
