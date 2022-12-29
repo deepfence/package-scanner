@@ -7,3 +7,6 @@ proto
 .DS_Store
 syft
 grype
+tools/grype-bin/grype*
+tools/syft-bin/syft*
+dist/

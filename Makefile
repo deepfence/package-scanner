@@ -34,3 +34,17 @@ buildx:
 .PHONY: rm-buildx
 rm-buildx:
 	docker buildx rm cibuilder
+
+.PHONY: tools
+tools:
+	(cd tools/grype-bin && ./get_grype.sh)
+	(cd tools/syft-bin && ./get_syft.sh)
+
+.PHONY: install-goreleaser
+install-goreleaser:
+	go install github.com/goreleaser/goreleaser@latest
+
+.PHONY: release
+release:
+	rm -rf dist
+	goreleaser release --snapshot --rm-dist

@@ -15,6 +15,7 @@ import (
 
 	"github.com/deepfence/package-scanner/sbom"
 	"github.com/deepfence/package-scanner/scanner/router"
+	"github.com/deepfence/package-scanner/tools"
 	"github.com/deepfence/package-scanner/utils"
 	vc "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
@@ -35,12 +36,6 @@ var (
 )
 
 var (
-	//go:embed syft
-	syftBin []byte
-
-	//go:embed grype
-	grypeBin []byte
-
 	//go:embed grype.yaml
 	grypeYaml []byte
 
@@ -93,10 +88,10 @@ func main() {
 	if err := os.MkdirAll(tmpPackageScannerPath, 0666); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile(syftBinPath, syftBin, 0555); err != nil {
+	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0555); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile(grypeBinPath, grypeBin, 0555); err != nil {
+	if err := os.WriteFile(grypeBinPath, tools.GrypeBin, 0555); err != nil {
 		log.Fatal(err)
 	}
 	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0666); err != nil {
