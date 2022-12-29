@@ -17,7 +17,7 @@ proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
 	CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: docker
-docker: 
+docker:
 	docker build -t deepfenceio/deepfence_package_scanner:latest .
 
 .PHONY: docker-multi-arch

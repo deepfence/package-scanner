@@ -3,24 +3,11 @@ RUN apt-get clean && apt-get update \
     && apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make protobuf-compiler apt-utils
 
-# install grype
-RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin v0.40.1 
-
-# build syft
-RUN cd /go \
-    && git clone https://github.com/anchore/syft \
-    && cd syft \
-    && git checkout 1d14f22e4538f03a1896b2d4e1d99a65e52b6f30 \
-    && cd /go/syft/cmd/syft \
-    && CGO_ENABLED=0 go build -v -o syftCli .
-
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
 RUN export CGO_ENABLED=0 && \
     go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
-    && cp /go/syft/cmd/syft/syftCli syft \
-    && cp /usr/local/bin/grype grype \
     && make
 
 
@@ -31,8 +18,8 @@ LABEL deepfence.role=system
 ENV PACKAGE_SCAN_CONCURRENCY=5
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
-COPY --from=build /go/syft/cmd/syft/syftCli /usr/local/bin/syft
-COPY --from=build /usr/local/bin/grype /usr/local/bin/grype
+COPY --from=build /go/package-scanner/tools/grype-bin/grype_linux_amd64 /usr/local/bin/grype
+COPY --from=build /go/package-scanner/tools/syft-bin/syft_linux_amd64 /usr/local/bin/syft
 
 COPY grype.yaml /root/.grype.yaml
 COPY entrypoint.sh /entrypoint.sh
