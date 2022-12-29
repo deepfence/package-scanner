@@ -35,7 +35,7 @@ func init() {
 func Scan(grypeBinPath, grypeConfigPath, bomPath string) ([]byte, error) {
 	cmd := fmt.Sprintf("%s -c %s sbom:%s -o json", grypeBinPath, grypeConfigPath, bomPath)
 	log.Debugf("grype command: %s", cmd)
-	return exec.Command("bash", "-c", cmd).Output()
+	return exec.Command("bash", "-c", cmd).CombinedOutput()
 }
 
 func Parse(p []byte) (Document, error) {

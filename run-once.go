@@ -70,7 +70,7 @@ func RunOnce(config utils.Config) {
 	log.Info("scanning sbom for vulnerabilities...")
 	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name())
 	if err != nil {
-		log.Fatalf("error on grype.Scan: %s", err.Error())
+		log.Fatalf("error on grype.Scan: %s %s", err.Error(), vulnerabilities)
 	}
 
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
