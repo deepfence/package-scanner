@@ -27,13 +27,13 @@ docker-multi-arch:
 .PHONY: buildx
 buildx:
 	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-	docker buildx create --name cibuilder --driver docker-container --use
+	docker buildx create --name builder --driver docker-container --driver-opt network=host --use
 	docker buildx ls
 	docker buildx inspect --bootstrap
 
 .PHONY: rm-buildx
 rm-buildx:
-	docker buildx rm cibuilder
+	docker buildx rm builder
 
 .PHONY: tools
 tools:

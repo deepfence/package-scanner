@@ -1,6 +1,6 @@
 FROM golang:1.18-bullseye AS build
 RUN apt-get clean && apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make protobuf-compiler apt-utils
 
 ADD . /go/package-scanner/
@@ -25,7 +25,7 @@ COPY grype.yaml /root/.grype.yaml
 COPY entrypoint.sh /entrypoint.sh
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.23.0/nerdctl-0.23.0-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-0.23.0-linux-amd64.tar.gz \
     && rm nerdctl-0.23.0-linux-amd64.tar.gz
