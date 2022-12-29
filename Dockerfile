@@ -1,7 +1,7 @@
 FROM golang:1.18-bullseye AS build
-RUN apt-get update \
+RUN apt-get clean && apt-get update \
     && apt-get install -y --no-install-recommends \
-    git gcc libc-dev libffi-dev bash make protobuf-compiler
+    build-essential git gcc libc-dev libffi-dev bash make protobuf-compiler apt-utils
 
 # install grype
 RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin v0.40.1 

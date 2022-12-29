@@ -18,4 +18,19 @@ proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
 
 .PHONY: docker
 docker: 
-	docker build -t deepfenceio/package-scanner:latest .
+	docker build -t deepfenceio/deepfence_package_scanner:latest .
+
+.PHONY: docker-multi-arch
+docker-multi-arch:
+	docker buildx build --platform linux/arm64,linux/amd64 --tag deepfenceio/deepfence_package_scanner:latest .
+
+.PHONY: buildx
+buildx:
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	docker buildx create --name cibuilder --driver docker-container --use
+	docker buildx ls
+	docker buildx inspect --bootstrap
+
+.PHONY: rm-buildx
+rm-buildx:
+	docker buildx rm cibuilder
