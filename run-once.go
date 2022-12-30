@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
@@ -52,7 +53,7 @@ func RunOnce(config utils.Config) {
 		}
 	}
 
-	log.Infof("generating sbom for %s...", config.Source)
+	log.Infof("generating sbom for %s ...", config.Source)
 	sbomResult, err := sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
@@ -67,8 +68,18 @@ func RunOnce(config utils.Config) {
 	}
 	defer os.Remove(file.Name())
 
-	log.Info("scanning sbom for vulnerabilities...")
-	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name())
+	// get user cache dir
+	cacheDir, dirErr := os.UserCacheDir()
+	if dirErr != nil {
+		log.Fatal(dirErr)
+	}
+
+	env := []string{
+		fmt.Sprintf("GRYPE_DB_CACHE_DIR=%s", path.Join(cacheDir, "grype", "db")),
+	}
+
+	log.Info("scanning sbom for vulnerabilities ...")
+	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name(), &env)
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s %s", err.Error(), vulnerabilities)
 	}

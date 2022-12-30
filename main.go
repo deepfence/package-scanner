@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	PluginName            = "PackageScanner"
-	tmpPackageScannerPath = "/tmp/package-scanner"
+	PluginName = "PackageScanner"
 )
 
 var (
@@ -38,10 +37,6 @@ var (
 var (
 	//go:embed grype.yaml
 	grypeYaml []byte
-
-	syftBinPath     string = path.Join(tmpPackageScannerPath, "syft")
-	grypeBinPath    string = path.Join(tmpPackageScannerPath, "grype")
-	grypeConfigPath string = path.Join(tmpPackageScannerPath, "grype.yaml")
 )
 
 var (
@@ -84,8 +79,19 @@ func main() {
 		},
 	})
 
+	cacheDir, dirErr := os.UserCacheDir()
+	if dirErr != nil {
+		log.Fatal(dirErr)
+	}
+	tmpPath := path.Join(cacheDir, "package-scanner")
+	syftBinPath := path.Join(tmpPath, "syft")
+	grypeBinPath := path.Join(tmpPath, "grype")
+	grypeConfigPath := path.Join(tmpPath, "grype.yaml")
+	log.Debugf("user cache dir: %s", cacheDir)
+	log.Debugf("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
+
 	// extract embedded binaries
-	if err := os.MkdirAll(tmpPackageScannerPath, 0666); err != nil {
+	if err := os.MkdirAll(tmpPath, 0666); err != nil {
 		log.Fatal(err)
 	}
 	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0555); err != nil {
@@ -99,7 +105,8 @@ func main() {
 	}
 	// remove on exit
 	defer func() {
-		if err := os.RemoveAll(tmpPackageScannerPath); err != nil {
+		log.Debugf("remove tools cache %s", tmpPath)
+		if err := os.RemoveAll(tmpPath); err != nil {
 			log.Fatal(err)
 		}
 	}()
