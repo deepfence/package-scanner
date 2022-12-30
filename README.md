@@ -22,7 +22,7 @@ drwxr-xr-x 2 root root 4.0K Dec 29 09:40 package-scanner_linux_arm64
 ```
 
 ### cli usage examples
-- run below examples with sudo on MacOS
+- please add security exception for MacOS to run package-scanner if required
 - scan a docker image for vulnerabilities
 ```
 ./package-scanner -source nginx:latest
