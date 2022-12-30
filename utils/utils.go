@@ -115,7 +115,7 @@ func ExtractExploitPocUrl(url []string) (string, []string) {
 	if len(url) == 0 {
 		return "", nil
 	}
-	nonExploitPocUrls := make([]string, len(url))
+	nonExploitPocUrls := make([]string, 0)
 	var msfURL string
 	for _, u := range url {
 		if strings.Contains(u, metasploitURLPattern) {
