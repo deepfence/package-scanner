@@ -91,16 +91,16 @@ func main() {
 	log.Debugf("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
 
 	// extract embedded binaries
-	if err := os.MkdirAll(tmpPath, 0666); err != nil {
+	if err := os.MkdirAll(tmpPath, 0755); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0555); err != nil {
+	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0755); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile(grypeBinPath, tools.GrypeBin, 0555); err != nil {
+	if err := os.WriteFile(grypeBinPath, tools.GrypeBin, 0755); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0666); err != nil {
+	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0755); err != nil {
 		log.Fatal(err)
 	}
 	// remove on exit
