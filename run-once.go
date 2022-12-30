@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom"
@@ -90,12 +91,6 @@ func RunOnce(config utils.Config) {
 	}
 	// scan details
 	details := CountBySeverity(&report)
-	fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
-		details.Total,
-		utils.CRITICAL, details.Severity.Critical,
-		utils.HIGH, details.Severity.High,
-		utils.MEDIUM, details.Severity.Medium,
-		utils.LOW, details.Severity.Low)
 	// filter by severity
 	filtered := FilterBySeverity(&report, c_severity)
 	// sort by severity
@@ -104,9 +99,19 @@ func RunOnce(config utils.Config) {
 	})
 
 	if *output != utils.JsonOutput {
+		fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
+			details.Total,
+			utils.CRITICAL, details.Severity.Critical,
+			utils.HIGH, details.Severity.High,
+			utils.MEDIUM, details.Severity.Medium,
+			utils.LOW, details.Severity.Low)
 		out.TableOutput(&filtered)
 	} else {
-		data, err := json.MarshalIndent(filtered, "", "  ")
+		final := map[string]interface{}{
+			"summary":         details,
+			"vulnerabilities": filtered,
+		}
+		data, err := json.MarshalIndent(final, "", "  ")
 		if err != nil {
 			log.Fatalf("error converting report to json, %s", err)
 		}
@@ -176,6 +181,8 @@ func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *out.Vulnerabili
 	}
 
 	detail.CveScore = math.Min((cveScore*10.0)/500.0, 10.0)
+
+	detail.TimeStamp = time.Now()
 
 	return &detail
 }

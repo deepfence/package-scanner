@@ -69,21 +69,21 @@ type vulnerabilityScanStatus struct {
 }
 
 type VulnerabilityScanDetail struct {
-	Action           string  `json:"action"`
-	ActiveContainers int     `json:"active_containers"`
-	CveScanMessage   string  `json:"cve_scan_message"`
-	CveScore         float64 `json:"cve_score"`
-	NodeName         string  `json:"node_name"`
-	NodeType         string  `json:"node_type"`
-	ScanID           string  `json:"scan_id"`
+	Action           string  `json:"action,omitempty"`
+	ActiveContainers int     `json:"active_containers,omitempty"`
+	CveScanMessage   string  `json:"cve_scan_message,omitempty"`
+	CveScore         float64 `json:"cve_score,omitempty"`
+	NodeName         string  `json:"node_name,omitempty"`
+	NodeType         string  `json:"node_type,omitempty"`
+	ScanID           string  `json:"scan_id,omitempty"`
 	Severity         struct {
-		Critical int `json:"critical"`
-		High     int `json:"high"`
-		Medium   int `json:"medium"`
-		Low      int `json:"low"`
-	} `json:"severity"`
-	TimeStamp time.Time `json:"time_stamp"`
-	Total     int       `json:"total"`
+		Critical int `json:"critical,omitempty"`
+		High     int `json:"high,omitempty"`
+		Medium   int `json:"medium,omitempty"`
+		Low      int `json:"low,omitempty"`
+	} `json:"severity,omitempty"`
+	TimeStamp time.Time `json:"time_stamp,omitempty"`
+	Total     int       `json:"total,omitempty"`
 }
 
 type VulnerabilityScanSummary struct {
