@@ -230,6 +230,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	}
 
 	if config.Mode != utils.ModeLocal {
+		publisher.StopPublishScanStatus()
 		publisher.PublishScanStatus("GENERATING_SBOM")
 	}
 
