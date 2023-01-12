@@ -235,7 +235,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Error("error from syft command for syftArgs: " + strings.Join(syftArgs, " "))
+		log.Error("failed syft command: %s", cmd.String())
 		log.Error("output:" + string(stdout) + " " + err.Error())
 		if config.VulnerabilityScan && config.Mode != utils.ModeLocal {
 			publisher.PublishScanError(string(stdout) + " " + err.Error())
