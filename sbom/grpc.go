@@ -124,6 +124,9 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 		ContainerID:           r.ContainerId,
+		SyftBinPath:           s.config.SyftBinPath,
+		GrypeBinPath:          s.config.GrypeBinPath,
+		GrypeConfigPath:       s.config.GrypeConfigPath,
 	}
 
 	go grpcScanWorkerPool.Process(config)
