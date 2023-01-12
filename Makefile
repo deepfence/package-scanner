@@ -36,8 +36,14 @@ rm-buildx:
 	docker buildx rm builder
 
 .PHONY: tools
-tools:
+tools: grype syft
+
+.PHONY: grype
+grype:
 	(cd tools/grype-bin && ./get_grype.sh)
+
+.PHONY: syft
+syft:
 	(cd tools/syft-bin && ./get_syft.sh)
 
 .PHONY: install-goreleaser

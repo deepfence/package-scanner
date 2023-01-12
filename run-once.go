@@ -67,7 +67,11 @@ func RunOnce(config utils.Config) {
 		log.Errorf("error on CreateTempFile: %s", err.Error())
 		return
 	}
-	defer os.Remove(file.Name())
+	if !config.KeepSbom {
+		defer os.Remove(file.Name())
+	} else {
+		log.Infof("generated sbom file at %s", file.Name())
+	}
 
 	// get user cache dir
 	cacheDir, dirErr := os.UserCacheDir()
@@ -84,6 +88,7 @@ func RunOnce(config utils.Config) {
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s %s", err.Error(), vulnerabilities)
 	}
+	log.Debugf("vulnerabilities: %s", string(vulnerabilities))
 
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {

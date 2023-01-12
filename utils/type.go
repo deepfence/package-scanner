@@ -36,6 +36,7 @@ type Config struct {
 	SyftBinPath           string         `json:"syft_bin_path,omitempty"`
 	GrypeBinPath          string         `json:"grype_bin_path,omitempty"`
 	GrypeConfigPath       string         `json:"grype_config_path,omitempty"`
+	KeepSbom              bool           `json:"keep_sbom,omitempty"`
 }
 
 const (

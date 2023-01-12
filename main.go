@@ -64,6 +64,7 @@ var (
 	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
 	systemBin             = flag.Bool("system-bin", false, "use system tools")
 	debug                 = flag.Bool("debug", false, "show debug logs")
+	keepSbom              = flag.Bool("keep-sbom", false, "keep generated sbom file")
 )
 
 func main() {
@@ -180,6 +181,7 @@ func main() {
 		SyftBinPath:           "/usr/local/bin/syft",
 		GrypeBinPath:          "/usr/local/bin/grype",
 		GrypeConfigPath:       grypeConfigPath,
+		KeepSbom:              *keepSbom,
 	}
 	if !*systemBin {
 		config.SyftBinPath = syftBinPath
