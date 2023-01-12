@@ -63,12 +63,14 @@ var (
 	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
 	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
 	systemBin             = flag.Bool("system-bin", false, "use system tools")
+	debug                 = flag.Bool("debug", false, "show debug logs")
 )
 
 func main() {
 
 	// setup logger
 	log.SetOutput(os.Stderr)
+	log.SetLevel(log.InfoLevel)
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		DisableColors: false,
@@ -78,6 +80,13 @@ func main() {
 			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
 		},
 	})
+
+	flag.Parse()
+
+	if *debug {
+		log.SetOutput(os.Stdout)
+		log.SetLevel(log.DebugLevel)
+	}
 
 	cacheDir, dirErr := os.UserCacheDir()
 	if dirErr != nil {
@@ -116,8 +125,6 @@ func main() {
 	if *mode != utils.ModeLocal {
 		log.SetOutput(os.Stdout)
 	}
-
-	flag.Parse()
 
 	var (
 		containerRuntime string
