@@ -114,6 +114,7 @@ func (c *Client) SendScanStatusToConsole(vulnerabilityScanMsg string, status str
 		"time_stamp":              utils.GetIntTimestamp(),
 		"cve_scan_message":        vulnerabilityScanMsg,
 		"action":                  status,
+		"scan_status":             status,
 		"node_type":               c.config.NodeType,
 		"node_id":                 c.config.NodeId,
 		"scan_type":               c.config.ScanType,
