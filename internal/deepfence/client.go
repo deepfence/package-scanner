@@ -96,6 +96,10 @@ func NewClient(config util.Config) (*Client, error) {
 func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
 	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
+	nodeId := c.config.NodeId
+	if c.config.NodeType == "container_image" {
+		nodeId = c.config.ImageId
+	}
 	scanLog := map[string]interface{}{
 		"scan_id":                 c.config.ScanId,
 		"time_stamp":              util.GetIntTimestamp(),
@@ -103,7 +107,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"action":                  status,
 		"type":                    "cve-scan",
 		"node_type":               c.config.NodeType,
-		"node_id":                 c.config.NodeId,
+		"node_id":                 nodeId,
 		"scan_type":               c.config.ScanType,
 		"host_name":               c.config.HostName,
 		"host":                    c.config.HostName,
@@ -246,12 +250,16 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 
 func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues := url.Values{}
-	urlValues.Set("image_name", c.config.NodeId)
+	urlValues.Set("image_name", c.config.Source)
 	urlValues.Set("image_id", c.config.ImageId)
 	urlValues.Set("scan_id", c.config.ScanId)
 	urlValues.Set("kubernetes_cluster_name", c.config.KubernetesClusterName)
 	urlValues.Set("host_name", c.config.HostName)
-	urlValues.Set("node_id", c.config.NodeId)
+	nodeId := c.config.NodeId
+	if c.config.NodeType == "container_image" {
+		nodeId = c.config.ImageId
+	}
+	urlValues.Set("node_id", nodeId)
 	urlValues.Set("node_type", c.config.NodeType)
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
