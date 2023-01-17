@@ -112,6 +112,8 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"host_name":               c.config.HostName,
 		"host":                    c.config.HostName,
 		"kubernetes_cluster_name": c.config.KubernetesClusterName,
+		"container_name":          c.config.ContainerName,
+		"image_name":              c.config.Source,
 	}
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
