@@ -33,6 +33,7 @@ type Config struct {
 	ContainerRuntimeName  string         `json:"container_runtime_name,omitempty"`
 	ContainerRuntime      vessel.Runtime `json:"container_runtime,omitempty"`
 	ContainerID           string         `json:"container_id,omitempty"`
+	ImageName             string         `json:"image_name,omitempty"`
 }
 
 const (
