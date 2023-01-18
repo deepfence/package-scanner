@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/output"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
@@ -140,10 +141,34 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		log.Error("Error processing grpc input for generating SBOM")
 		return nil
 	}
-	_, err := GenerateSBOM(config)
+
+	var (
+		publisher *output.Publisher
+		err       error
+		sbom      []byte
+	)
+
+	publisher, err = output.NewPublisher(config)
+	if err != nil {
+		log.Error("error in creating publisher")
+		return err
+	}
+	publisher.PublishScanStatus("IN_PROGRESS")
+
+	publisher.StopPublishScanStatus()
+	publisher.PublishScanStatus("GENERATING_SBOM")
+
+	sbom, err = GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
-		return nil
+		publisher.PublishScanError(string(sbom) + " " + err.Error())
+		return err
 	}
+
+	publisher.StopPublishScanStatus()
+
+	// Send sbom to Deepfence Management Console for Vulnerability Scan
+	publisher.RunVulnerabilityScan(sbom)
+
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/deepfence/vessel"
 	vesselConstants "github.com/deepfence/vessel/constants"
@@ -193,17 +192,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
-	var publisher *output.Publisher
 	var err error
-
-	if config.Mode != utils.ModeLocal {
-		publisher, err = output.NewPublisher(config)
-		if err != nil {
-			log.Error("error in creating publisher")
-			return nil, err
-		}
-		publisher.PublishScanStatus("IN_PROGRESS")
-	}
 
 	insecureRegistry := isRegistryInsecure(config.RegistryId)
 	if strings.Contains(syftArgs[1], "registry:") && insecureRegistry {
@@ -229,19 +218,11 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
-	if config.Mode != utils.ModeLocal {
-		publisher.StopPublishScanStatus()
-		publisher.PublishScanStatus("GENERATING_SBOM")
-	}
-
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Error("failed command: %s", cmd.String())
+		log.Errorf("failed command: %s", cmd.String())
 		log.Error("output:" + string(stdout) + " " + err.Error())
-		if config.Mode != utils.ModeLocal {
-			publisher.PublishScanError(string(stdout) + " " + err.Error())
-		}
-		return nil, err
+		return stdout, err
 	}
 
 	sbom, err := os.ReadFile(jsonFile)
@@ -250,31 +231,6 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		return nil, err
 	}
 	defer os.RemoveAll(jsonFile)
-
-	if config.Mode != utils.ModeLocal {
-		publisher.StopPublishScanStatus()
-		if config.VulnerabilityScan {
-			// Send sbom to Deepfence Management Console for Vulnerability Scan
-			publisher.RunVulnerabilityScan(sbom)
-
-			if config.Quiet && config.FailOnScore <= 0 && config.FailOnCount <= 0 {
-				return sbom, nil
-			}
-
-			vulnerabilityScanDetail, err := publisher.GetVulnerabilityScanResults()
-			if err != nil {
-				log.Error("error in getting vulnerability scan detail")
-				return sbom, err
-			}
-
-			if !config.Quiet {
-				_ = publisher.Output(vulnerabilityScanDetail)
-			}
-
-			// check if has to fail on counts/score
-			output.FailOn(&config, vulnerabilityScanDetail)
-		}
-	}
 
 	return sbom, nil
 }

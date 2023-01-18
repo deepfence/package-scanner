@@ -6,19 +6,18 @@ import (
 	"net"
 	"net/http"
 	"time"
-)
 
-const (
-	CriticalSeverity = "critical"
-	HighSeverity     = "high"
-	MediumSeverity   = "medium"
-	LowSeverity      = "low"
+	rhttp "github.com/hashicorp/go-retryablehttp"
 )
 
 func buildHttpClient() (*http.Client, error) {
+	rhc := rhttp.NewClient()
+	rhc.RetryMax = 3
+	rhc.RetryWaitMin = 1 * time.Second
+	rhc.RetryWaitMax = 15 * time.Second
 	// Set up our own certificate pool
 	tlsConfig := &tls.Config{RootCAs: x509.NewCertPool(), InsecureSkipVerify: true}
-	client := &http.Client{
+	rhc.HTTPClient = &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig:     tlsConfig,
 			DisableKeepAlives:   false,
@@ -32,7 +31,7 @@ func buildHttpClient() (*http.Client, error) {
 		},
 		Timeout: 15 * time.Minute,
 	}
-	return client, nil
+	return rhc.StandardClient(), nil
 }
 
 type dfApiAuthResponse struct {

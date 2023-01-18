@@ -54,7 +54,7 @@ func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) err
 func (p *Publisher) PublishScanStatus(status string) {
 	go func() {
 		p.PublishScanStatusMessage("", status)
-		ticker := time.NewTicker(2 * time.Minute)
+		ticker := time.NewTicker(90 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
@@ -79,6 +79,7 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 		p.PublishScanError(err.Error())
 		log.Error(p.config.ScanId, " ", err.Error())
 	}
+	p.StopPublishScanStatus()
 }
 
 func (p *Publisher) GetVulnerabilityScanResults() (*VulnerabilityScanDetail, error) {

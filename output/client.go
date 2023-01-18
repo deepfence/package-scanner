@@ -357,47 +357,46 @@ func (c *Client) sendSBOMArtifactsToES(artifacts []Artifact) error {
 	return nil
 }
 
-func (c *Client) HttpRequest(method string, requestUrl string, postReader io.Reader, header map[string]string, contentType string) ([]byte, error) {
-	retryCount := 0
+func (c *Client) HttpRequest(
+	method string,
+	requestUrl string,
+	postReader io.Reader,
+	header map[string]string,
+	contentType string,
+) ([]byte, error) {
+
 	var response []byte
-	for {
-		httpReq, err := http.NewRequest(method, requestUrl, postReader)
-		if err != nil {
-			return response, err
-		}
-		httpReq.Close = true
-		httpReq.Header.Add("deepfence-key", c.config.DeepfenceKey)
-		if contentType == "" {
-			httpReq.Header.Set("Content-Type", "application/json")
-		} else {
-			httpReq.Header.Set("Content-Type", contentType)
-		}
 
-		for k, v := range header {
-			httpReq.Header.Add(k, v)
-		}
-
-		resp, err := c.httpClient.Do(httpReq)
-		if err != nil {
-			return response, err
-		}
-		if resp.StatusCode == 200 {
-			response, err = io.ReadAll(resp.Body)
-			if err != nil {
-				return response, err
-			}
-			resp.Body.Close()
-			break
-		} else {
-			if retryCount > 4 {
-				errMsg := fmt.Sprintf("Unable to complete request. Got %d ", resp.StatusCode)
-				resp.Body.Close()
-				return response, errors.New(errMsg)
-			}
-			resp.Body.Close()
-			retryCount += 1
-			time.Sleep(5 * time.Second)
-		}
+	httpReq, err := http.NewRequest(method, requestUrl, postReader)
+	if err != nil {
+		return response, err
 	}
+	httpReq.Close = true
+	httpReq.Header.Add("deepfence-key", c.config.DeepfenceKey)
+	if contentType == "" {
+		httpReq.Header.Set("Content-Type", "application/json")
+	} else {
+		httpReq.Header.Set("Content-Type", contentType)
+	}
+
+	for k, v := range header {
+		httpReq.Header.Add(k, v)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return response, err
+	}
+	defer resp.Body.Close()
+
+	response, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return response, err
+	}
+
+	if resp.StatusCode != 200 {
+		return response, fmt.Errorf("unable to complete request, got code %d", resp.StatusCode)
+	}
+
 	return response, nil
 }
