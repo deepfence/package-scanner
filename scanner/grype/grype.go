@@ -51,7 +51,7 @@ func Parse(p []byte) (Document, error) {
 	return doc, nil
 }
 
-func PopulateFinalReport(vulnerabilities []byte, c utils.Config) ([]scanner.VulnerabilityScanReport, error) {
+func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
 	grypeDocument, err := Parse(vulnerabilities)
 	if err != nil {
 		return []scanner.VulnerabilityScanReport{}, err
@@ -60,12 +60,12 @@ func PopulateFinalReport(vulnerabilities []byte, c utils.Config) ([]scanner.Vuln
 	var currentlyMaskedCveIds []string
 	var fullReport []scanner.VulnerabilityScanReport
 
-	currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(c.NodeId, c.NodeType)
+	currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
 	if err != nil {
 		currentlyMaskedCveIds = []string{}
 	}
 
-	maskCveIdsInArgs := strings.Split(c.MaskCveIds, ",")
+	maskCveIdsInArgs := strings.Split(cfg.MaskCveIds, ",")
 	maskCveIds := append(currentlyMaskedCveIds, maskCveIdsInArgs...)
 	for _, match := range grypeDocument.Matches {
 		description := match.Vulnerability.Description
@@ -97,17 +97,17 @@ func PopulateFinalReport(vulnerabilities []byte, c utils.Config) ([]scanner.Vuln
 		report := scanner.VulnerabilityScanReport{
 			Type:                  "cve",
 			Masked:                "false",
-			Host:                  c.HostName,
-			NodeType:              c.NodeType,
-			NodeId:                c.NodeId,
-			HostName:              c.HostName,
-			KubernetesClusterName: c.KubernetesClusterName,
-			ScanId:                c.ScanId,
+			Host:                  cfg.HostName,
+			NodeType:              cfg.NodeType,
+			NodeId:                cfg.NodeId,
+			HostName:              cfg.HostName,
+			KubernetesClusterName: cfg.KubernetesClusterName,
+			ScanId:                cfg.ScanId,
 			CveId:                 match.Vulnerability.ID,
 			CveType:               getLanguageFromMatcher(match.MatchDetails[0].Matcher),
-			CveContainerImage:     c.NodeId,
-			CveContainerImageId:   c.ImageId,
-			CveContainerName:      c.ContainerName,
+			CveContainerImage:     cfg.NodeId,
+			CveContainerImageId:   cfg.ImageId,
+			CveContainerName:      cfg.ContainerName,
 			CveSeverity:           strings.ToLower(match.Vulnerability.Severity),
 			CveCausedByPackage:    match.Artifact.Name + ":" + match.Artifact.Version,
 			CveContainerLayer:     "",

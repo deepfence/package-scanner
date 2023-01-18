@@ -165,32 +165,36 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 }
 
 func ExitOnSeverityScore(score float64, failOnScore float64) {
+	log.Debugf("ExitOnSeverityScore count=%f failOnCount=%f", score, failOnScore)
 	if score >= failOnScore {
 		log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).",
 			score, failOnScore)
 	}
 }
 
-func ExitOnSeverity(count int, failOnCount int) {
+func ExitOnSeverity(severity string, count int, failOnCount int) {
+	log.Debugf("ExitOnSeverity severity=%s count=%d failOnCount=%d", severity, count, failOnCount)
 	if count >= failOnCount {
-		log.Fatalf("Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d).",
-			count, failOnCount)
+		if len(severity) > 0 {
+			msg := "Exit vulnerability scan. Number of %s vulnerabilities (%d) reached/exceeded the limit (%d)."
+			log.Fatalf(msg, severity, count, failOnCount)
+		}
+		msg := "Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d)."
+		log.Fatalf(msg, count, failOnCount)
 	}
 }
 
 func FailOn(cfg *utils.Config, details *VulnerabilityScanDetail) {
 	if cfg.FailOnCount > 0 {
-		if details.Total >= cfg.FailOnCount {
-			ExitOnSeverity(details.Total, cfg.FailOnCount)
-		} else if details.Severity.Critical >= cfg.FailOnCriticalCount {
-			ExitOnSeverity(details.Severity.Critical, cfg.FailOnCriticalCount)
-		} else if details.Severity.High >= cfg.FailOnHighCount {
-			ExitOnSeverity(details.Severity.High, cfg.FailOnHighCount)
-		} else if details.Severity.Medium >= cfg.FailOnMediumCount {
-			ExitOnSeverity(details.Severity.Medium, cfg.FailOnMediumCount)
-		} else if details.Severity.Low >= cfg.FailOnLowCount {
-			ExitOnSeverity(details.Severity.Low, cfg.FailOnLowCount)
-		}
+		ExitOnSeverity("", details.Total, cfg.FailOnCount)
+	} else if cfg.FailOnCriticalCount > 0 {
+		ExitOnSeverity(utils.CRITICAL, details.Severity.Critical, cfg.FailOnCriticalCount)
+	} else if cfg.FailOnHighCount > 0 {
+		ExitOnSeverity(utils.HIGH, details.Severity.High, cfg.FailOnHighCount)
+	} else if cfg.FailOnMediumCount > 0 {
+		ExitOnSeverity(utils.MEDIUM, details.Severity.Medium, cfg.FailOnMediumCount)
+	} else if cfg.FailOnLowCount > 0 {
+		ExitOnSeverity(utils.LOW, details.Severity.Low, cfg.FailOnLowCount)
 	}
 	if cfg.FailOnScore > 0.0 {
 		ExitOnSeverityScore(details.CveScore, cfg.FailOnScore)
