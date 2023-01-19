@@ -34,6 +34,8 @@ type ContainerScan struct {
 }
 
 func (containerScan *ContainerScan) exportFileSystemTar() error {
+	log.Infof("ContainerScan: %+v", containerScan)
+
 	// Auto-detect underlying container runtime
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
 	if err != nil {
@@ -49,7 +51,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerRuntimeInterface = crioRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		fmt.Println("Error: Could not detect container runtime")
+		log.Error("Error: Could not detect container runtime")
 		return fmt.Errorf("failed to detect container runtime")
 	}
 
@@ -57,7 +59,6 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerScan.containerId, containerScan.namespace,
 		containerScan.tempDir+".tar", endpoint,
 	)
-
 	if err != nil {
 		log.Errorf("errored: %s", err)
 		return err
@@ -79,6 +80,7 @@ func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
 	cmd.Stderr = &stderr
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
+		log.Errorf("cmd: %s", cmd.String())
 		log.Error(errorOnRun)
 		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
 	}
@@ -158,9 +160,8 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 				} else {
 					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: "default"}
 				}
-				log.Infof("ContainerScan: %+v", containerScan)
-				err = containerScan.exportFileSystemTar()
 
+				err = containerScan.exportFileSystemTar()
 				if err != nil {
 					log.Error(err)
 					return nil, err

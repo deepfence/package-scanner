@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.44.164
-	github.com/deepfence/vessel v0.9.1-0.20230119053206-575165f18536
+	github.com/deepfence/vessel v0.9.1-0.20230119080800-6de4fa3bc2b4
 	github.com/gin-gonic/gin v1.8.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/olekukonko/tablewriter v0.0.5
