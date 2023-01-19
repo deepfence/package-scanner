@@ -1,4 +1,4 @@
-FROM golang:1.18-bullseye AS build
+FROM golang:1.19-bullseye AS build
 RUN apt-get clean && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make protobuf-compiler apt-utils
