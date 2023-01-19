@@ -113,8 +113,12 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"host":                    c.config.HostName,
 		"kubernetes_cluster_name": c.config.KubernetesClusterName,
 		"container_name":          c.config.ContainerName,
-		"image_name":              c.config.Source,
+		"image_name":              c.config.ImageName,
 	}
+
+	log.Errorf("scanLog to console %+v", c.config)
+	fmt.Printf("%+v",c.config)
+
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
 
@@ -252,7 +256,7 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 
 func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues := url.Values{}
-	urlValues.Set("image_name", c.config.Source)
+	urlValues.Set("image_name", c.config.ImageName)
 	urlValues.Set("image_id", c.config.ImageId)
 	urlValues.Set("scan_id", c.config.ScanId)
 	urlValues.Set("kubernetes_cluster_name", c.config.KubernetesClusterName)
