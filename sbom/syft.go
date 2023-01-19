@@ -59,13 +59,13 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	)
 
 	if err != nil {
-		log.Error("erroed")
+		log.Errorf("errored: %s", err)
 		return err
 	}
 
-	_, err = runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
+	stdout, err := runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("error: %s output: %s", err, stdout.String())
 		return err
 	}
 
@@ -79,6 +79,7 @@ func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
 	cmd.Stderr = &stderr
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
+		log.Error(errorOnRun)
 		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
 	}
 	return &out, nil
