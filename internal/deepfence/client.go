@@ -287,6 +287,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
 	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 	sbomDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
+	log.Error(sbomDoc)
 	var resultSBOM SBOMDocument
 	err := json.Unmarshal(sbom, &resultSBOM)
 	if err != nil {
