@@ -266,6 +266,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
 	log.Errorf("sbom to console %+v", c.config)
+	fmt.Printf("%+v",c.config)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
 	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil, "")
 	if err != nil {
