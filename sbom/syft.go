@@ -156,11 +156,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 				if config.KubernetesClusterName != "" {
 					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
 				} else {
-					c_name := config.ContainerID
-					if config.ContainerID == "" {
-						c_name = config.ContainerName
-					}
-					containerScan = ContainerScan{containerId: c_name, tempDir: tmpDir, namespace: "default"}
+					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: "default"}
 				}
 				log.Debugf("ContainerScan: %+v", containerScan)
 				err = containerScan.exportFileSystemTar()
