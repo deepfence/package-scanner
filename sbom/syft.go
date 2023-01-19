@@ -162,6 +162,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 					}
 					containerScan = ContainerScan{containerId: c_name, tempDir: tmpDir, namespace: "default"}
 				}
+				log.Debugf("ContainerScan: %+v", containerScan)
 				err = containerScan.exportFileSystemTar()
 
 				if err != nil {
