@@ -276,6 +276,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 func (c *Client) SendSBOMtoES(sbom []byte) error {
 	var sbomDoc = make(map[string]interface{})
 	sbomDoc["scan_id"] = c.config.ScanId
+	sbomDoc["image_name"] = c.config.Source
 	sbomDoc["node_id"] = c.config.NodeId
 	sbomDoc["scan_type"] = c.config.ScanType
 	sbomDoc["node_type"] = c.config.NodeType
