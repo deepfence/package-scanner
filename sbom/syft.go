@@ -50,7 +50,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	}
 	if containerRuntimeInterface == nil {
 		fmt.Println("Error: Could not detect container runtime")
-		os.Exit(1)
+		return fmt.Errorf("failed to detect container runtime")
 	}
 
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
@@ -156,7 +156,11 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 				if config.KubernetesClusterName != "" {
 					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
 				} else {
-					containerScan = ContainerScan{containerId: config.ContainerName, tempDir: tmpDir, namespace: "default"}
+					c_name := config.ContainerID
+					if config.ContainerID == "" {
+						c_name = config.ContainerName
+					}
+					containerScan = ContainerScan{containerId: c_name, tempDir: tmpDir, namespace: "default"}
 				}
 				err = containerScan.exportFileSystemTar()
 
