@@ -170,6 +170,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 			}
 		}
 	}
+
 	if config.ScanType != "" && config.ScanType != "all" {
 		scanTypes := strings.Split(config.ScanType, ",")
 		for _, scanType := range scanTypes {

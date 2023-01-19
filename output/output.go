@@ -54,7 +54,7 @@ func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) err
 func (p *Publisher) PublishScanStatus(status string) {
 	go func() {
 		p.PublishScanStatusMessage("", status)
-		ticker := time.NewTicker(90 * time.Second)
+		ticker := time.NewTicker(60 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
