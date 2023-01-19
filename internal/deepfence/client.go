@@ -252,6 +252,7 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 
 func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues := url.Values{}
+	log
 	urlValues.Set("image_name", c.config.Source)
 	urlValues.Set("image_id", c.config.ImageId)
 	urlValues.Set("scan_id", c.config.ScanId)
@@ -265,6 +266,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("node_type", c.config.NodeType)
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("container_name", c.config.ContainerName)
+	log.Errorf("sbom to console %s", c.config)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
 	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil, "")
 	if err != nil {
@@ -287,7 +289,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
 	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 	sbomDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
-	log.Error(sbomDoc)
+	log.Errorf("sbom to es %s", sbomDoc)
 	var resultSBOM SBOMDocument
 	err := json.Unmarshal(sbom, &resultSBOM)
 	if err != nil {

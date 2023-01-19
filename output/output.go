@@ -71,6 +71,7 @@ func (p *Publisher) StopPublishScanStatus() {
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
+	logrus.Errorf("mukul %s", sbom)
 	err := p.dfClient.SendSBOMtoConsole(sbom)
 	if err != nil {
 		p.PublishScanError(err.Error())
