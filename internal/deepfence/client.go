@@ -252,7 +252,6 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 
 func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues := url.Values{}
-	log
 	urlValues.Set("image_name", c.config.Source)
 	urlValues.Set("image_id", c.config.ImageId)
 	urlValues.Set("scan_id", c.config.ScanId)
