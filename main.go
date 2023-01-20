@@ -73,7 +73,7 @@ func runOnce(config util.Config) {
 			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
 		}
 	}
-	log.Infof("config for image %+v", config)
+	
 	sbom, err := package_sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
@@ -130,6 +130,8 @@ func main() {
 		config.ContainerRuntime = crioRuntime.New(endpoint)
 	}
 
+	log.Infof("config for image %+v", config)
+
 	if *mode == util.ModeLocal {
 		runOnce(config)
 	} else if *mode == util.ModeGrpcServer {
@@ -140,6 +142,7 @@ func main() {
 		}
 	} else if *mode == util.ModeHttpServer {
 		err := package_sbom.RunHttpServer(config)
+		log.Infof("config for image %+v", config)
 		if err != nil {
 			log.Errorf("Error running http server: %v", err)
 			return
