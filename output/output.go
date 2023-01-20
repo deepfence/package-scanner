@@ -72,6 +72,7 @@ func (p *Publisher) StopPublishScanStatus() {
 }
 
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
+	logrus.Infof("generated sbom %+v", p.config)
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
 	err := p.dfClient.SendSBOMtoConsole(sbom)
