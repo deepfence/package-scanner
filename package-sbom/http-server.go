@@ -3,12 +3,13 @@ package package_sbom
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Jeffail/tunny"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/util"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -66,6 +67,7 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		NodeType:              r.NodeType,
 		NodeId:                r.NodeId,
 		HostName:              r.HostName,
+		ImageName:             r.ImageName,
 		ImageId:               r.ImageId,
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
