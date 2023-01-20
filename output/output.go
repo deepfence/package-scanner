@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/containerd/containerd/log"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/olekukonko/tablewriter"
@@ -34,6 +33,7 @@ func NewPublisher(config util.Config) (*Publisher, error) {
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	logrus.Infof("from pulsih scan status %+v", p.config)
+	logrus.Info("i am writing this simply")
 	err := p.dfClient.SendScanStatustoConsole(message, status)
 	if err != nil {
 		logrus.Error(p.config.ScanId, " ", err.Error())
