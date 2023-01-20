@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/containerd/containerd/log"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/olekukonko/tablewriter"
