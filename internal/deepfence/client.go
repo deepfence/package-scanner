@@ -262,7 +262,10 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("kubernetes_cluster_name", c.config.KubernetesClusterName)
 	urlValues.Set("host_name", c.config.HostName)
 	nodeId := c.config.NodeId
-	if c.config.NodeType == "container_image" {
+	if c.config.RegistryId == "" {
+		fmt.Println("it is coming to the condition")
+		nodeId = c.config.ImageName
+	}else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
 	urlValues.Set("node_id", nodeId)
