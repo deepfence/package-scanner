@@ -21,6 +21,7 @@ const (
 	cveScanLogsIndexName     = "cve-scan"
 	sbomCveScanLogsIndexName = "sbom-cve-scan"
 	sbomArtifactsIndexName   = "sbom-artifact"
+	sourceTypeImage          = "image"
 )
 
 type Client struct {
@@ -302,6 +303,16 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	err := json.Unmarshal(sbom, &resultSBOM)
 	if err != nil {
 		return err
+	}
+	if _, ok := resultSBOM.Source.Target.(string); !ok {
+		if resultSBOM.Source.Type == sourceTypeImage {
+			resultSBOM.Source.Target = c.config.ImageName
+		} else {
+			targetJsonByte, err := json.Marshal(resultSBOM.Source.Target)
+			if err != nil {
+				resultSBOM.Source.Target = string(targetJsonByte)
+			}
+		}
 	}
 	sbomDoc["artifacts"] = resultSBOM.Artifacts
 	if c.config.NodeType == "host" {
