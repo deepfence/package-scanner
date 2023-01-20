@@ -73,6 +73,7 @@ func runOnce(config util.Config) {
 			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
 		}
 	}
+	log.Infof("config for image %+v", config)
 	sbom, err := package_sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
