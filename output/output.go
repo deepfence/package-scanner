@@ -3,13 +3,15 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"time"
+
+	"github.com/containerd/containerd/log"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"time"
 )
 
 type Publisher struct {
@@ -31,6 +33,7 @@ func NewPublisher(config util.Config) (*Publisher, error) {
 }
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
+	logrus.Infof("from pulsih scan status %+v", p.config)
 	err := p.dfClient.SendScanStatustoConsole(message, status)
 	if err != nil {
 		logrus.Error(p.config.ScanId, " ", err.Error())
@@ -49,6 +52,7 @@ func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) err
 }
 
 func (p *Publisher) PublishScanStatus(status string) {
+	logrus.Infof("from pulsih scan status %+v", p.config)
 	go func() {
 		p.PublishScanStatusMessage("", status)
 		ticker := time.NewTicker(2 * time.Minute)

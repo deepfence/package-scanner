@@ -122,8 +122,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"image_name":              c.config.ImageName,
 	}
 
-	log.Errorf("scanLog to console %+v", c.config)
-	fmt.Printf("%+v", c.config)
+	log.Errorf("scanLog to console %+v %s", c.config, vulnerabilityScanMsg)
 
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
