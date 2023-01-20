@@ -98,9 +98,14 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
 	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	nodeId := c.config.NodeId
-	if c.config.NodeType == "container_image" {
+	if c.config.RegistryId != "" {
+		log.Error("it is coming to the condition")
+		nodeId = c.config.ImageName
+		log.Error(nodeId)
+	} else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
+
 	scanLog := map[string]interface{}{
 		"scan_id":                 c.config.ScanId,
 		"time_stamp":              util.GetIntTimestamp(),
@@ -118,7 +123,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	}
 
 	log.Errorf("scanLog to console %+v", c.config)
-	fmt.Printf("%+v",c.config)
+	fmt.Printf("%+v", c.config)
 
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
@@ -267,7 +272,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 		log.Error("it is coming to the condition")
 		nodeId = c.config.ImageName
 		log.Error(nodeId)
-	}else if c.config.NodeType == "container_image" {
+	} else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
 	urlValues.Set("node_id", nodeId)
