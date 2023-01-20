@@ -263,8 +263,9 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("host_name", c.config.HostName)
 	nodeId := c.config.NodeId
 	if c.config.RegistryId == "" {
-		fmt.Println("it is coming to the condition")
+		log.Error("it is coming to the condition")
 		nodeId = c.config.ImageName
+		log.Error(nodeId)
 	}else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
