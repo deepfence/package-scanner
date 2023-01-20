@@ -309,15 +309,8 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if err != nil {
 		return err
 	}
-	if _, ok := resultSBOM.Source.Target.(string); !ok {
-		if resultSBOM.Source.Type == sourceTypeImage {
-			resultSBOM.Source.Target = c.config.ImageName
-		} else {
-			targetJsonByte, err := json.Marshal(resultSBOM.Source.Target)
-			if err != nil {
-				resultSBOM.Source.Target = string(targetJsonByte)
-			}
-		}
+	if resultSBOM.Source.Type == sourceTypeImage {
+		resultSBOM.Source.Target = c.config.ImageName
 	}
 	sbomDoc["artifacts"] = resultSBOM.Artifacts
 	if c.config.NodeType == "host" {
