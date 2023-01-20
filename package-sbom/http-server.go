@@ -71,6 +71,8 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
+
+	log.Infof("just before the scan %+v", config)
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
@@ -95,7 +97,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	if config.Source == "" {
 		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
 	}
-
+	log.Infof("came to the registry handler: %+v", config)
 	go workerPool.Process(config)
 
 	w.WriteHeader(http.StatusOK)

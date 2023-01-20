@@ -142,7 +142,7 @@ func main() {
 		}
 	} else if *mode == util.ModeHttpServer {
 		err := package_sbom.RunHttpServer(config)
-		log.Infof("config for image %+v", config)
+		log.Infof("http config for image %+v", config)
 		if err != nil {
 			log.Errorf("Error running http server: %v", err)
 			return
