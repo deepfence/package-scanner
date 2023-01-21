@@ -277,6 +277,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("node_id", nodeId)
 	urlValues.Set("node_type", c.config.NodeType)
 	urlValues.Set("scan_type", c.config.ScanType)
+	urlValues.Set("registry_id", c.config.RegistryId)
 	urlValues.Set("container_name", c.config.ContainerName)
 	log.Errorf("sbom to console %+v", c.config)
 	log.Errorf("urlvalues %+v", urlValues)
