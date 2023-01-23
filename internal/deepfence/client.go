@@ -323,6 +323,10 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	// 	return err
 	// }
 	// postReader := bytes.NewReader(docBytes)
+	sourceVal, exists := sbomDoc["source"]
+	if exists {
+		log.Errorf("Sending sbom source to es %+v", sourceVal)
+	}
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
 
