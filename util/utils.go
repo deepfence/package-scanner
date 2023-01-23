@@ -60,6 +60,5 @@ func ToKafkaRestFormat(data []map[string]interface{}) *bytes.Buffer {
 		}
 		values[i] = "{\"value\":" + string(encoded) + "}"
 	}
-	log.Infof("values from kafkaformat %+v", values)
 	return bytes.NewBuffer([]byte("{\"records\":[" + strings.Join(values, ",") + "]}"))
 }
