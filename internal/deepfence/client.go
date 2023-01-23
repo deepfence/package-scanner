@@ -99,9 +99,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 	// scanLog := fmt.Sprintf("{\"scan_id\":\"%s\",\"time_stamp\":%d,\"cve_scan_message\":\"%s\",\"action\":\"%s\",\"type\":\"cve-scan\",\"node_type\":\"%s\",\"node_id\":\"%s\",\"scan_type\":\"%s\",\"host_name\":\"%s\",\"host\":\"%s\",\"kubernetes_cluster_name\":\"%s\"}", c.config.ScanId, util.GetIntTimestamp(), vulnerabilityScanMsg, status, c.config.NodeType, c.config.NodeId, c.config.ScanType, c.config.HostName, c.config.HostName, c.config.KubernetesClusterName)
 	nodeId := c.config.NodeId
 	if c.config.RegistryId != "" {
-		log.Error("it is coming to the condition")
 		nodeId = c.config.ImageName
-		log.Error(nodeId)
 	} else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
@@ -269,9 +267,7 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("host_name", c.config.HostName)
 	nodeId := c.config.NodeId
 	if c.config.RegistryId != "" {
-		log.Error("it is coming to the condition")
 		nodeId = c.config.ImageName
-		log.Error(nodeId)
 	} else if c.config.NodeType == "container_image" {
 		nodeId = c.config.ImageId
 	}
@@ -280,8 +276,6 @@ func (c *Client) SendSBOMtoConsole(sbom []byte) error {
 	urlValues.Set("scan_type", c.config.ScanType)
 	urlValues.Set("registry_id", c.config.RegistryId)
 	urlValues.Set("container_name", c.config.ContainerName)
-	log.Errorf("sbom to console %+v", c.config)
-	log.Errorf("urlvalues %+v", urlValues)
 	requestUrl := fmt.Sprintf("https://"+c.mgmtConsoleUrl+"/vulnerability-mapper-api/vulnerability-scan?%s", urlValues.Encode())
 	_, err := c.HttpRequest(MethodPost, requestUrl, bytes.NewReader(sbom), nil, "")
 	if err != nil {
