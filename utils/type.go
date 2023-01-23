@@ -8,8 +8,8 @@ type Config struct {
 	Port                  string         `json:"port,omitempty"`
 	Output                string         `json:"output,omitempty"`
 	Quiet                 bool           `json:"quiet,omitempty"`
-	ManagementConsoleUrl  string         `json:"management_console_url,omitempty"`
-	ManagementConsolePort string         `json:"management_console_port,omitempty"`
+	ConsoleURL            string         `json:"console_url,omitempty"`
+	ConsolePort           string         `json:"console_port,omitempty"`
 	DeepfenceKey          string         `json:"deepfence_key,omitempty"`
 	Source                string         `json:"source,omitempty"`
 	ScanType              string         `json:"scan_type,omitempty"`

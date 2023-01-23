@@ -57,8 +57,8 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 	config := utils.Config{
 		Output:                "",
 		Quiet:                 true,
-		ManagementConsoleUrl:  managementConsoleUrl,
-		ManagementConsolePort: managementConsolePort,
+		ConsoleURL:            managementConsoleUrl,
+		ConsolePort:           managementConsolePort,
 		DeepfenceKey:          "",
 		Source:                r.Source,
 		ScanType:              r.ScanType,

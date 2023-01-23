@@ -3,11 +3,14 @@ package output
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io"
+	stdlog "log"
 	"net"
 	"net/http"
 	"time"
 
 	rhttp "github.com/hashicorp/go-retryablehttp"
+	log "github.com/sirupsen/logrus"
 )
 
 func buildHttpClient() (*http.Client, error) {
@@ -15,6 +18,20 @@ func buildHttpClient() (*http.Client, error) {
 	rhc.RetryMax = 3
 	rhc.RetryWaitMin = 1 * time.Second
 	rhc.RetryWaitMax = 15 * time.Second
+	rhc.Logger = stdlog.New(io.Discard, "", stdlog.LstdFlags)
+	// rhc.RequestLogHook = func(_ rhttp.Logger, req *http.Request, attempt int) {
+	// 	log.WithFields(log.Fields{
+	// 		"host":    req.URL.Host,
+	// 		"path":    req.URL.Path,
+	// 		"attempt": attempt,
+	// 	}).Debug("Sending request")
+	// }
+	rhc.ResponseLogHook = func(_ rhttp.Logger, resp *http.Response) {
+		log.WithFields(log.Fields{
+			"url":  resp.Request.URL.String(),
+			"code": resp.StatusCode,
+		}).Debug(resp.Status)
+	}
 	// Set up our own certificate pool
 	tlsConfig := &tls.Config{RootCAs: x509.NewCertPool(), InsecureSkipVerify: true}
 	rhc.HTTPClient = &http.Client{

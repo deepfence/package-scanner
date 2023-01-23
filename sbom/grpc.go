@@ -69,10 +69,10 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 		done <- true
 	}()
 
-	config.ManagementConsoleUrl = os.Getenv("MGMT_CONSOLE_URL")
-	config.ManagementConsolePort = os.Getenv("MGMT_CONSOLE_PORT")
-	if config.ManagementConsolePort == "" {
-		config.ManagementConsolePort = "443"
+	config.ConsoleURL = os.Getenv("MGMT_CONSOLE_URL")
+	config.ConsolePort = os.Getenv("MGMT_CONSOLE_PORT")
+	if config.ConsolePort == "" {
+		config.ConsolePort = "443"
 	}
 	config.DeepfenceKey = os.Getenv("DEEPFENCE_KEY")
 
@@ -110,8 +110,8 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		SocketPath:            s.config.SocketPath,
 		Output:                "",
 		Quiet:                 true,
-		ManagementConsoleUrl:  s.config.ManagementConsoleUrl,
-		ManagementConsolePort: s.config.ManagementConsolePort,
+		ConsoleURL:            s.config.ConsoleURL,
+		ConsolePort:           s.config.ConsolePort,
 		DeepfenceKey:          s.config.DeepfenceKey,
 		Source:                r.Source,
 		ScanType:              r.ScanType,
@@ -165,10 +165,10 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return err
 	}
 
-	publisher.StopPublishScanStatus()
-
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	publisher.RunVulnerabilityScan(sbom)
+
+	publisher.StopPublishScanStatus()
 
 	return nil
 }

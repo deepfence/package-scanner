@@ -16,7 +16,7 @@ import (
 
 type Publisher struct {
 	config         utils.Config
-	dfClient       *Client
+	client         *Client
 	stopScanStatus chan bool
 }
 
@@ -27,15 +27,28 @@ func NewPublisher(config utils.Config) (*Publisher, error) {
 	}
 	return &Publisher{
 		config:         config,
-		dfClient:       dfClient,
+		client:         dfClient,
 		stopScanStatus: make(chan bool, 1),
 	}, nil
 }
 
-func (p *Publisher) PublishScanStatusMessage(message string, status string) {
-	err := p.dfClient.SendScanStatusToConsole(message, status)
+func (p *Publisher) SetScanId(scanId string) {
+	p.config.ScanId = scanId
+	p.client.config.ScanId = scanId
+}
+
+func (p *Publisher) StartScan() string {
+	scan_id, err := p.client.StartScanToConsole()
 	if err != nil {
-		log.Error(p.config.ScanId, " ", err.Error())
+		log.Errorf("scan_id: %s error: %s", p.config.ScanId, err)
+	}
+	return scan_id
+}
+
+func (p *Publisher) PublishScanStatusMessage(message string, status string) {
+	err := p.client.SendScanStatusToConsole(message, status)
+	if err != nil {
+		log.Errorf("scan_id: %s error: %s", p.config.ScanId, err)
 	}
 }
 
@@ -46,7 +59,7 @@ func (p *Publisher) PublishScanError(errMsg string) {
 }
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
-	_, err := p.dfClient.HttpRequest(http.MethodPost, requestUrl,
+	_, err := p.client.HttpRequest(http.MethodPost, requestUrl,
 		postReader, nil, "application/json")
 	return err
 }
@@ -73,25 +86,27 @@ func (p *Publisher) StopPublishScanStatus() {
 
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
+	defer p.StopPublishScanStatus()
+
 	time.Sleep(3 * time.Second)
-	err := p.dfClient.SendSbomToConsole(sbom)
+
+	err := p.client.SendSbomToConsole(sbom)
 	if err != nil {
 		p.PublishScanError(err.Error())
 		log.Error(p.config.ScanId, " ", err.Error())
 	}
-	p.StopPublishScanStatus()
 }
 
 func (p *Publisher) GetVulnerabilityScanResults() (*VulnerabilityScanDetail, error) {
-	err := p.dfClient.WaitForScanToComplete()
+	err := p.client.WaitForScanToComplete()
 	if err != nil {
 		return nil, err
 	}
-	return p.dfClient.GetVulnerabilityScanSummary()
+	return p.client.GetVulnerabilityScanSummary()
 }
 
 func (p *Publisher) PublishSBOMtoES(sbom []byte) error {
-	return p.dfClient.SendSBOMtoES(sbom)
+	return p.client.SendSBOMtoES(sbom)
 }
 
 func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) error {
@@ -102,7 +117,7 @@ func (p *Publisher) Output(vulnerabilityScanDetail *VulnerabilityScanDetail) err
 	log.Infof("Low Vulnerabilities: %d\n", vulnerabilityScanDetail.Severity.Low)
 	log.Infof("Vulnerability Score: %f\n", vulnerabilityScanDetail.CveScore)
 
-	vulnerabilities, err := p.dfClient.GetVulnerabilities()
+	vulnerabilities, err := p.client.GetVulnerabilities()
 	if err != nil {
 		return err
 	}

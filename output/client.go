@@ -23,7 +23,7 @@ const (
 
 type Client struct {
 	config      utils.Config
-	httpClient  *http.Client
+	hc          *http.Client
 	consoleUrl  string
 	accessToken string
 }
@@ -80,15 +80,23 @@ func NewClient(config utils.Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	mgmtConsoleUrl := config.ManagementConsoleUrl
-	if config.ManagementConsolePort != "" && config.ManagementConsolePort != "443" {
-		mgmtConsoleUrl += ":" + config.ManagementConsolePort
+	mgmtConsoleUrl := config.ConsoleURL
+	if config.ConsolePort != "" && config.ConsolePort != "443" {
+		mgmtConsoleUrl += ":" + config.ConsolePort
 	}
 	if mgmtConsoleUrl == "" {
 		return nil, fmt.Errorf("management console url is required")
 	}
-	c := &Client{config: config, httpClient: httpClient, consoleUrl: mgmtConsoleUrl}
+	c := &Client{config: config, hc: httpClient, consoleUrl: mgmtConsoleUrl}
 	return c, nil
+}
+
+func (c *Client) SetScanId(scanId string) {
+	c.config.ScanId = scanId
+}
+
+func (c *Client) StartScanAPI() string {
+	return "https://" + c.consoleUrl + "/deepfence/scan/start/vulnerability"
 }
 
 func (c *Client) StatusAPI() string {
@@ -99,12 +107,37 @@ func (c *Client) ResultAPI() string {
 	return "https://" + c.consoleUrl + "/deepfence/ingest/vulnerabilities"
 }
 
-func (c *Client) SbomAPI(query url.Values) string {
-	return "https://" + c.consoleUrl + "/deepfence/ingest/sbom?" + query.Encode()
+func (c *Client) SbomAPI() string {
+	return "https://" + c.consoleUrl + "/deepfence/ingest/sbom"
 }
 
 func (c *Client) TokenAuthAPI() string {
 	return "https://" + c.consoleUrl + "/deepfence/auth/token"
+}
+
+func (c *Client) StartScanToConsole() (string, error) {
+	scan := map[string]interface{}{
+		"node_id":   c.config.NodeId,
+		"node_type": "image",
+	}
+	b, err := json.Marshal(scan)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.HttpRequest(http.MethodPost, c.StartScanAPI(), bytes.NewBuffer(b),
+		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
+	if err != nil {
+		return "", err
+	}
+
+	r := map[string]string{}
+	if err := json.Unmarshal(resp, &r); err != nil {
+		return "", err
+	}
+
+	log.Debugf("start scan response: %+v", r)
+
+	return r["scan_id"], nil
 }
 
 func (c *Client) SendScanStatusToConsole(vulnerabilityScanMsg string, status string) error {
@@ -126,6 +159,7 @@ func (c *Client) SendScanStatusToConsole(vulnerabilityScanMsg string, status str
 	if err != nil {
 		return err
 	}
+	log.Debugf("scan status: %s", string(b))
 	_, err = c.HttpRequest(http.MethodPost, c.StatusAPI(), bytes.NewBuffer(b),
 		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 	if err != nil {
@@ -261,17 +295,24 @@ func (c *Client) GetVulnerabilities() (*Vulnerabilities, error) {
 }
 
 func (c *Client) SendSbomToConsole(sbom []byte) error {
-	urlValues := url.Values{}
-	urlValues.Set("image_name", c.config.NodeId)
-	urlValues.Set("image_id", c.config.ImageId)
-	urlValues.Set("scan_id", c.config.ScanId)
-	urlValues.Set("kubernetes_cluster_name", c.config.KubernetesClusterName)
-	urlValues.Set("host_name", c.config.HostName)
-	urlValues.Set("node_id", c.config.NodeId)
-	urlValues.Set("node_type", c.config.NodeType)
-	urlValues.Set("scan_type", c.config.ScanType)
-	urlValues.Set("container_name", c.config.ContainerName)
-	_, err := c.HttpRequest(http.MethodPost, c.SbomAPI(urlValues), bytes.NewReader(sbom),
+	request := map[string]interface{}{
+		"image_name":              c.config.NodeId,
+		"image_id":                c.config.ImageId,
+		"scan_id":                 c.config.ScanId,
+		"kubernetes_cluster_name": c.config.KubernetesClusterName,
+		"host_name":               c.config.HostName,
+		"node_id":                 c.config.NodeId,
+		"node_type":               c.config.NodeType,
+		"scan_type":               c.config.ScanType,
+		"container_name":          c.config.ContainerName,
+		"mode":                    c.config.Mode,
+		"sbom":                    sbom,
+	}
+	body, err := json.Marshal(request)
+	if err != nil {
+		log.Error(err)
+	}
+	_, err = c.HttpRequest(http.MethodPost, c.SbomAPI(), bytes.NewReader(body),
 		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
 	if err != nil {
 		log.Errorf("SendSbomToConsole error: %s", err)
@@ -383,7 +424,7 @@ func (c *Client) HttpRequest(
 		httpReq.Header.Add(k, v)
 	}
 
-	resp, err := c.httpClient.Do(httpReq)
+	resp, err := c.hc.Do(httpReq)
 	if err != nil {
 		return response, err
 	}

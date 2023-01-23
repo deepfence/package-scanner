@@ -43,15 +43,29 @@ func RunOnce(config utils.Config) {
 		config.NodeId = hostname
 		config.NodeType = utils.NodeTypeHost
 		if config.ScanId == "" {
-			config.ScanId = hostname + "_" + utils.GetDateTimeNow()
+			config.ScanId = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
 	} else {
 		config.NodeId = config.Source
 		config.HostName = hostname
 		config.NodeType = utils.NodeTypeImage
 		if config.ScanId == "" {
-			config.ScanId = config.Source + "_" + utils.GetDateTimeNow()
+			config.ScanId = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
+	}
+
+	var pub *out.Publisher
+	var err error
+	// send sbom to console if console url and key are configured
+	if config.ConsoleURL != "" && config.DeepfenceKey != "" {
+		pub, err = out.NewPublisher(config)
+		if err != nil {
+			log.Error(err)
+		}
+		scanId := pub.StartScan()
+		config.ScanId = scanId
+		pub.SetScanId(scanId)
+		log.Infof("scan id from console %s", scanId)
 	}
 
 	log.Infof("generating sbom for %s ...", config.Source)
@@ -59,6 +73,12 @@ func RunOnce(config utils.Config) {
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
+	}
+
+	// send sbom to console if console url and key are configured
+	if config.ConsoleURL != "" && config.DeepfenceKey != "" {
+		log.Infof("sending sbom to console at %s", config.ConsoleURL)
+		pub.RunVulnerabilityScan(sbomResult)
 	}
 
 	// create a temporary file to store the user input(SBOM)

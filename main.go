@@ -40,31 +40,31 @@ var (
 )
 
 var (
-	mode                  = flag.String("mode", utils.ModeLocal, strings.Join(modes, "/"))
-	socketPath            = flag.String("socket-path", "", "Socket path for grpc server")
-	port                  = flag.String("port", "", "Port for grpc server")
-	output                = flag.String("output", utils.TableOutput, "Output format: json or table")
-	quiet                 = flag.Bool("quiet", false, "Don't display any output in stdout")
-	managementConsoleUrl  = flag.String("mgmt-console-url", "", "Deepfence Management Console URL")
-	managementConsolePort = flag.Int("mgmt-console-port", 443, "Deepfence Management Console Port")
-	vulnerabilityScan     = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
-	deepfenceKey          = flag.String("deepfence-key", "", "Deepfence key for auth")
-	source                = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
-	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang,dotnet", "base,java,python,ruby,php,javascript,rust,golang,dotnet")
-	scanId                = flag.String("scan-id", "", "(Optional) Scan id")
-	failOnCount           = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
-	failOnCriticalCount   = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
-	failOnHighCount       = flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high vulnerabilities found is >= this value (Default: -1)")
-	failOnMediumCount     = flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium vulnerabilities found is >= this value (Default: -1)")
-	failOnLowCount        = flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low vulnerabilities found is >= this value (Default: -1)")
-	failOnSeverityCount   = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
-	failOnScore           = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
-	maskCveIds            = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
-	c_runtime             = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
-	severity              = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
-	systemBin             = flag.Bool("system-bin", false, "use system tools")
-	debug                 = flag.Bool("debug", false, "show debug logs")
-	keepSbom              = flag.Bool("keep-sbom", false, "keep generated sbom file")
+	mode                = flag.String("mode", utils.ModeLocal, strings.Join(modes, "/"))
+	socketPath          = flag.String("socket-path", "", "Socket path for grpc server")
+	port                = flag.String("port", "", "Port for grpc server")
+	output              = flag.String("output", utils.TableOutput, "Output format: json or table")
+	quiet               = flag.Bool("quiet", false, "Don't display any output in stdout")
+	consoleUrl          = flag.String("console-url", "", "Deepfence Management Console URL")
+	consolePort         = flag.Int("console-port", 443, "Deepfence Management Console Port")
+	vulnerabilityScan   = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
+	deepfenceKey        = flag.String("deepfence-key", "", "Deepfence key for auth")
+	source              = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
+	scanType            = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang,dotnet", "base,java,python,ruby,php,javascript,rust,golang,dotnet")
+	scanId              = flag.String("scan-id", "", "(Optional) Scan id")
+	failOnCount         = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
+	failOnCriticalCount = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
+	failOnHighCount     = flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high vulnerabilities found is >= this value (Default: -1)")
+	failOnMediumCount   = flag.Int("fail-on-medium-count", -1, "Exit with status 1 if number of medium vulnerabilities found is >= this value (Default: -1)")
+	failOnLowCount      = flag.Int("fail-on-low-count", -1, "Exit with status 1 if number of low vulnerabilities found is >= this value (Default: -1)")
+	failOnSeverityCount = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
+	failOnScore         = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
+	maskCveIds          = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
+	c_runtime           = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
+	severity            = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
+	systemBin           = flag.Bool("system-bin", false, "use system tools")
+	debug               = flag.Bool("debug", false, "show debug logs")
+	keepSbom            = flag.Bool("keep-sbom", false, "keep generated sbom file")
 )
 
 func main() {
@@ -157,31 +157,31 @@ func main() {
 	}
 
 	config := utils.Config{
-		Mode:                  *mode,
-		SocketPath:            *socketPath,
-		Port:                  *port,
-		Output:                *output,
-		Quiet:                 *quiet,
-		ManagementConsoleUrl:  *managementConsoleUrl,
-		ManagementConsolePort: strconv.Itoa(*managementConsolePort),
-		DeepfenceKey:          *deepfenceKey,
-		Source:                *source,
-		ScanType:              *scanType,
-		VulnerabilityScan:     *vulnerabilityScan,
-		ScanId:                *scanId,
-		FailOnScore:           *failOnScore,
-		FailOnCount:           *failOnCount,
-		FailOnCriticalCount:   *failOnCriticalCount,
-		FailOnHighCount:       *failOnHighCount,
-		FailOnMediumCount:     *failOnMediumCount,
-		FailOnLowCount:        *failOnLowCount,
-		FailOnSeverityCount:   *failOnSeverityCount,
-		MaskCveIds:            *maskCveIds,
-		ContainerRuntimeName:  containerRuntime,
-		SyftBinPath:           "/usr/local/bin/syft",
-		GrypeBinPath:          "/usr/local/bin/grype",
-		GrypeConfigPath:       grypeConfigPath,
-		KeepSbom:              *keepSbom,
+		Mode:                 *mode,
+		SocketPath:           *socketPath,
+		Port:                 *port,
+		Output:               *output,
+		Quiet:                *quiet,
+		ConsoleURL:           *consoleUrl,
+		ConsolePort:          strconv.Itoa(*consolePort),
+		DeepfenceKey:         *deepfenceKey,
+		Source:               *source,
+		ScanType:             *scanType,
+		VulnerabilityScan:    *vulnerabilityScan,
+		ScanId:               *scanId,
+		FailOnScore:          *failOnScore,
+		FailOnCount:          *failOnCount,
+		FailOnCriticalCount:  *failOnCriticalCount,
+		FailOnHighCount:      *failOnHighCount,
+		FailOnMediumCount:    *failOnMediumCount,
+		FailOnLowCount:       *failOnLowCount,
+		FailOnSeverityCount:  *failOnSeverityCount,
+		MaskCveIds:           *maskCveIds,
+		ContainerRuntimeName: containerRuntime,
+		SyftBinPath:          "/usr/local/bin/syft",
+		GrypeBinPath:         "/usr/local/bin/grype",
+		GrypeConfigPath:      grypeConfigPath,
+		KeepSbom:             *keepSbom,
 	}
 	if !*systemBin {
 		config.SyftBinPath = syftBinPath
