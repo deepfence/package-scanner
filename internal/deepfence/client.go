@@ -120,6 +120,7 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"kubernetes_cluster_name": c.config.KubernetesClusterName,
 		"container_name":          c.config.ContainerName,
 		"image_name":              c.config.ImageName,
+		"registry_id":             c.config.RegistryId,
 	}
 
 	log.Errorf("scanLog to console %+v %s", c.config, status)
