@@ -115,31 +115,6 @@ func (c *Client) TokenAuthAPI() string {
 	return "https://" + c.consoleUrl + "/deepfence/auth/token"
 }
 
-func (c *Client) StartScanToConsole() (string, error) {
-	scan := map[string]interface{}{
-		"node_id":   c.config.NodeId,
-		"node_type": "image",
-	}
-	b, err := json.Marshal(scan)
-	if err != nil {
-		return "", err
-	}
-	resp, err := c.HttpRequest(http.MethodPost, c.StartScanAPI(), bytes.NewBuffer(b),
-		map[string]string{"Authorization": "Bearer " + c.getApiAccessToken()}, "")
-	if err != nil {
-		return "", err
-	}
-
-	r := map[string]string{}
-	if err := json.Unmarshal(resp, &r); err != nil {
-		return "", err
-	}
-
-	log.Debugf("start scan response: %+v", r)
-
-	return r["scan_id"], nil
-}
-
 func (c *Client) SendScanStatusToConsole(vulnerabilityScanMsg string, status string) error {
 	vulnerabilityScanMsg = strings.Replace(vulnerabilityScanMsg, "\n", " ", -1)
 	scanLog := map[string]interface{}{

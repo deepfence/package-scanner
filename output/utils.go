@@ -13,6 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func toTimePtr(t time.Time) *time.Time {
+	return &t
+}
+
 func buildHttpClient() (*http.Client, error) {
 	rhc := rhttp.NewClient()
 	rhc.RetryMax = 3

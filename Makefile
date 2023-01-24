@@ -13,7 +13,7 @@ clean:
 	(cd agent-plugins-grpc && make clean)
 	-rm -rf package-scanner proto
 
-proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
+proto: update-sdk $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
 	go mod tidy -v 
 	CGO_ENABLED=0 go build -buildvcs=false -v .
 
@@ -54,3 +54,8 @@ install-goreleaser:
 .PHONY: release
 release: proto install-goreleaser
 	goreleaser release --snapshot --rm-dist
+
+.PHONY: update-sdk
+update-sdk:
+	go get -u -v github.com/deepfence/golang_deepfence_sdk/client@main
+	go get -u -v github.com/deepfence/golang_deepfence_sdk/utils@main
