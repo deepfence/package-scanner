@@ -135,7 +135,7 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	data.SetScanType(p.config.ScanType)
 	data.SetContainerName(p.config.ContainerName)
 	data.SetMode(p.config.Mode)
-	// data.SetSbom(sbom)
+	data.SetSbom(string(sbom))
 
 	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
 	req = req.UtilsSbomRequest(data)
