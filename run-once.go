@@ -52,7 +52,16 @@ func RunOnce(config utils.Config) {
 		if config.ScanId == "" {
 			config.ScanId = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
+		if image_id, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
+			log.Error(err)
+		} else {
+			sp := strings.Split(strings.TrimSpace(string(image_id)), ":")
+			config.ImageId = sp[len(sp)-1]
+			log.Debugf("image_id: %s", sp[len(sp)-1])
+		}
 	}
+
+	// try to get image id
 
 	var pub *out.Publisher
 	var err error
@@ -62,11 +71,14 @@ func RunOnce(config utils.Config) {
 		if err != nil {
 			log.Error(err)
 		}
+		pub.SendReport()
 		scanId := pub.StartScan()
 		config.ScanId = scanId
 		pub.SetScanId(scanId)
 		log.Infof("scan id from console %s", scanId)
 	}
+
+	log.Debugf("config: %+v", config)
 
 	log.Infof("generating sbom for %s ...", config.Source)
 	sbomResult, err := sbom.GenerateSBOM(config)

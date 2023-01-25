@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	dsc "github.com/deepfence/golang_deepfence_sdk/client"
@@ -34,6 +35,43 @@ func NewPublisher(config utils.Config) (*Publisher, error) {
 
 func (p *Publisher) SetScanId(scanId string) {
 	p.config.ScanId = scanId
+}
+
+func (p *Publisher) SendReport() {
+
+	host := map[string]string{
+		"node_id":        p.config.HostName,
+		"cloud_region":   "cli",
+		"cloud_provider": "cli",
+	}
+
+	var image map[string]string
+	if !strings.HasPrefix(p.config.Source, "dir:") || !(p.config.Source == ".") {
+		image = map[string]string{
+			"image_name": p.config.Source,
+			"image_id":   p.config.ImageId,
+			"node_id":    p.config.ImageId,
+			"hostname":   p.config.HostName,
+		}
+	}
+
+	report := dsc.IngestersReportIngestionData{
+		HostBatch:           []map[string]string{host},
+		ContainerImageBatch: []map[string]string{image},
+	}
+
+	log.Debugf("report: %+v", report)
+
+	req := p.client.Client().TopologyApi.IngestSyncAgentReport(context.Background())
+	req.IngestersReportIngestionData(report)
+
+	resp, err := p.client.Client().TopologyApi.IngestSyncAgentReportExecute(req)
+	if err != nil {
+		log.Error(err)
+	}
+	defer resp.Body.Close()
+	io.Copy(io.Discard, resp.Body)
+	log.Debugf("report response %s", resp.Status)
 }
 
 func (p *Publisher) StartScan() string {
