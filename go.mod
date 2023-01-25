@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.44.164
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230125110219-19e345c8a075
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230125110219-19e345c8a075
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230125114331-f947cce9df44
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230125114331-f947cce9df44
 	github.com/deepfence/vessel v0.9.1
 	github.com/gin-gonic/gin v1.8.1
 	github.com/hashicorp/go-retryablehttp v0.7.2
@@ -69,10 +69,10 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/tools v0.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20221207170731-23e4bf6bdc37 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
