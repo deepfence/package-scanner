@@ -239,10 +239,10 @@ github.com/d2g/hardwareaddr v0.0.0-20190221164911-e7d9fbe030e4/go.mod h1:bMl4RjI
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230125114331-f947cce9df44 h1:ZZR6JYZeVGB4lGEQugBrkIrPpN4M9+NIbOhtisa0dfs=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230125114331-f947cce9df44/go.mod h1:qabc/zAXfgegHnupfed5KzYz15ljA0WQ7k+nUTo6xAk=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230125114331-f947cce9df44 h1:MlSmXut+0i3Dlmy48bL7yK9Gefmm3rnlm3KGd3WIMGk=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230125114331-f947cce9df44/go.mod h1:ZLqWsCrW/yJwbOr0+xyR4dFzav+hpWuyKNnntcmDzSc=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230127082250-ebacdd3fa775 h1:jqF+raAcz8Q7iAm3GV4FA5IV/1d+PSWxbgNv2TOA22Q=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230127082250-ebacdd3fa775/go.mod h1:QnHzHKRZmGxYcNQWz+lDJSxF1oJPjrC8hkLZd+N6610=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230127082250-ebacdd3fa775 h1:nDM9tzjU/K/Yt9iF8i6yMsLSxRJmORyuP5zRzhdSnS4=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230127082250-ebacdd3fa775/go.mod h1:ZLqWsCrW/yJwbOr0+xyR4dFzav+hpWuyKNnntcmDzSc=
 github.com/deepfence/vessel v0.9.1 h1:43IuWdrRqHRW8O065qtporepudEGQWhMSqpxiI0/lSE=
 github.com/deepfence/vessel v0.9.1/go.mod h1:cN+m37ETZPBZvsZGZWxuMGagSC2dllUam5ypvC23IbI=
 github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba/go.mod h1:dV8lFg6daOBZbT6/BDGIz6Y3WFGn8juu6G+CQ6LHtl0=

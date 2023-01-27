@@ -39,31 +39,39 @@ func (p *Publisher) SetScanId(scanId string) {
 
 func (p *Publisher) SendReport() {
 
+	report := dsc.IngestersReportIngestionData{}
+
 	host := map[string]string{
 		"node_id":        p.config.HostName,
+		"hostname":       p.config.HostName,
 		"cloud_region":   "cli",
 		"cloud_provider": "cli",
 	}
+	report.HostBatch = []map[string]string{host}
 
-	var image map[string]string
-	if !strings.HasPrefix(p.config.Source, "dir:") || !(p.config.Source == ".") {
-		image = map[string]string{
+	if !(strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".")) {
+		image := map[string]string{
 			"image_name": p.config.Source,
 			"image_id":   p.config.ImageId,
 			"node_id":    p.config.ImageId,
-			"hostname":   p.config.HostName,
 		}
-	}
-
-	report := dsc.IngestersReportIngestionData{
-		HostBatch:           []map[string]string{host},
-		ContainerImageBatch: []map[string]string{image},
+		s := strings.Split(p.config.Source, ":")
+		if len(s) == 2 {
+			image["docker_image_name"] = s[0]
+			image["docker_image_tag"] = s[1]
+		}
+		containerImageEdge := map[string]interface{}{
+			"source":       p.config.HostName,
+			"destinations": p.config.ImageId,
+		}
+		report.ContainerImageBatch = []map[string]string{image}
+		report.ContainerImageEdgeBatch = []map[string]interface{}{containerImageEdge}
 	}
 
 	log.Debugf("report: %+v", report)
 
 	req := p.client.Client().TopologyApi.IngestSyncAgentReport(context.Background())
-	req.IngestersReportIngestionData(report)
+	req = req.IngestersReportIngestionData(report)
 
 	resp, err := p.client.Client().TopologyApi.IngestSyncAgentReportExecute(req)
 	if err != nil {
@@ -75,14 +83,19 @@ func (p *Publisher) SendReport() {
 }
 
 func (p *Publisher) StartScan() string {
+
+	trigger := dsc.ModelVulnerabilityScanTriggerReq{
+		NodeId:   p.config.NodeId,
+		NodeType: "image",
+		ScanType: p.config.ScanType,
+	}
+
+	if strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".") {
+		trigger.NodeType = "host"
+	}
+
 	req := p.client.Client().VulnerabilityApi.StartVulnerabilityScan(context.Background())
-	req = req.ModelVulnerabilityScanTriggerReq(
-		dsc.ModelVulnerabilityScanTriggerReq{
-			NodeId:   p.config.NodeId,
-			NodeType: "image",
-			ScanType: p.config.ScanType,
-		},
-	)
+	req = req.ModelVulnerabilityScanTriggerReq(trigger)
 	res, resp, err := p.client.Client().VulnerabilityApi.StartVulnerabilityScanExecute(req)
 	if err != nil {
 		log.Error(err)

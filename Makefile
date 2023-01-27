@@ -57,5 +57,5 @@ release: proto install-goreleaser
 
 .PHONY: update-sdk
 update-sdk:
-	go get -u -v github.com/deepfence/golang_deepfence_sdk/client@main
-	go get -u -v github.com/deepfence/golang_deepfence_sdk/utils@main
+	go get -u -v github.com/deepfence/golang_deepfence_sdk/client@latest
+	go get -u -v github.com/deepfence/golang_deepfence_sdk/utils@latest

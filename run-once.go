@@ -57,6 +57,7 @@ func RunOnce(config utils.Config) {
 		} else {
 			sp := strings.Split(strings.TrimSpace(string(image_id)), ":")
 			config.ImageId = sp[len(sp)-1]
+			config.NodeId = sp[len(sp)-1]
 			log.Debugf("image_id: %s", sp[len(sp)-1])
 		}
 	}
@@ -75,6 +76,9 @@ func RunOnce(config utils.Config) {
 		scanId := pub.StartScan()
 		config.ScanId = scanId
 		pub.SetScanId(scanId)
+		if scanId == "" {
+			log.Fatal("console scan id is empty")
+		}
 		log.Infof("scan id from console %s", scanId)
 	}
 
@@ -120,7 +124,7 @@ func RunOnce(config utils.Config) {
 	if err != nil {
 		log.Fatalf("error on grype.Scan: %s %s", err.Error(), vulnerabilities)
 	}
-	log.Debugf("vulnerabilities: %s", string(vulnerabilities))
+	log.Debugf("grype output: %d bytes", len(vulnerabilities))
 
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {
