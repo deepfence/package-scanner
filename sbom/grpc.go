@@ -9,8 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/Jeffail/tunny"
+	dschttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
 	"github.com/deepfence/package-scanner/output"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/utils"
@@ -75,6 +77,19 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 		config.ConsolePort = "443"
 	}
 	config.DeepfenceKey = os.Getenv("DEEPFENCE_KEY")
+
+	if dschttp.IsConsoleAgent(config.ConsoleURL) && strings.Trim(config.DeepfenceKey, "\"") == "" {
+		log.Info("fetch token for console agent")
+		for {
+			var err error
+			if config.DeepfenceKey, err = dschttp.GetConsoleApiToken(config.ConsoleURL); err != nil {
+				log.Error(err)
+				time.Sleep(5 * time.Second)
+			} else {
+				break
+			}
+		}
+	}
 
 	impl := &gRPCServer{socketPath: config.SocketPath, pluginName: pluginName, config: config}
 	pb.RegisterAgentPluginServer(s, impl)
@@ -150,7 +165,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 
 	publisher, err = output.NewPublisher(config)
 	if err != nil {
-		log.Error("error in creating publisher")
+		log.Errorf("error in creating publisher %s", err)
 		return err
 	}
 	publisher.PublishScanStatus("IN_PROGRESS")

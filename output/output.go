@@ -85,9 +85,9 @@ func (p *Publisher) SendReport() {
 func (p *Publisher) StartScan() string {
 
 	trigger := dsc.ModelVulnerabilityScanTriggerReq{
-		NodeId:   p.config.NodeId,
-		NodeType: "image",
-		ScanType: p.config.ScanType,
+		NodeId:     p.config.NodeId,
+		NodeType:   "image",
+		ScanConfig: p.config.ScanType,
 	}
 
 	if strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".") {
