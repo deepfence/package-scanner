@@ -83,18 +83,25 @@ func (p *Publisher) SendReport() {
 
 func (p *Publisher) StartScan() string {
 
-	trigger := dsc.ModelVulnerabilityScanTriggerReq{
-		NodeId:     p.config.NodeId,
-		NodeType:   "image",
-		ScanConfig: p.config.ScanType,
+	scanTrigger := dsc.ModelVulnerabilityScanTriggerReq{
+		GenerateBulkScanId: false,
+		ScanConfig:         p.config.ScanType,
+		ScanTriggers:       []dsc.ModelScanTrigger{},
+	}
+
+	trigger := dsc.ModelScanTrigger{
+		NodeId:   p.config.NodeId,
+		NodeType: "image",
 	}
 
 	if strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".") {
 		trigger.NodeType = "host"
 	}
 
+	scanTrigger.ScanTriggers = append(scanTrigger.ScanTriggers, trigger)
+
 	req := p.client.Client().VulnerabilityApi.StartVulnerabilityScan(context.Background())
-	req = req.ModelVulnerabilityScanTriggerReq(trigger)
+	req = req.ModelVulnerabilityScanTriggerReq(scanTrigger)
 	res, resp, err := p.client.Client().VulnerabilityApi.StartVulnerabilityScanExecute(req)
 	if err != nil {
 		log.Error(err)
@@ -106,7 +113,7 @@ func (p *Publisher) StartScan() string {
 	log.Debugf("start scan response: %+v", res)
 	log.Debugf("start scan response status: %s", resp.Status)
 
-	return res.GetScanId()
+	return res.GetScanIds()[0]
 }
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
