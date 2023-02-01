@@ -139,7 +139,7 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	// defer resp.Body.Close()
 	// io.Copy(io.Discard, resp.Body)
 
-	log.Debugf("publish scan status response: %s", resp.Status)
+	log.Debugf("publish scan status response: %v", resp)
 }
 
 func (p *Publisher) PublishScanError(errMsg string) {
@@ -206,7 +206,7 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	// defer resp.Body.Close()
 	// io.Copy(io.Discard, resp.Body)
 
-	log.Debugf("publish sbom to console response: %s", resp.Status)
+	log.Debugf("publish sbom to console response: %v", resp)
 
 	return nil
 }
