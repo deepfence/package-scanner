@@ -31,8 +31,6 @@ func NewPublisher(config util.Config) (*Publisher, error) {
 }
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
-	logrus.Infof("from pulsih scan status %+v", p.config)
-	logrus.Info("i am writing this simply")
 	err := p.dfClient.SendScanStatustoConsole(message, status)
 	if err != nil {
 		logrus.Error(p.config.ScanId, " ", err.Error())
@@ -51,7 +49,6 @@ func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) err
 }
 
 func (p *Publisher) PublishScanStatus(status string) {
-	logrus.Infof("from pulsih scan status %+v", p.config)
 	go func() {
 		p.PublishScanStatusMessage("", status)
 		ticker := time.NewTicker(2 * time.Minute)
@@ -72,7 +69,6 @@ func (p *Publisher) StopPublishScanStatus() {
 }
 
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
-	logrus.Infof("generated sbom %+v", p.config)
 	p.PublishScanStatusMessage("", "GENERATED_SBOM")
 	time.Sleep(3 * time.Second)
 	err := p.dfClient.SendSBOMtoConsole(sbom)
