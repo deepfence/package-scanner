@@ -7,9 +7,9 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
     && make \
     && cd /go \
-    && git clone https://github.com/anchore/syft --single-branch \
+    && git clone https://github.com/deepfence/syft.git \
     && cd syft \
-    && git checkout 1d14f22e4538f03a1896b2d4e1d99a65e52b6f30 \
+    && git checkout optimise-resolver \
     && cd /go/syft/cmd/syft \
     && go build -v -o syftCli .
 
