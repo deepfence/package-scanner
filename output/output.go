@@ -2,7 +2,6 @@ package output
 
 import (
 	"context"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -77,8 +76,8 @@ func (p *Publisher) SendReport() {
 	if err != nil {
 		log.Error(err)
 	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	// defer resp.Body.Close()
+	// io.Copy(io.Discard, resp.Body)
 	log.Debugf("report response %s", resp.Status)
 }
 
@@ -101,10 +100,11 @@ func (p *Publisher) StartScan() string {
 		log.Error(err)
 		return ""
 	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	// defer resp.Body.Close()
+	// io.Copy(io.Discard, resp.Body)
 
 	log.Debugf("start scan response: %+v", res)
+	log.Debugf("start scan response status: %s", resp.Status)
 
 	return res.GetScanId()
 }
@@ -129,8 +129,8 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	if err != nil {
 		log.Error(err)
 	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	// defer resp.Body.Close()
+	// io.Copy(io.Discard, resp.Body)
 
 	log.Debugf("publish scan status response: %s", resp.Status)
 }
@@ -196,8 +196,8 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 		log.Error(err)
 		return err
 	}
-	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
+	// defer resp.Body.Close()
+	// io.Copy(io.Discard, resp.Body)
 
 	log.Debugf("publish sbom to console response: %s", resp.Status)
 
