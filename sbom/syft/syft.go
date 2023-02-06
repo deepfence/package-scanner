@@ -1,4 +1,4 @@
-package sbom
+package syft
 
 import (
 	"bytes"
@@ -172,28 +172,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	}
 
 	if config.ScanType != "" && config.ScanType != "all" {
-		scanTypes := strings.Split(config.ScanType, ",")
-		for _, scanType := range scanTypes {
-			if scanType == "base" {
-				syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpmdb-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger")
-			} else if scanType == "ruby" {
-				syftArgs = append(syftArgs, "--catalogers", "ruby-gemfile-cataloger", "--catalogers", "ruby-gemspec-cataloger")
-			} else if scanType == "python" {
-				syftArgs = append(syftArgs, "--catalogers", "python-index-cataloger", "--catalogers", "python-package-cataloger")
-			} else if scanType == "javascript" {
-				syftArgs = append(syftArgs, "--catalogers", "javascript-lock-cataloger", "--catalogers", "javascript-package-cataloger")
-			} else if scanType == "php" {
-				syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
-			} else if scanType == "golang" {
-				syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
-			} else if scanType == "java" {
-				syftArgs = append(syftArgs, "--catalogers", "java-cataloger")
-			} else if scanType == "rust" {
-				syftArgs = append(syftArgs, "--catalogers", "rust-cataloger")
-			} else if scanType == "dotnet" {
-				syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
-			}
-		}
+		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 	}
 
 	var err error
@@ -237,6 +216,33 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	defer os.RemoveAll(jsonFile)
 
 	return sbom, nil
+}
+
+func buildCatalogersArg(scanType string) []string {
+	syftArgs := []string{}
+	scanTypes := strings.Split(scanType, ",")
+	for _, scanType := range scanTypes {
+		if scanType == "base" {
+			syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpmdb-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger")
+		} else if scanType == "ruby" {
+			syftArgs = append(syftArgs, "--catalogers", "ruby-gemfile-cataloger", "--catalogers", "ruby-gemspec-cataloger")
+		} else if scanType == "python" {
+			syftArgs = append(syftArgs, "--catalogers", "python-index-cataloger", "--catalogers", "python-package-cataloger")
+		} else if scanType == "javascript" {
+			syftArgs = append(syftArgs, "--catalogers", "javascript-lock-cataloger", "--catalogers", "javascript-package-cataloger")
+		} else if scanType == "php" {
+			syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
+		} else if scanType == "golang" {
+			syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
+		} else if scanType == "java" {
+			syftArgs = append(syftArgs, "--catalogers", "java-cataloger")
+		} else if scanType == "rust" {
+			syftArgs = append(syftArgs, "--catalogers", "rust-cataloger")
+		} else if scanType == "dotnet" {
+			syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
+		}
+	}
+	return syftArgs
 }
 
 func getNfsMountsDirs() []string {

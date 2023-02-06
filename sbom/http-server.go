@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -72,7 +73,7 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
-	_, err := GenerateSBOM(config)
+	_, err := syft.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
 		return false

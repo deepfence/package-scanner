@@ -11,7 +11,7 @@ import (
 	"time"
 
 	out "github.com/deepfence/package-scanner/output"
-	"github.com/deepfence/package-scanner/sbom"
+	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/scanner/grype"
 	"github.com/deepfence/package-scanner/utils"
@@ -85,7 +85,7 @@ func RunOnce(config utils.Config) {
 	log.Debugf("config: %+v", config)
 
 	log.Infof("generating sbom for %s ...", config.Source)
-	sbomResult, err := sbom.GenerateSBOM(config)
+	sbomResult, err := syft.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return

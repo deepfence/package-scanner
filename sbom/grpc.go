@@ -15,6 +15,7 @@ import (
 	dschttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
 	"github.com/deepfence/package-scanner/output"
 	pb "github.com/deepfence/package-scanner/proto"
+	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -173,7 +174,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	publisher.StopPublishScanStatus()
 	publisher.PublishScanStatus("GENERATING_SBOM")
 
-	sbom, err = GenerateSBOM(config)
+	sbom, err = syft.GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
 		publisher.PublishScanError(string(sbom) + " " + err.Error())

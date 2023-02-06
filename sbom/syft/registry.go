@@ -1,4 +1,4 @@
-package sbom
+package syft
 
 import (
 	"bytes"
