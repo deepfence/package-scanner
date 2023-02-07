@@ -63,8 +63,8 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		log.Errorf("errored: %s", err)
 		return err
 	}
-
-	stdout, err := runCommand(exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir), "tar : "+string(containerScan.tempDir))
+	tarCmd := exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir)
+	stdout, err := runCommand(tarCmd)
 	if err != nil {
 		log.Errorf("error: %s output: %s", err, stdout.String())
 		return err
@@ -73,18 +73,18 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	return nil
 }
 
-func runCommand(cmd *exec.Cmd, operation string) (*bytes.Buffer, error) {
-	var out bytes.Buffer
+func runCommand(cmd *exec.Cmd) (*bytes.Buffer, error) {
+	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd.Stdout = &out
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
 		log.Errorf("cmd: %s", cmd.String())
-		log.Error(errorOnRun)
-		return nil, errors.New(operation + fmt.Sprint(errorOnRun) + ": " + stderr.String())
+		log.Errorf("error: %s", errorOnRun)
+		return nil, errors.New(fmt.Sprint(errorOnRun) + ": " + stderr.String())
 	}
-	return &out, nil
+	return &stdout, nil
 }
 
 func GenerateSBOM(config utils.Config) ([]byte, error) {
@@ -112,62 +112,60 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 			}
 		}
 
-		if !strings.HasPrefix(config.Source, "registry:") {
-			if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
-				config.ContainerRuntimeName == vesselConstants.CRIO) &&
-				config.ContainerRuntime != nil {
-				// This means the underlying container runtime is containerd
-				// in case of image scan, we need to generate image tar file and
-				// feed it to syft, since syft does not support listing images from containerd
-				// ref: https://github.com/anchore/syft/issues/1048
-				//
-				// TODO : Remove this commit after anchore/syft#1048 is resolved
-				//
-				// create a temp directory for tar
-				tmpDir, err := os.MkdirTemp("", "syft-")
-				if err != nil {
-					log.Errorf("Error creating temp directory: %v", err)
-					return nil, err
-				}
-				defer os.RemoveAll(tmpDir)
-				// create a tar file for the image
-				tarFile := filepath.Join(tmpDir, "image.tar")
-				_, err = config.ContainerRuntime.Save(config.Source, tarFile)
-				if err != nil {
-					log.Errorf("Error creating tar file: %v", err)
-					return nil, err
-				}
-				// feed the tar file to syft
-				switch config.ContainerRuntimeName {
-				case vesselConstants.CONTAINERD:
-					syftArgs[1] = "oci-archive:" + tarFile
-				case vesselConstants.CRIO:
-					syftArgs[1] = "docker-archive:" + tarFile
-				}
-			} else if config.NodeType == utils.NodeTypeContainer {
-				tmpDir, err := os.MkdirTemp("", "syft-")
-				if err != nil {
-					log.Errorf("Error creating temp directory: %v", err)
-					return nil, err
-				}
-
-				defer os.RemoveAll(tmpDir)
-				defer os.Remove(tmpDir + ".tar")
-
-				var containerScan ContainerScan
-				if config.KubernetesClusterName != "" {
-					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
-				} else {
-					containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: "default"}
-				}
-
-				err = containerScan.exportFileSystemTar()
-				if err != nil {
-					log.Error(err)
-					return nil, err
-				}
-				syftArgs[1] = "dir:" + tmpDir
+		if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
+			config.ContainerRuntimeName == vesselConstants.CRIO) &&
+			config.ContainerRuntime != nil {
+			// This means the underlying container runtime is containerd
+			// in case of image scan, we need to generate image tar file and
+			// feed it to syft, since syft does not support listing images from containerd
+			// ref: https://github.com/anchore/syft/issues/1048
+			//
+			// TODO : Remove this commit after anchore/syft#1048 is resolved
+			//
+			// create a temp directory for tar
+			tmpDir, err := os.MkdirTemp("", "syft-")
+			if err != nil {
+				log.Errorf("Error creating temp directory: %v", err)
+				return nil, err
 			}
+			defer os.RemoveAll(tmpDir)
+			// create a tar file for the image
+			tarFile := filepath.Join(tmpDir, "image.tar")
+			_, err = config.ContainerRuntime.Save(config.Source, tarFile)
+			if err != nil {
+				log.Errorf("Error creating tar file: %v", err)
+				return nil, err
+			}
+			// feed the tar file to syft
+			switch config.ContainerRuntimeName {
+			case vesselConstants.CONTAINERD:
+				syftArgs[1] = "oci-archive:" + tarFile
+			case vesselConstants.CRIO:
+				syftArgs[1] = "docker-archive:" + tarFile
+			}
+		} else if config.NodeType == utils.NodeTypeContainer {
+			tmpDir, err := os.MkdirTemp("", "syft-")
+			if err != nil {
+				log.Errorf("Error creating temp directory: %v", err)
+				return nil, err
+			}
+
+			defer os.RemoveAll(tmpDir)
+			defer os.Remove(tmpDir + ".tar")
+
+			var containerScan ContainerScan
+			if config.KubernetesClusterName != "" {
+				containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
+			} else {
+				containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: "default"}
+			}
+
+			err = containerScan.exportFileSystemTar()
+			if err != nil {
+				log.Error(err)
+				return nil, err
+			}
+			syftArgs[1] = "dir:" + tmpDir
 		}
 	}
 
@@ -175,37 +173,27 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 	}
 
-	var err error
-
-	insecureRegistry := isRegistryInsecure(config.RegistryId)
-	if strings.Contains(syftArgs[1], "registry:") && insecureRegistry {
-		syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
-	}
+	syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
 
 	cmd := exec.Command(config.SyftBinPath, syftArgs...)
 	log.Debugf("syft command: %s", cmd.String())
 	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
-		authFilePath, err := GetConfigFileFromRegistry(config.RegistryId)
-		if err != nil {
-			log.Error("error in getting authFilePath")
-			return nil, err
-		}
-		defer os.RemoveAll(authFilePath)
 		cmd.Env = os.Environ()
-		if authFilePath != "" {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", authFilePath))
+		if config.RegistryCreds.AuthFilePath != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
 		}
-		if insecureRegistry {
+		if config.RegistryCreds.InsecureRegistry {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
 
-	stdout, err := cmd.CombinedOutput()
+	stdout, err := runCommand(cmd)
 	if err != nil {
 		log.Errorf("failed command: %s", cmd.String())
-		log.Error("output:" + string(stdout) + " " + err.Error())
-		return stdout, err
+		log.Errorf("err: %s", err)
+		log.Errorf("output: %s", stdout.String())
+		return []byte(""), err
 	}
 
 	sbom, err := os.ReadFile(jsonFile)

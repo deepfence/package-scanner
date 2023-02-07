@@ -37,6 +37,12 @@ type Config struct {
 	GrypeBinPath          string         `json:"grype_bin_path,omitempty"`
 	GrypeConfigPath       string         `json:"grype_config_path,omitempty"`
 	KeepSbom              bool           `json:"keep_sbom,omitempty"`
+	RegistryCreds         RegistryCreds  `json:"registry_creds,omitempty"`
+}
+
+type RegistryCreds struct {
+	AuthFilePath     string
+	InsecureRegistry bool
 }
 
 const (
