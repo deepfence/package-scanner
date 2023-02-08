@@ -13,6 +13,6 @@ clean:
 	-rm -rf package-scanner proto
 
 proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go
-	go build -buildvcs=false -v .
+	env CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: clean
