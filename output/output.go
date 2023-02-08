@@ -84,21 +84,17 @@ func (p *Publisher) SendReport() {
 func (p *Publisher) StartScan() string {
 
 	scanTrigger := dsc.ModelVulnerabilityScanTriggerReq{
-		GenerateBulkScanId: false,
-		ScanConfig:         p.config.ScanType,
-		ScanTriggers:       []dsc.ModelScanTrigger{},
+		Filters:    *dsc.NewModelScanFilterWithDefaults(),
+		NodeIds:    []dsc.ModelNodeIdentifier{},
+		ScanConfig: p.config.ScanType,
 	}
 
-	trigger := dsc.ModelScanTrigger{
-		NodeId:   p.config.NodeId,
-		NodeType: "image",
-	}
-
+	nodeIds := dsc.ModelNodeIdentifier{NodeId: p.config.NodeId, NodeType: "image"}
 	if strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".") {
-		trigger.NodeType = "host"
+		nodeIds.NodeType = "host"
 	}
 
-	scanTrigger.ScanTriggers = append(scanTrigger.ScanTriggers, trigger)
+	scanTrigger.NodeIds = append(scanTrigger.NodeIds, nodeIds)
 
 	req := p.client.Client().VulnerabilityApi.StartVulnerabilityScan(context.Background())
 	req = req.ModelVulnerabilityScanTriggerReq(scanTrigger)
@@ -182,7 +178,7 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 }
 
 func (p *Publisher) SendSbomToConsole(sbom []byte) error {
-	data := dsc.UtilsSbomRequest{}
+	data := dsc.UtilsScanSbomRequest{}
 	data.SetImageName(p.config.NodeId)
 	data.SetImageId(p.config.ImageId)
 	data.SetScanId(p.config.ScanId)
@@ -196,7 +192,7 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	data.SetSbom(string(sbom))
 
 	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
-	req = req.UtilsSbomRequest(data)
+	req = req.UtilsScanSbomRequest(data)
 
 	resp, err := p.client.Client().VulnerabilityApi.IngestSbomExecute(req)
 	if err != nil {
