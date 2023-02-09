@@ -320,7 +320,9 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	// postReader := bytes.NewReader(docBytes)
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
-
+	log.Errorf("Sending SBOM to console")
+	s, _ := json.Marshal(sbomDoc)
+	log.Errorf(string(s))
 	_, err = c.HttpRequest("POST", ingestScanStatusAPI, postReader, nil, "application/vnd.kafka.json.v2+json")
 	if err != nil {
 		log.Errorf("SendSBOMtoES error: %s", err)
