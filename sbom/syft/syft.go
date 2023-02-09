@@ -193,8 +193,9 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	stdout, err := runCommand(cmd)
 	if err != nil {
 		log.Errorf("failed command: %s", cmd.String())
+		log.Errorf("failed command Env: %s", cmd.Env)
 		log.Errorf("err: %s", err)
-		log.Errorf("output: %s", stdout.String())
+		log.Errorf("stdout: %s", stdout.String())
 		return []byte(""), err
 	}
 
