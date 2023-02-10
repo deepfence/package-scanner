@@ -175,25 +175,31 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 	}
 
-	cmd := exec.Command(config.SyftBinPath, syftArgs...)
-	log.Debugf("syft command: %s", cmd.String())
+	if config.RegistryCreds.AuthFilePath != "" {
+		if !strings.HasPrefix(syftArgs[1], registryPrefix) {
+			syftArgs[1] = registryPrefix + syftArgs[1]
+		}
+	} else {
+		syftArgs[1] = strings.Replace(syftArgs[1], registryPrefix, "", -1)
+	}
+
+	syftEnv := []string{}
 	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
-		cmd.Env = os.Environ()
 		if config.RegistryCreds.AuthFilePath != "" {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
-			if !strings.HasPrefix(syftArgs[1], registryPrefix) {
-				syftArgs[1] = registryPrefix + syftArgs[1]
-			}
-		} else {
-			syftArgs[1] = strings.Replace(syftArgs[1], registryPrefix, "", -1)
+			syftEnv = append(syftEnv, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
 		}
 		if config.RegistryCreds.InsecureRegistry {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
-			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
+			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
+			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
 
-	log.Infof("execute command: %s", cmd.String())
+	cmd := exec.Command(config.SyftBinPath, syftArgs...)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, syftEnv...)
+
+	log.Debugf("execute command: %s", cmd.String())
+	log.Debugf("execute command with env: %s", syftEnv)
 
 	stdout, err := runCommand(cmd)
 	if err != nil {
