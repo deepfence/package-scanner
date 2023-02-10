@@ -27,6 +27,8 @@ var (
 	mntDirs = getNfsMountsDirs()
 )
 
+const registryPrefix = "registry:"
+
 type ContainerScan struct {
 	containerId string
 	tempDir     string
@@ -173,14 +175,17 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 	}
 
-	syftArgs[1] = strings.Replace(syftArgs[1], "registry:", "", -1)
-
 	cmd := exec.Command(config.SyftBinPath, syftArgs...)
 	log.Debugf("syft command: %s", cmd.String())
 	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
 		cmd.Env = os.Environ()
 		if config.RegistryCreds.AuthFilePath != "" {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
+			if !strings.HasPrefix(syftArgs[1], registryPrefix) {
+				syftArgs[1] = registryPrefix + syftArgs[1]
+			}
+		} else {
+			syftArgs[1] = strings.Replace(syftArgs[1], registryPrefix, "", -1)
 		}
 		if config.RegistryCreds.InsecureRegistry {
 			cmd.Env = append(cmd.Env, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))

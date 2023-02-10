@@ -11,6 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
+	github.com/rs/zerolog v1.28.0
 	github.com/sirupsen/logrus v1.9.0
 	google.golang.org/grpc v1.51.0
 	google.golang.org/protobuf v1.28.1
@@ -64,7 +65,6 @@ require (
 	github.com/opencontainers/selinux v1.10.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect

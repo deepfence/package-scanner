@@ -10,9 +10,11 @@ import (
 
 	"github.com/deepfence/vessel"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 
 	_ "embed"
 
+	sdkLog "github.com/deepfence/golang_deepfence_sdk/utils/log"
 	"github.com/deepfence/package-scanner/sbom"
 	"github.com/deepfence/package-scanner/scanner/router"
 	"github.com/deepfence/package-scanner/tools"
@@ -82,11 +84,14 @@ func main() {
 		},
 	})
 
+	sdkLog.Initialize(zerolog.LevelInfoValue)
+
 	flag.Parse()
 
 	if *debug {
 		log.SetOutput(os.Stdout)
 		log.SetLevel(log.DebugLevel)
+		sdkLog.Initialize(zerolog.LevelDebugValue)
 	}
 
 	cacheDir, dirErr := os.UserCacheDir()
