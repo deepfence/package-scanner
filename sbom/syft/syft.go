@@ -193,7 +193,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
-	log.Debugf("execute command: %s", cmd.String())
+	log.Infof("execute command: %s", cmd.String())
 
 	stdout, err := runCommand(cmd)
 	if err != nil {
