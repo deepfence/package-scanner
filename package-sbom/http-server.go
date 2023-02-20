@@ -3,12 +3,14 @@ package package_sbom
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Jeffail/tunny"
-	"github.com/deepfence/package-scanner/util"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/internal/deepfence"
+	"github.com/deepfence/package-scanner/util"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -71,6 +73,14 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
+
+	flock := deepfence.NewFlock()
+	if err := flock.LockFile(); err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	defer flock.UnlockFile()
+
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
