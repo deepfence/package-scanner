@@ -87,7 +87,7 @@ func (p *Publisher) StartScan() string {
 	scanTrigger := dsc.ModelVulnerabilityScanTriggerReq{
 		Filters:    *dsc.NewModelScanFilterWithDefaults(),
 		NodeIds:    []dsc.ModelNodeIdentifier{},
-		ScanConfig: p.config.ScanType,
+		ScanConfig: []dsc.ModelVulnerabilityScanConfigLanguage{},
 	}
 
 	nodeIds := dsc.ModelNodeIdentifier{NodeId: p.config.NodeId, NodeType: "image"}
@@ -96,6 +96,10 @@ func (p *Publisher) StartScan() string {
 	}
 
 	scanTrigger.NodeIds = append(scanTrigger.NodeIds, nodeIds)
+
+	for _, t := range strings.Split(p.config.ScanType, ",") {
+		scanTrigger.ScanConfig = append(scanTrigger.ScanConfig, *dsc.NewModelVulnerabilityScanConfigLanguage(t))
+	}
 
 	req := p.client.Client().VulnerabilityApi.StartVulnerabilityScan(context.Background())
 	req = req.ModelVulnerabilityScanTriggerReq(scanTrigger)
