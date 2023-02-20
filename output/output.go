@@ -2,6 +2,7 @@ package output
 
 import (
 	"context"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -264,4 +265,31 @@ func FailOn(cfg *utils.Config, details *VulnerabilityScanDetail) {
 	if cfg.FailOnScore > 0.0 {
 		ExitOnSeverityScore(details.CveScore, cfg.FailOnScore)
 	}
+}
+
+func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *VulnerabilityScanDetail {
+	detail := VulnerabilityScanDetail{}
+
+	cveScore := 0.0
+
+	for _, r := range *report {
+		detail.Total += 1
+		cveScore += r.CveOverallScore
+		switch r.CveSeverity {
+		case utils.CRITICAL:
+			detail.Severity.Critical += 1
+		case utils.HIGH:
+			detail.Severity.High += 1
+		case utils.MEDIUM:
+			detail.Severity.Medium += 1
+		case utils.LOW:
+			detail.Severity.Low += 1
+		}
+	}
+
+	detail.CveScore = math.Min((cveScore*10.0)/500.0, 10.0)
+
+	detail.TimeStamp = time.Now()
+
+	return &detail
 }

@@ -3,12 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"path"
 	"sort"
 	"strings"
-	"time"
 
 	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom/syft"
@@ -131,7 +129,7 @@ func RunOnce(config utils.Config) {
 		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
 	// scan details
-	details := CountBySeverity(&report)
+	details := out.CountBySeverity(&report)
 	// filter by severity
 	filtered := FilterBySeverity(&report, c_severity)
 	// sort by severity
@@ -199,31 +197,4 @@ func FilterBySeverity(
 	}
 
 	return filtered
-}
-
-func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *out.VulnerabilityScanDetail {
-	detail := out.VulnerabilityScanDetail{}
-
-	cveScore := 0.0
-
-	for _, r := range *report {
-		detail.Total += 1
-		cveScore += r.CveOverallScore
-		switch r.CveSeverity {
-		case utils.CRITICAL:
-			detail.Severity.Critical += 1
-		case utils.HIGH:
-			detail.Severity.High += 1
-		case utils.MEDIUM:
-			detail.Severity.Medium += 1
-		case utils.LOW:
-			detail.Severity.Low += 1
-		}
-	}
-
-	detail.CveScore = math.Min((cveScore*10.0)/500.0, 10.0)
-
-	detail.TimeStamp = time.Now()
-
-	return &detail
 }
