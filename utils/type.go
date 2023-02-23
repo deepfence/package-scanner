@@ -41,8 +41,9 @@ type Config struct {
 }
 
 type RegistryCreds struct {
-	AuthFilePath     string
-	InsecureRegistry bool
+	AuthFilePath  string
+	SkipTLSVerify bool
+	UseHttp       bool
 }
 
 const (

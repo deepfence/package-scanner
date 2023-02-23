@@ -188,8 +188,10 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		if config.RegistryCreds.AuthFilePath != "" {
 			syftEnv = append(syftEnv, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
 		}
-		if config.RegistryCreds.InsecureRegistry {
+		if config.RegistryCreds.SkipTLSVerify {
 			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
+		}
+		if config.RegistryCreds.UseHttp {
 			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}
