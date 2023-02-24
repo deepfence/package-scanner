@@ -2,7 +2,7 @@ package scanner
 
 type VulnerabilityScanReport struct {
 	Type                   string   `json:"type"`
-	Masked                 string   `json:"masked"`
+	Masked                 bool     `json:"masked"`
 	Host                   string   `json:"host"`
 	NodeType               string   `json:"node_type"`
 	NodeId                 string   `json:"node_id"`

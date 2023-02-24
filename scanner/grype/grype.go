@@ -96,7 +96,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 
 		report := scanner.VulnerabilityScanReport{
 			Type:                  "cve",
-			Masked:                "false",
+			Masked:                false,
 			Host:                  cfg.HostName,
 			NodeType:              cfg.NodeType,
 			NodeId:                cfg.NodeId,
@@ -122,7 +122,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 		}
 
 		if utils.Contains(maskCveIds, report.CveId) {
-			report.Masked = "true"
+			report.Masked = true
 		}
 
 		if report.CveType == "base" {
