@@ -123,7 +123,6 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	data.SetScanId(p.config.ScanId)
 	data.SetHostName(p.config.HostName)
 	data.SetKubernetesClusterName(p.config.KubernetesClusterName)
-	data.SetMasked("false")
 	data.SetNodeId(p.config.NodeId)
 	data.SetNodeType(p.config.NodeType)
 	data.SetTimestamp(time.Now())
