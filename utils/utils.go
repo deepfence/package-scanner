@@ -115,16 +115,16 @@ func ExtractExploitPocUrl(url []string) (string, []string) {
 	if len(url) == 0 {
 		return "", nil
 	}
-	nonExploitPocUrls := make([]string, 0)
-	var msfURL string
+	var nonExploitPocUrls []string
+	var metasploitURL string
 	for _, u := range url {
 		if strings.Contains(u, metasploitURLPattern) {
-			msfURL = u
+			metasploitURL = u
 		} else {
 			nonExploitPocUrls = append(nonExploitPocUrls, u)
 		}
 	}
-	return msfURL, nonExploitPocUrls
+	return metasploitURL, nonExploitPocUrls
 }
 
 func getTimestamp() string {

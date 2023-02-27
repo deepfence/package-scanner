@@ -3,11 +3,6 @@ package scanner
 type VulnerabilityScanReport struct {
 	Type                   string   `json:"type"`
 	Masked                 bool     `json:"masked"`
-	Host                   string   `json:"host"`
-	NodeType               string   `json:"node_type"`
-	NodeId                 string   `json:"node_id"`
-	HostName               string   `json:"host_name"`
-	KubernetesClusterName  string   `json:"kubernetes_cluster_name"`
 	ScanId                 string   `json:"scan_id"`
 	CveId                  string   `json:"cve_id"`
 	CveType                string   `json:"cve_type"`

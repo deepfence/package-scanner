@@ -92,37 +92,25 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			cvssScore, overallScore, attackVector = GetCvss(cveCVSSScoreList)
 		}
 
-		msfPoCURL, urls := utils.ExtractExploitPocUrl(match.Vulnerability.URLs)
+		metasploitURL, urls := utils.ExtractExploitPocUrl(match.Vulnerability.URLs)
 
 		report := scanner.VulnerabilityScanReport{
-			Type:                  "cve",
-			Masked:                false,
-			Host:                  cfg.HostName,
-			NodeType:              cfg.NodeType,
-			NodeId:                cfg.NodeId,
-			HostName:              cfg.HostName,
-			KubernetesClusterName: cfg.KubernetesClusterName,
-			ScanId:                cfg.ScanId,
-			CveId:                 match.Vulnerability.ID,
-			CveType:               getLanguageFromMatcher(match.MatchDetails[0].Matcher),
-			CveContainerImage:     cfg.NodeId,
-			CveContainerImageId:   cfg.ImageId,
-			CveContainerName:      cfg.ContainerName,
-			CveSeverity:           strings.ToLower(match.Vulnerability.Severity),
-			CveCausedByPackage:    match.Artifact.Name + ":" + match.Artifact.Version,
-			CveContainerLayer:     "",
-			CveFixedIn:            cveFixedInVersion,
-			CveLink:               match.Vulnerability.DataSource,
-			CveDescription:        description,
-			CveCvssScore:          cvssScore,
-			CveOverallScore:       overallScore,
-			CveAttackVector:       attackVector,
-			URLs:                  urls,
-			ExploitPOC:            msfPoCURL,
-		}
-
-		if utils.Contains(maskCveIds, report.CveId) {
-			report.Masked = true
+			Type:               "cve",
+			Masked:             utils.Contains(maskCveIds, match.Vulnerability.ID),
+			ScanId:             cfg.ScanId,
+			CveId:              match.Vulnerability.ID,
+			CveType:            getLanguageFromMatcher(match.MatchDetails[0].Matcher),
+			CveSeverity:        strings.ToLower(match.Vulnerability.Severity),
+			CveCausedByPackage: match.Artifact.Name + ":" + match.Artifact.Version,
+			CveContainerLayer:  "",
+			CveFixedIn:         cveFixedInVersion,
+			CveLink:            match.Vulnerability.DataSource,
+			CveDescription:     description,
+			CveCvssScore:       cvssScore,
+			CveOverallScore:    overallScore,
+			CveAttackVector:    attackVector,
+			URLs:               urls,
+			ExploitPOC:         metasploitURL,
 		}
 
 		if report.CveType == "base" {

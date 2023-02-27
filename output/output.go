@@ -119,15 +119,10 @@ func (p *Publisher) StartScan() string {
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	data := dsc.IngestersVulnerabilityScanStatus{}
-	data.SetContainerName(p.config.ContainerName)
 	data.SetScanId(p.config.ScanId)
-	data.SetHostName(p.config.HostName)
-	data.SetKubernetesClusterName(p.config.KubernetesClusterName)
-	data.SetNodeId(p.config.NodeId)
-	data.SetNodeType(p.config.NodeType)
 	data.SetTimestamp(time.Now())
 	data.SetScanStatus(status)
-	data.SetNodeName(p.config.NodeId)
+	data.SetScanMessage(message)
 
 	req := p.client.Client().VulnerabilityApi.IngestVulnerabilitiesScanStatus(context.Background())
 	req = req.IngestersVulnerabilityScanStatus([]dsc.IngestersVulnerabilityScanStatus{data})
