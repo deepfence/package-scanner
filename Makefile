@@ -17,6 +17,9 @@ proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
 	go mod tidy -v 
 	CGO_ENABLED=0 go build -buildvcs=false -v .
 
+build:
+	go mod tidy -v && CGO_ENABLED=0 go build -buildvcs=false -v .
+
 .PHONY: docker
 docker:
 	docker build -t deepfenceio/deepfence_package_scanner:latest .
