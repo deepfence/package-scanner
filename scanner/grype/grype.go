@@ -60,10 +60,10 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 	var currentlyMaskedCveIds []string
 	var fullReport []scanner.VulnerabilityScanReport
 
-	currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
-	if err != nil {
-		currentlyMaskedCveIds = []string{}
-	}
+	//currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
+	//if err != nil {
+	//	currentlyMaskedCveIds = []string{}
+	//}
 
 	maskCveIdsInArgs := strings.Split(cfg.MaskCveIds, ",")
 	maskCveIds := append(currentlyMaskedCveIds, maskCveIdsInArgs...)

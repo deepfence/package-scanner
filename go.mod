@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/aws/aws-sdk-go v1.44.209
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230227162914-0400ffea289d
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230227162914-0400ffea289d
+	github.com/aws/aws-sdk-go v1.44.210
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230228072949-50c62cfc9ed6
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230228072949-50c62cfc9ed6
 	github.com/deepfence/vessel v0.9.2
 	github.com/gin-gonic/gin v1.9.0
 	github.com/olekukonko/tablewriter v0.0.5
@@ -16,9 +16,6 @@ require (
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1
 )
-
-// replace github.com/deepfence/golang_deepfence_sdk/client => /root/ThreatMapper/golang_deepfence_sdk/client
-// replace github.com/deepfence/golang_deepfence_sdk/utils => /root/ThreatMapper/golang_deepfence_sdk/utils
 
 require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
