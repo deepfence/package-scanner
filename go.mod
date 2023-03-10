@@ -4,11 +4,12 @@ go 1.19
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/aws/aws-sdk-go v1.44.210
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230228072949-50c62cfc9ed6
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230228072949-50c62cfc9ed6
+	github.com/aws/aws-sdk-go v1.44.209
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230310063137-b653517c5502
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230310063137-b653517c5502
 	github.com/deepfence/vessel v0.9.2
 	github.com/gin-gonic/gin v1.9.0
+	github.com/klauspost/compress v1.15.12
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
@@ -47,7 +48,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect

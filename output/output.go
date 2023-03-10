@@ -1,7 +1,9 @@
 package output
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"math"
 	"os"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	oahttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
+	"github.com/klauspost/compress/gzip"
 	tw "github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
 )
@@ -188,7 +191,23 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	data.SetScanType(p.config.ScanType)
 	data.SetContainerName(p.config.ContainerName)
 	data.SetMode(p.config.Mode)
-	data.SetSbom(string(sbom))
+	// data.SetSbom(string(sbom))
+
+	// compress sbom and encode to bas64
+	var out bytes.Buffer
+	gzw := gzip.NewWriter(&out)
+	if _, err := gzw.Write(sbom); err != nil {
+		log.Errorf("compress error: %s", err)
+		return err
+	}
+	gzw.Close()
+
+	log.Infof("sbom size: %.4fmb compressed: %.4fmb",
+		float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
+
+	c_sbom := base64.StdEncoding.EncodeToString(out.Bytes())
+
+	data.SetSbom(c_sbom)
 
 	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
 	req = req.UtilsScanSbomRequest(data)
