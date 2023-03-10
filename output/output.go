@@ -205,9 +205,11 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	log.Infof("sbom size: %.4fmb compressed: %.4fmb",
 		float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
 
-	c_sbom := base64.StdEncoding.EncodeToString(out.Bytes())
+	bb := out.Bytes()
+	c_sbom := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
+	base64.StdEncoding.Encode(c_sbom, bb)
 
-	data.SetSbom(c_sbom)
+	data.SetSbom(string(c_sbom))
 
 	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
 	req = req.UtilsScanSbomRequest(data)
