@@ -1,7 +1,10 @@
 package output
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/base64"
 	"math"
 	"os"
 	"strings"
@@ -188,25 +191,24 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	data.SetScanType(p.config.ScanType)
 	data.SetContainerName(p.config.ContainerName)
 	data.SetMode(p.config.Mode)
-	data.SetSbom(string(sbom))
 
-	// // compress sbom and encode to base64
-	// var out bytes.Buffer
-	// gzw := gzip.NewWriter(&out)
-	// if _, err := gzw.Write(sbom); err != nil {
-	// 	log.Errorf("compress error: %s", err)
-	// 	return err
-	// }
-	// gzw.Close()
+	// compress sbom and encode to base64
+	var out bytes.Buffer
+	gzw := gzip.NewWriter(&out)
+	if _, err := gzw.Write(sbom); err != nil {
+		log.Errorf("compress error: %s", err)
+		return err
+	}
+	gzw.Close()
 
-	// log.Infof("sbom size: %.4fmb compressed: %.4fmb",
-	// 	float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
+	log.Infof("sbom size: %.4fmb compressed: %.4fmb",
+		float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
 
-	// bb := out.Bytes()
-	// c_sbom := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
-	// base64.StdEncoding.Encode(c_sbom, bb)
+	bb := out.Bytes()
+	c_sbom := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
+	base64.StdEncoding.Encode(c_sbom, bb)
 
-	// data.SetSbom(string(c_sbom))
+	data.SetSbom(string(c_sbom))
 
 	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
 	req = req.UtilsScanSbomRequest(data)
