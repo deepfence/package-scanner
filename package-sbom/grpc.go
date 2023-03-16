@@ -3,6 +3,14 @@ package package_sbom
 import (
 	"context"
 	"fmt"
+
+	"net"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"syscall"
+
 	"github.com/Jeffail/tunny"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	pb "github.com/deepfence/package-scanner/proto"
@@ -10,12 +18,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"net"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"syscall"
 )
 
 type gRPCServer struct {
@@ -123,6 +125,7 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 		ContainerID:           r.ContainerId,
+		ImageName:             r.ImageName,
 	}
 
 	go grpcScanWorkerPool.Process(config)

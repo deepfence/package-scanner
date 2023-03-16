@@ -3,13 +3,13 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"time"
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"time"
 )
 
 type Publisher struct {
@@ -44,7 +44,7 @@ func (p *Publisher) PublishScanError(errMsg string) {
 }
 
 func (p *Publisher) PublishDocument(requestUrl string, postReader io.Reader) error {
-	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil)
+	_, err := p.dfClient.HttpRequest(deepfence.MethodPost, requestUrl, postReader, nil, "application/vnd.kafka.json.v2+json")
 	return err
 }
 

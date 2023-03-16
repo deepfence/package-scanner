@@ -3,4 +3,5 @@ package-scanner
 .idea
 vendor
 proto
+.vscode/
 .DS_Store

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
+
 	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
@@ -68,19 +69,18 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		NodeType:              r.NodeType,
 		NodeId:                r.NodeId,
 		HostName:              r.HostName,
+		ImageName:             r.ImageName,
 		ImageId:               r.ImageId,
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
-
 	flock := deepfence.NewFlock()
 	if err := flock.LockFile(); err != nil {
 		log.Error(err.Error())
 		return false
 	}
 	defer flock.UnlockFile()
-
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
@@ -105,7 +105,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	if config.Source == "" {
 		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
 	}
-
+	log.Infof("came to the registry handler: %+v", config)
 	go workerPool.Process(config)
 
 	w.WriteHeader(http.StatusOK)
