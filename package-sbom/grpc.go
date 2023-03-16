@@ -3,6 +3,7 @@ package package_sbom
 import (
 	"context"
 	"fmt"
+
 	"net"
 	"os"
 	"os/signal"
@@ -11,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/Jeffail/tunny"
+	"github.com/deepfence/package-scanner/internal/deepfence"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
@@ -137,6 +139,14 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		log.Error("Error processing grpc input for generating SBOM")
 		return nil
 	}
+
+	flock := deepfence.NewFlock()
+	if err := flock.LockFile(); err != nil {
+		log.Error(err.Error())
+		return nil
+	}
+	defer flock.UnlockFile()
+
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())

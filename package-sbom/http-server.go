@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
+
+	"github.com/deepfence/package-scanner/internal/deepfence"
 	"github.com/deepfence/package-scanner/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -73,8 +75,12 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
-
-	log.Infof("just before the scan %+v", config)
+	flock := deepfence.NewFlock()
+	if err := flock.LockFile(); err != nil {
+		log.Error(err.Error())
+		return false
+	}
+	defer flock.UnlockFile()
 	_, err := GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
