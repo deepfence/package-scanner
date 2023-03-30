@@ -44,19 +44,24 @@ func (p *Publisher) SendReport() {
 
 	report := dsc.IngestersReportIngestionData{}
 
-	host := map[string]string{
-		"node_id":        p.config.HostName,
-		"hostname":       p.config.HostName,
-		"cloud_region":   "cli",
-		"cloud_provider": "cli",
+	host := map[string]interface{}{
+		"node_id":               p.config.HostName,
+		"host_name":             p.config.HostName,
+		"node_name":             p.config.HostName,
+		"node_type":             "host",
+		"cloud_region":          "cli",
+		"cloud_provider":        "cli",
+		"kubernetes_cluster_id": "",
 	}
-	report.HostBatch = []map[string]string{host}
+	report.HostBatch = []map[string]interface{}{host}
 
 	if !(strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".")) {
-		image := map[string]string{
-			"image_name": p.config.Source,
-			"image_id":   p.config.ImageId,
-			"node_id":    p.config.ImageId,
+		image := map[string]interface{}{
+			"docker_image_name_with_tag": p.config.Source,
+			"docker_image_id":            p.config.ImageId,
+			"node_id":                    p.config.ImageId,
+			"node_name":                  p.config.ImageId,
+			"node_type":                  p.config.NodeType,
 		}
 		s := strings.Split(p.config.Source, ":")
 		if len(s) == 2 {
@@ -67,7 +72,7 @@ func (p *Publisher) SendReport() {
 			"source":       p.config.HostName,
 			"destinations": p.config.ImageId,
 		}
-		report.ContainerImageBatch = []map[string]string{image}
+		report.ContainerImageBatch = []map[string]interface{}{image}
 		report.ContainerImageEdgeBatch = []map[string]interface{}{containerImageEdge}
 	}
 
