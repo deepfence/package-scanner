@@ -168,7 +168,7 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 		scanTypes := strings.Split(config.ScanType, ",")
 		for _, scanType := range scanTypes {
 			if scanType == "base" {
-				syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpmdb-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger")
+				syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpm-db-cataloger", "--catalogers", "rpm-file-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger")
 			} else if scanType == "ruby" {
 				syftArgs = append(syftArgs, "--catalogers", "ruby-gemfile-cataloger", "--catalogers", "ruby-gemspec-cataloger")
 			} else if scanType == "python" {
@@ -180,9 +180,9 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			} else if scanType == "golang" {
 				syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
 			} else if scanType == "java" {
-				syftArgs = append(syftArgs, "--catalogers", "java-cataloger")
+				syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-pom-cataloger")
 			} else if scanType == "rust" {
-				syftArgs = append(syftArgs, "--catalogers", "rust-cataloger")
+				syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger")
 			} else if scanType == "dotnet" {
 				syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
 			}
