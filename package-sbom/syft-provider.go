@@ -178,11 +178,11 @@ func GenerateSBOM(config util.Config) ([]byte, error) {
 			} else if scanType == "php" {
 				syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
 			} else if scanType == "golang" {
-				syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger", "--catalogers", "go-module-binary-cataloger")
+				syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
 			} else if scanType == "java" {
 				syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-pom-cataloger")
 			} else if scanType == "rust" {
-				syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger", "--catalogers", "cargo-auditable-binary-cataloger")
+				syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger")
 			} else if scanType == "dotnet" {
 				syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
 			}
