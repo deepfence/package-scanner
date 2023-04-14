@@ -80,10 +80,12 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	config.DeepfenceKey = os.Getenv("DEEPFENCE_KEY")
 
 	if dschttp.IsConsoleAgent(config.ConsoleURL) && strings.Trim(config.DeepfenceKey, "\"") == "" {
+		internalURL := os.Getenv("MGMT_CONSOLE_URL_INTERNAL")
+		internalPort := os.Getenv("MGMT_CONSOLE_PORT_INTERNAL")
 		log.Info("fetch token for console agent")
 		for {
 			var err error
-			if config.DeepfenceKey, err = dschttp.GetConsoleApiToken(config.ConsoleURL); err != nil {
+			if config.DeepfenceKey, err = dschttp.GetConsoleApiToken(internalURL, internalPort); err != nil {
 				log.Error(err)
 				time.Sleep(5 * time.Second)
 			} else {
