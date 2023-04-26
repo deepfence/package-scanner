@@ -13,6 +13,7 @@ import (
 
 	"github.com/Jeffail/tunny"
 	dschttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
+	"github.com/deepfence/package-scanner/jobs"
 	"github.com/deepfence/package-scanner/output"
 	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/sbom/syft"
@@ -28,6 +29,7 @@ type gRPCServer struct {
 	config     utils.Config
 	pb.UnimplementedPackageScannerServer
 	pb.UnimplementedAgentPluginServer
+	pb.UnimplementedScannersServer
 }
 
 var (
@@ -97,6 +99,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	impl := &gRPCServer{socketPath: config.SocketPath, pluginName: pluginName, config: config}
 	pb.RegisterAgentPluginServer(s, impl)
 	pb.RegisterPackageScannerServer(s, impl)
+	pb.RegisterScannersServer(s, impl)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	log.Infof("main: server listening at %v", lis.Addr())
@@ -107,6 +110,12 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	<-done
 	log.Info("main: exiting gracefully")
 	return nil
+}
+
+func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReports, error) {
+	return &pb.JobReports{
+		RunningJobs: jobs.GetRunningJobCount(),
+	}, nil
 }
 
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
@@ -154,6 +163,10 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 }
 
 func processSbomGeneration(configInterface interface{}) interface{} {
+
+	jobs.StartScanJob()
+	defer jobs.StopScanJob()
+
 	config, ok := configInterface.(utils.Config)
 	if !ok {
 		log.Error("Error processing grpc input for generating SBOM")
