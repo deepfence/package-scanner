@@ -5,8 +5,8 @@ go 1.19
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.44.232
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230414063913-89b979d968a2
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230414063913-89b979d968a2
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230426073046-3eb89c3b0565
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230426073046-3eb89c3b0565
 	github.com/deepfence/vessel v0.9.2
 	github.com/gin-gonic/gin v1.9.0
 	github.com/olekukonko/tablewriter v0.0.5
