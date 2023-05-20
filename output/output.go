@@ -78,10 +78,10 @@ func (p *Publisher) SendReport() {
 
 	log.Debugf("report: %+v", report)
 
-	req := p.client.Client().TopologyApi.IngestSyncAgentReport(context.Background())
+	req := p.client.Client().TopologyAPI.IngestSyncAgentReport(context.Background())
 	req = req.IngestersReportIngestionData(report)
 
-	resp, err := p.client.Client().TopologyApi.IngestSyncAgentReportExecute(req)
+	resp, err := p.client.Client().TopologyAPI.IngestSyncAgentReportExecute(req)
 	if err != nil {
 		log.Error(err)
 	}
@@ -109,9 +109,9 @@ func (p *Publisher) StartScan() string {
 		scanTrigger.ScanConfig = append(scanTrigger.ScanConfig, *dsc.NewModelVulnerabilityScanConfigLanguage(t))
 	}
 
-	req := p.client.Client().VulnerabilityApi.StartVulnerabilityScan(context.Background())
+	req := p.client.Client().VulnerabilityAPI.StartVulnerabilityScan(context.Background())
 	req = req.ModelVulnerabilityScanTriggerReq(scanTrigger)
-	res, resp, err := p.client.Client().VulnerabilityApi.StartVulnerabilityScanExecute(req)
+	res, resp, err := p.client.Client().VulnerabilityAPI.StartVulnerabilityScanExecute(req)
 	if err != nil {
 		log.Error(err)
 		return ""
@@ -132,10 +132,10 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	data.SetScanStatus(status)
 	data.SetScanMessage(message)
 
-	req := p.client.Client().VulnerabilityApi.IngestVulnerabilitiesScanStatus(context.Background())
+	req := p.client.Client().VulnerabilityAPI.IngestVulnerabilitiesScanStatus(context.Background())
 	req = req.IngestersVulnerabilityScanStatus([]dsc.IngestersVulnerabilityScanStatus{data})
 
-	resp, err := p.client.Client().VulnerabilityApi.IngestVulnerabilitiesScanStatusExecute(req)
+	resp, err := p.client.Client().VulnerabilityAPI.IngestVulnerabilitiesScanStatusExecute(req)
 	if err != nil {
 		log.Error(err)
 	}
@@ -215,10 +215,10 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 
 	data.SetSbom(string(c_sbom))
 
-	req := p.client.Client().VulnerabilityApi.IngestSbom(context.Background())
+	req := p.client.Client().VulnerabilityAPI.IngestSbom(context.Background())
 	req = req.UtilsScanSbomRequest(data)
 
-	resp, err := p.client.Client().VulnerabilityApi.IngestSbomExecute(req)
+	resp, err := p.client.Client().VulnerabilityAPI.IngestSbomExecute(req)
 	if err != nil {
 		log.Error(err)
 		return err

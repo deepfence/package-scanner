@@ -7,4 +7,4 @@ sleep 60
 
 /usr/local/bin/grype db update
 
-exec $@
+exec "$@"
