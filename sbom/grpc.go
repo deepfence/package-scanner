@@ -184,22 +184,27 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		log.Errorf("error in creating publisher %s", err)
 		return err
 	}
-	publisher.PublishScanStatus("IN_PROGRESS")
 
+	publisher.PublishScanStatusPeriodic("IN_PROGRESS")
 	publisher.StopPublishScanStatus()
-	publisher.PublishScanStatus("GENERATING_SBOM")
 
+	// generate sbom
+	publisher.PublishScanStatusPeriodic("GENERATING_SBOM")
 	sbom, err = syft.GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
+		publisher.StopPublishScanStatus()
 		publisher.PublishScanError(string(sbom) + " " + err.Error())
 		return err
 	}
-
-	// Send sbom to Deepfence Management Console for Vulnerability Scan
-	publisher.RunVulnerabilityScan(sbom)
-
 	publisher.StopPublishScanStatus()
+
+	publisher.PublishScanStatusMessage("", "GENERATED_SBOM")
+	// Send sbom to Deepfence Management Console for Vulnerability Scan
+	if err := publisher.SendSbomToConsole(sbom); err != nil {
+		publisher.PublishScanError(err.Error())
+		log.Error(config.ScanId, " ", err.Error())
+	}
 
 	return nil
 }

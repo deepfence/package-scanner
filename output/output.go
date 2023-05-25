@@ -106,7 +106,8 @@ func (p *Publisher) StartScan() string {
 	scanTrigger.NodeIds = append(scanTrigger.NodeIds, nodeIds)
 
 	for _, t := range strings.Split(p.config.ScanType, ",") {
-		scanTrigger.ScanConfig = append(scanTrigger.ScanConfig, *dsc.NewModelVulnerabilityScanConfigLanguage(t))
+		scanTrigger.ScanConfig = append(scanTrigger.ScanConfig,
+			*dsc.NewModelVulnerabilityScanConfigLanguage(t))
 	}
 
 	req := p.client.Client().VulnerabilityAPI.StartVulnerabilityScan(context.Background())
@@ -146,12 +147,10 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 }
 
 func (p *Publisher) PublishScanError(errMsg string) {
-	p.stopScanStatus <- true
-	time.Sleep(3 * time.Second)
 	p.PublishScanStatusMessage(errMsg, "ERROR")
 }
 
-func (p *Publisher) PublishScanStatus(status string) {
+func (p *Publisher) PublishScanStatusPeriodic(status string) {
 	go func() {
 		p.PublishScanStatusMessage("", status)
 		ticker := time.NewTicker(60 * time.Second)
@@ -168,7 +167,7 @@ func (p *Publisher) PublishScanStatus(status string) {
 
 func (p *Publisher) StopPublishScanStatus() {
 	p.stopScanStatus <- true
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 }
 
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
