@@ -169,8 +169,8 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 
 	config, ok := configInterface.(utils.Config)
 	if !ok {
-		log.Error("Error processing grpc input for generating SBOM")
-		return nil
+		log.Error("error processing grpc input for generating sbom")
+		return fmt.Errorf("error processing grpc input for generating sbom")
 	}
 
 	var (
@@ -204,6 +204,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	if err := publisher.SendSbomToConsole(sbom); err != nil {
 		publisher.PublishScanError(err.Error())
 		log.Error(config.ScanId, " ", err.Error())
+		return err
 	}
 
 	return nil
