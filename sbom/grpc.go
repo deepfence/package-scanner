@@ -202,8 +202,9 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	publisher.PublishScanStatusMessage("", "GENERATED_SBOM")
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	if err := publisher.SendSbomToConsole(sbom); err != nil {
-		publisher.PublishScanError(err.Error())
 		log.Error(config.ScanId, " ", err.Error())
+		time.Sleep(5 * time.Second)
+		publisher.PublishScanError(err.Error())
 		return err
 	}
 
