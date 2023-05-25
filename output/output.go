@@ -225,7 +225,7 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	// defer resp.Body.Close()
 	// io.Copy(io.Discard, resp.Body)
 
-	log.Debugf("publish sbom to console response: %v", resp)
+	log.Infof("publish sbom to console response: %v", resp)
 
 	return nil
 }
