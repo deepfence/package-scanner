@@ -153,7 +153,7 @@ func (p *Publisher) PublishScanError(errMsg string) {
 func (p *Publisher) PublishScanStatusPeriodic(status string) {
 	go func() {
 		p.PublishScanStatusMessage("", status)
-		ticker := time.NewTicker(60 * time.Second)
+		ticker := time.NewTicker(30 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
