@@ -171,7 +171,7 @@ func (p *Publisher) StopPublishScanStatus() {
 }
 
 func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
-	p.PublishScanStatusMessage("", "GENERATED_SBOM")
+	p.PublishScanStatusMessage("", "IN_PROGRESS")
 	defer p.StopPublishScanStatus()
 
 	time.Sleep(3 * time.Second)

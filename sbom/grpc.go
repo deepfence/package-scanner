@@ -186,10 +186,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	}
 
 	publisher.PublishScanStatusPeriodic("IN_PROGRESS")
-	publisher.StopPublishScanStatus()
-
 	// generate sbom
-	publisher.PublishScanStatusPeriodic("GENERATING_SBOM")
 	sbom, err = syft.GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
@@ -197,16 +194,16 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		publisher.PublishScanError(string(sbom) + " " + err.Error())
 		return err
 	}
-	publisher.StopPublishScanStatus()
 
-	publisher.PublishScanStatusMessage("", "GENERATED_SBOM")
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	if err := publisher.SendSbomToConsole(sbom); err != nil {
 		log.Error(config.ScanId, " ", err.Error())
-		time.Sleep(5 * time.Second)
+		publisher.StopPublishScanStatus()
 		publisher.PublishScanError(err.Error())
 		return err
 	}
+
+	publisher.StopPublishScanStatus()
 
 	return nil
 }
