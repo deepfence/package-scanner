@@ -5,9 +5,11 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"math"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	dsc "github.com/deepfence/golang_deepfence_sdk/client"
@@ -23,6 +25,19 @@ type Publisher struct {
 	client         *oahttp.OpenapiHttpClient
 	stopScanStatus chan bool
 }
+
+type JobStatus struct {
+	Status string
+	Msg    string
+}
+
+const (
+	IN_PROGRESS string = "IN_PROGRESS"
+	COMPLETE           = "COMPLETE"
+	ABORT              = "ABORT"
+	CANCELLED          = "CANCELLED"
+	ERROR              = "ERROR"
+)
 
 func NewPublisher(config utils.Config) (*Publisher, error) {
 	client := oahttp.NewHttpsConsoleClient(config.ConsoleURL, config.ConsolePort)
@@ -314,4 +329,62 @@ func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *VulnerabilitySc
 	detail.TimeStamp = time.Now()
 
 	return &detail
+}
+
+func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
+	wg *sync.WaitGroup) {
+	scanID := p.config.ScanId
+
+	go func() {
+		log.Info("StartStatusReporter started, scanid:", scanID)
+		defer wg.Done()
+
+		ticker := time.NewTicker(30 * time.Second)
+		var err error
+		var msg string
+		var statusIn JobStatus
+		abort := false
+		start := time.Now()
+		threshold := 5 * 60 * 60 //5 hours
+	loop:
+		for {
+			select {
+			case statusIn = <-statusChan:
+				status := statusIn.Status
+				if status == IN_PROGRESS {
+					p.PublishScanStatusMessage(statusIn.Msg, "IN_PROGRESS")
+				} else if status == COMPLETE {
+					break loop
+				} else if status == ABORT {
+					abort = true
+					msg = statusIn.Msg
+					break loop
+				} else if status == ERROR {
+					err = fmt.Errorf(statusIn.Msg)
+					msg = statusIn.Msg
+					break loop
+				}
+			case <-ticker.C:
+				ts := int(time.Since(start).Seconds())
+				if ts > threshold {
+					err = fmt.Errorf("Scan job aborted due to inactivity")
+					p.PublishScanStatusMessage(err.Error(), ERROR)
+					//We will restart the program after this.
+					log.Info("Aborting scan job, total time taken is more than threshold, scanid:", scanID)
+					os.Exit(0)
+				} else {
+					p.PublishScanStatusMessage("", "IN_PROGRESS")
+				}
+			}
+		}
+
+		if abort == true {
+			p.PublishScanStatusMessage(msg, CANCELLED)
+		} else if err != nil {
+			p.PublishScanStatusMessage(err.Error(), ERROR)
+		} else {
+			p.PublishScanStatusMessage("", COMPLETE)
+		}
+		log.Info("StartStatusReporter exited, scanid:", scanID)
+	}()
 }

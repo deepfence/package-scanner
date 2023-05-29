@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -102,6 +103,7 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	pb.RegisterScannersServer(s, impl)
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
+
 	log.Infof("main: server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		return err
@@ -185,25 +187,30 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return err
 	}
 
-	publisher.PublishScanStatusPeriodic("IN_PROGRESS")
+	statusChan := make(chan output.JobStatus)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	publisher.StartStatusReporter(statusChan, &wg)
+	defer wg.Wait()
+
+	statusChan <- output.JobStatus{output.IN_PROGRESS, ""}
+
 	// generate sbom
 	sbom, err = syft.GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
-		publisher.StopPublishScanStatus()
-		publisher.PublishScanError(string(sbom) + " " + err.Error())
+		statusChan <- output.JobStatus{output.ERROR, string(sbom) + " " + err.Error()}
 		return err
 	}
 
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	if err := publisher.SendSbomToConsole(sbom); err != nil {
 		log.Error(config.ScanId, " ", err.Error())
-		publisher.StopPublishScanStatus()
-		publisher.PublishScanError(err.Error())
+		statusChan <- output.JobStatus{output.ERROR, string(sbom) + " " + err.Error()}
 		return err
 	}
 
-	publisher.StopPublishScanStatus()
+	statusChan <- output.JobStatus{output.COMPLETE, ""}
 
 	return nil
 }
