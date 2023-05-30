@@ -210,6 +210,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return err
 	}
 
+	//This is to signal completion to the StatusChecker
 	statusChan <- output.JobStatus{output.COMPLETE, ""}
 
 	return nil

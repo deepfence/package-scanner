@@ -382,9 +382,8 @@ func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
 			p.PublishScanStatusMessage(msg, CANCELLED)
 		} else if err != nil {
 			p.PublishScanStatusMessage(err.Error(), ERROR)
-		} else {
-			p.PublishScanStatusMessage("", COMPLETE)
 		}
+
 		log.Info("StartStatusReporter exited, scanid:", scanID)
 	}()
 }
