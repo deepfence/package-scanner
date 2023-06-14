@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"os"
 	"path"
@@ -12,17 +13,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 
-	_ "embed"
-
 	sdkLog "github.com/deepfence/golang_deepfence_sdk/utils/log"
 	"github.com/deepfence/package-scanner/sbom"
 	"github.com/deepfence/package-scanner/scanner/router"
 	"github.com/deepfence/package-scanner/tools"
 	"github.com/deepfence/package-scanner/utils"
-	vc "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	vc "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
 

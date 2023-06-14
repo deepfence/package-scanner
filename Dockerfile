@@ -1,4 +1,4 @@
-FROM golang:1.19-bullseye AS build
+FROM golang:1.20-bullseye AS build
 RUN apt-get clean && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make protobuf-compiler apt-utils
@@ -6,8 +6,8 @@ RUN apt-get clean && apt-get update \
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
 RUN export CGO_ENABLED=0 && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
-    && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2.0 \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.30.0 \
+    && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0 \
     && make build
 
 
