@@ -26,9 +26,10 @@ COPY entrypoint.sh /entrypoint.sh
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron \
-    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v0.23.0/nerdctl-0.23.0-linux-amd64.tar.gz \
-    && tar Cxzvvf /usr/local/bin nerdctl-0.23.0-linux-amd64.tar.gz \
-    && rm nerdctl-0.23.0-linux-amd64.tar.gz
+    && nerdctl_version=1.4.0 \
+    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
+    && tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
+    && rm nerdctl-${nerdctl_version}-linux-amd64.tar.gz
 
 #RUN echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
 RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
