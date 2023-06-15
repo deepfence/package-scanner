@@ -50,8 +50,8 @@ github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230614081205-dc6e3aa55
 github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230614081205-dc6e3aa55854/go.mod h1:rco4ZTBCAPvaqyHgKUD3lqxub8Km+5fxNk25nF3gRIc=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230614081205-dc6e3aa55854 h1:s8lkEI5QJoHziGXv24PxezwWKj6a7Omo0Ukf8jdcHOQ=
 github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230614081205-dc6e3aa55854/go.mod h1:uqAQ8lZ27admMnTG7FvrpdYU8A/Ih/utGaw1wV3xLM4=
-github.com/deepfence/vessel v0.11.0 h1:uEraDXSVBxbFEa6hjALpY3In897FF5OnWf7G4PD8Ayg=
-github.com/deepfence/vessel v0.11.0/go.mod h1:uSMZ7HZePuQzHH2kKdRJ/r8kYPz9ZgkffYhFiccmeHk=
+github.com/deepfence/vessel v0.11.1 h1:RSnPHv/HX9Vrcujxzp6l4cjzF7a/34lVvh+jr8Hq8YA=
+github.com/deepfence/vessel v0.11.1/go.mod h1:uSMZ7HZePuQzHH2kKdRJ/r8kYPz9ZgkffYhFiccmeHk=
 github.com/docker/distribution v2.8.1+incompatible h1:Q50tZOPR6T/hjNsyc9g8/syEs6bk8XXApsHjKukMl68=
 github.com/docker/distribution v2.8.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/docker v24.0.2+incompatible h1:eATx+oLz9WdNVkQrr0qjQ8HvRJ4bOOxfzEo8R+dA3cg=

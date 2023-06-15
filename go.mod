@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.282
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230614081205-dc6e3aa55854
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230614081205-dc6e3aa55854
-	github.com/deepfence/vessel v0.11.0
+	github.com/deepfence/vessel v0.11.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
