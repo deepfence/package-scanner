@@ -21,4 +21,7 @@ type VulnerabilityScanReport struct {
 	CveAttackVector        string   `json:"cve_attack_vector"`
 	URLs                   []string `json:"urls"`
 	ExploitPOC             string   `json:"exploit_poc"`
+	ParsedAttackVector     string   `json:"parsed_attack_vector"`
+	ExploitabilityScore    int      `json:"exploitability_score"`
+	HasLiveConnection      bool     `json:"has_live_connection"`
 }
