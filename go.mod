@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/aws/aws-sdk-go v1.44.282
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230614081205-dc6e3aa55854
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230614081205-dc6e3aa55854
+	github.com/aws/aws-sdk-go v1.44.285
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230620070833-89f34b57eece
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230620070833-89f34b57eece
 	github.com/deepfence/vessel v0.11.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/olekukonko/tablewriter v0.0.5
@@ -51,10 +51,10 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.2 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.3 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
@@ -75,8 +75,9 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/otel v1.15.1 // indirect
-	go.opentelemetry.io/otel/trace v1.15.1 // indirect
+	go.opentelemetry.io/otel v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
+	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/mod v0.9.0 // indirect
