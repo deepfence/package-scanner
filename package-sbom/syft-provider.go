@@ -12,10 +12,10 @@ import (
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/util"
 	"github.com/deepfence/vessel"
-	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	vesselConstants "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -51,9 +51,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	}
 
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
-		containerScan.containerId, containerScan.namespace,
-		containerScan.tempDir+".tar", endpoint,
-	)
+		containerScan.containerId, containerScan.namespace, containerScan.tempDir+".tar")
 
 	if err != nil {
 		log.Error("erroed")

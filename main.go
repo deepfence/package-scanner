@@ -9,10 +9,10 @@ import (
 
 	package_sbom "github.com/deepfence/package-scanner/package-sbom"
 	"github.com/deepfence/package-scanner/util"
-	vesselConstants "github.com/deepfence/vessel/constants"
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	vesselConstants "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,7 +73,7 @@ func runOnce(config util.Config) {
 			config.ScanId = config.Source + "_" + util.GetDatetimeNow()
 		}
 	}
-	
+
 	sbom, err := package_sbom.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)

@@ -5,3 +5,4 @@ vendor
 proto
 .vscode/
 .DS_Store
+tools
