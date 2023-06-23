@@ -6,8 +6,7 @@ RUN apt-get clean && apt-get update \
 ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
 RUN export CGO_ENABLED=0 && \
-    && make build
-
+    make build
 
 FROM debian:bullseye-slim
 LABEL MAINTAINER="Deepfence Inc"
