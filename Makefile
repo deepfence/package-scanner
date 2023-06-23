@@ -1,11 +1,14 @@
 all: build
 
+.PHONY: bootstrap
+bootstrap:
+	$(PWD)/bootstrap.sh
+
 .PHONY: clean
 clean:
 	-rm package-scanner
 
 build:
-	$(PWD)/bootstrap.sh
 	go mod tidy -v && CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: docker
