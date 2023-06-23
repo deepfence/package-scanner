@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/Jeffail/tunny"
+	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	dschttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
 	"github.com/deepfence/package-scanner/jobs"
 	"github.com/deepfence/package-scanner/output"
-	pb "github.com/deepfence/package-scanner/proto"
 	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"

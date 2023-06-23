@@ -1,21 +1,11 @@
 all: build
 
-$(PWD)/agent-plugins-grpc/proto/*.proto:
-	$(PWD)/bootstrap.sh
-
-$(PWD)/agent-plugins-grpc/proto/*.go: $(PWD)/agent-plugins-grpc/proto/*.proto
-	(cd agent-plugins-grpc && make go)
-	-rm -rf proto
-	cp -r agent-plugins-grpc/proto .
-
 .PHONY: clean
 clean:
-	(cd agent-plugins-grpc && make clean)
-	-rm -rf package-scanner proto
+	-rm package-scanner
 
-proto: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/proto/*.go $(PWD)/*.go
-
-build: proto
+build:
+	$(PWD)/bootstrap.sh
 	go mod tidy -v && CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: docker
