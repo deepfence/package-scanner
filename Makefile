@@ -1,4 +1,4 @@
-all: build
+all: package-scanner
 
 .PHONY: bootstrap
 bootstrap:
@@ -8,8 +8,9 @@ bootstrap:
 clean:
 	-rm package-scanner
 
-build:
-	go mod tidy -v && CGO_ENABLED=0 go build -buildvcs=false -v .
+package-scanner: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+	go mod tidy
+	CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: docker
 docker:
