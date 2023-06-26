@@ -1,10 +1,9 @@
 FROM golang:1.20-bullseye AS build
-RUN apt-get clean && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get clean && apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make apt-utils
-
-ADD . /go/package-scanner/
 WORKDIR /go/package-scanner/
+COPY . .
 RUN CGO_ENABLED=0 make package-scanner
 
 FROM debian:bullseye-slim
@@ -20,9 +19,9 @@ COPY --from=build /go/package-scanner/tools/syft-bin/syft_linux_amd64 /usr/local
 COPY grype.yaml /root/.grype.yaml
 COPY entrypoint.sh /entrypoint.sh
 
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron \
-    && nerdctl_version=1.4.0 \
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron
+RUN nerdctl_version=1.4.0 \
     && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
     && tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
     && rm nerdctl-${nerdctl_version}-linux-amd64.tar.gz
