@@ -4,8 +4,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make apt-utils
 WORKDIR /go/package-scanner/
 COPY . .
-RUN CGO_ENABLED=0 make package-scanner
 RUN make tools
+RUN CGO_ENABLED=0 make package-scanner
 
 FROM debian:bullseye-slim
 LABEL MAINTAINER="Deepfence Inc"
