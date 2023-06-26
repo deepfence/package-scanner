@@ -4,19 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
-	matcherToLanguage map[string]string
-)
-
-func init() {
 	matcherToLanguage = map[string]string{
 		"UnknownMatcherType": "unknown",
 		"stock-matcher":      "stock",
@@ -30,7 +26,8 @@ func init() {
 		"javascript-matcher": "javascript",
 		"msrc-matcher":       "dotnet",
 	}
-}
+	attackVectorRegex = regexp.MustCompile(`.*av:n.*`)
+)
 
 func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) ([]byte, error) {
 	cmd := fmt.Sprintf("%s -c %s sbom:%s -o json", grypeBinPath, grypeConfigPath, bomPath)
@@ -56,7 +53,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 	if err != nil {
 		return []scanner.VulnerabilityScanReport{}, err
 	}
-	var cveJsonList string
+
 	var currentlyMaskedCveIds []string
 	var fullReport []scanner.VulnerabilityScanReport
 
@@ -111,6 +108,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			CveAttackVector:    attackVector,
 			URLs:               urls,
 			ExploitPOC:         metasploitURL,
+			ParsedAttackVector: "",
 		}
 
 		if report.CveType == "base" {
@@ -119,13 +117,25 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			report.CveCausedByPackagePath = combinePaths(match.Artifact.Locations)
 		}
 
-		dfVulnerabilitiesStr, err := json.Marshal(report)
-		if err != nil {
-			return []scanner.VulnerabilityScanReport{}, errors.Wrap(err, "failed to marshal vulnerability report")
+		// calculate exploit-ability score
+		if attackVectorRegex.MatchString(report.CveAttackVector) ||
+			report.CveAttackVector == "network" || report.CveAttackVector == "n" {
+			report.ParsedAttackVector = "network"
+		} else {
+			report.ParsedAttackVector = "local"
 		}
-		if err == nil && string(dfVulnerabilitiesStr) != "" {
-			cveJsonList += string(dfVulnerabilitiesStr) + ","
+
+		score := 0
+		if report.ParsedAttackVector == "network" {
+			score = 2
+		} else if report.CveSeverity == "critical" {
+			score = 1
 		}
+
+		report.ExploitabilityScore = score
+		report.InitExploitabilityScore = score
+		report.HasLiveConnection = false
+
 		fullReport = append(fullReport, report)
 	}
 

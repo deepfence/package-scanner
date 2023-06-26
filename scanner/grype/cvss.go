@@ -1,5 +1,7 @@
 package grype
 
+import "strings"
+
 // Cvss is a struct that represents the CVSS object
 func GetCvss(c []Cvss) (float64, float64, string) {
 	var cvssScore float64
@@ -34,5 +36,5 @@ func GetCvss(c []Cvss) (float64, float64, string) {
 	}
 
 	// return cvss
-	return cvssScore, overallScore, attackVector
+	return cvssScore, overallScore, strings.ToLower(attackVector)
 }

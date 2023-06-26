@@ -10,7 +10,7 @@ clean:
 
 .PHONY: vendor
 vendor:
-	go mod tidy
+	go mod tidy -v
 	go mod vendor
 
 package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
