@@ -1,15 +1,19 @@
 all: package-scanner
 
 .PHONY: bootstrap
-bootstrap:
+bootstrap: vendor
 	$(PWD)/bootstrap.sh
 
 .PHONY: clean
 clean:
 	-rm package-scanner
 
-package-scanner: $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+.PHONY: vendor
+vendor:
 	go mod tidy
+	go mod vendor
+
+package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 	CGO_ENABLED=0 go build -buildvcs=false -v .
 
 .PHONY: docker
