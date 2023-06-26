@@ -5,6 +5,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 WORKDIR /go/package-scanner/
 COPY . .
 RUN CGO_ENABLED=0 make package-scanner
+RUN make tools
 
 FROM debian:bullseye-slim
 LABEL MAINTAINER="Deepfence Inc"
