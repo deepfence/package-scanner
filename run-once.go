@@ -82,7 +82,7 @@ func RunOnce(config utils.Config) {
 
 	log.Debugf("config: %+v", config)
 
-	log.Infof("generating sbom for %s ...", config.Source)
+	log.Debugf("generating sbom for %s ...", config.Source)
 	sbomResult, err := syft.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
@@ -117,12 +117,11 @@ func RunOnce(config utils.Config) {
 		fmt.Sprintf("GRYPE_DB_CACHE_DIR=%s", path.Join(cacheDir, "grype", "db")),
 	}
 
-	log.Info("scanning sbom for vulnerabilities ...")
+	log.Debug("scanning sbom for vulnerabilities ...")
 	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name(), &env)
 	if err != nil {
-		log.Fatalf("error on grype.Scan: %s %s", err.Error(), vulnerabilities)
+		log.Fatalf("error on sbom scan: %s %s", err.Error(), vulnerabilities)
 	}
-	log.Debugf("grype output: %d bytes", len(vulnerabilities))
 
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {
@@ -137,6 +136,8 @@ func RunOnce(config utils.Config) {
 		return severityToInt(filtered[i].CveSeverity) > severityToInt(filtered[j].CveSeverity)
 	})
 
+	exploitable, others := GroupByExploitability(&filtered)
+
 	if *output != utils.JsonOutput {
 		fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
 			details.Total,
@@ -144,11 +145,20 @@ func RunOnce(config utils.Config) {
 			utils.HIGH, details.Severity.High,
 			utils.MEDIUM, details.Severity.Medium,
 			utils.LOW, details.Severity.Low)
-		out.TableOutput(&filtered)
+		if len(exploitable) > 0 {
+			fmt.Println("\nMost Exploitable Vulnerabilities:")
+			out.TableOutput(&exploitable)
+		}
+		if len(others) > 0 {
+			fmt.Println("\nOther Vulnerabilities:")
+			out.TableOutput(&others)
+		}
+		// out.TableOutput(&filtered)
 	} else {
 		final := map[string]interface{}{
-			"summary":         details,
-			"vulnerabilities": filtered,
+			"summary":                          details,
+			"most_exploitable_vulnerabilities": exploitable,
+			"other_vulnerabilities":            others,
 		}
 		data, err := json.MarshalIndent(final, "", "  ")
 		if err != nil {
@@ -197,4 +207,21 @@ func FilterBySeverity(
 	}
 
 	return filtered
+}
+
+func GroupByExploitability(
+	reports *[]scanner.VulnerabilityScanReport,
+) (
+	exploitable []scanner.VulnerabilityScanReport,
+	others []scanner.VulnerabilityScanReport,
+) {
+
+	for _, r := range *reports {
+		if r.ExploitabilityScore > 0 {
+			exploitable = append(exploitable, r)
+		} else {
+			others = append(others, r)
+		}
+	}
+	return
 }
