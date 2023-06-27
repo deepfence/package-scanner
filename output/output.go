@@ -144,7 +144,6 @@ func (p *Publisher) StartScan() string {
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	data := dsc.IngestersVulnerabilityScanStatus{}
 	data.SetScanId(p.config.ScanId)
-	data.SetTimestamp(time.Now())
 	data.SetScanStatus(status)
 	data.SetScanMessage(message)
 
