@@ -171,7 +171,8 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	}
 
 	if config.ScanType != "" && config.ScanType != "all" {
-		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
+		isRegistry := config.RegistryId != "" && config.NodeType == utils.NodeTypeImage
+		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType, isRegistry)...)
 	}
 
 	if config.RegistryCreds.AuthFilePath != "" {
@@ -221,7 +222,9 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	return sbom, nil
 }
 
-func buildCatalogersArg(scanType string) []string {
+// isRegistry is used to enable binary catalogers in case it's runnning on console (registry scan)
+// running binary catalogers are memory intensive and hence not enabled by default
+func buildCatalogersArg(scanType string, isRegistry bool) []string {
 	syftArgs := []string{}
 	scanTypes := strings.Split(scanType, ",")
 	for _, scanType := range scanTypes {
@@ -236,10 +239,16 @@ func buildCatalogersArg(scanType string) []string {
 		} else if scanType == "php" {
 			syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
 		} else if scanType == "golang" {
+			if isRegistry {
+				syftArgs = append(syftArgs, "--catalogers", "go-module-binary-cataloger")
+			}
 			syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
 		} else if scanType == "java" {
 			syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-pom-cataloger")
 		} else if scanType == "rust" {
+			if isRegistry {
+				syftArgs = append(syftArgs, "--catalogers", "cargo-auditable-binary-cataloger")
+			}
 			syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger")
 		} else if scanType == "dotnet" {
 			syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
