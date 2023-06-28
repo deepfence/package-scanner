@@ -52,7 +52,7 @@ install-goreleaser:
 
 .PHONY: release
 release: proto install-goreleaser
-	goreleaser release --snapshot --rm-dist
+	goreleaser release --snapshot --clean
 
 .PHONY: update-sdk
 update-sdk:
