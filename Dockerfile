@@ -30,7 +30,8 @@ RUN nerdctl_version=1.4.0 \
 #RUN echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
 RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
     && chmod +x /entrypoint.sh
+RUN grype db update
 
 EXPOSE 8001 8002 8005
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/usr/local/bin/package-scanner", "--mode", "grpc-server", "--port", "8002"]
+CMD ["/usr/local/bin/package-scanner"]
