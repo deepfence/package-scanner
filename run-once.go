@@ -13,6 +13,7 @@ import (
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/scanner/grype"
 	"github.com/deepfence/package-scanner/utils"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -53,6 +54,10 @@ func RunOnce(config utils.Config) {
 		if image_id, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
 			log.Error(err)
 		} else {
+			// generate image_id if we are unable to get it from runtime
+			if len(image_id) == 0 {
+				image_id = []byte(uuid.New().String())
+			}
 			sp := strings.Split(strings.TrimSpace(string(image_id)), ":")
 			config.ImageId = sp[len(sp)-1]
 			config.NodeId = sp[len(sp)-1]
