@@ -7,6 +7,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom/syft"
@@ -53,16 +54,16 @@ func RunOnce(config utils.Config) {
 		}
 		if image_id, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
 			log.Error(err)
-		} else {
 			// generate image_id if we are unable to get it from runtime
-			if len(image_id) == 0 {
-				image_id = []byte(uuid.New().String())
-			}
+			image_id = []byte(uuid.New().String())
+			config.ImageId = string(image_id)
+			config.NodeId = string(image_id)
+		} else {
 			sp := strings.Split(strings.TrimSpace(string(image_id)), ":")
 			config.ImageId = sp[len(sp)-1]
 			config.NodeId = sp[len(sp)-1]
-			log.Debugf("image_id: %s", sp[len(sp)-1])
 		}
+		log.Debugf("image_id: %s", config.ImageId)
 	}
 
 	// try to get image id
@@ -70,20 +71,21 @@ func RunOnce(config utils.Config) {
 	var pub *out.Publisher
 	var err error
 	// send sbom to console if console url and key are configured
-	if config.ConsoleURL != "" && config.DeepfenceKey != "" {
+	if len(config.ConsoleURL) != 0 && len(config.DeepfenceKey) != 0 {
 		pub, err = out.NewPublisher(config)
 		if err != nil {
 			log.Error(err)
 		}
 		pub.SendReport()
 		scanId := pub.StartScan()
+		if scanId == "" {
+			log.Warn("console scan id is empty")
+			scanId = fmt.Sprintf("%s-%d", config.ImageId, time.Now().UnixMilli())
+		}
 		config.ScanId = scanId
 		pub.SetScanId(scanId)
-		if scanId == "" {
-			log.Fatal("console scan id is empty")
-		}
-		log.Infof("scan id from console %s", scanId)
 	}
+	log.Infof("scan id %s", config.ScanId)
 
 	log.Debugf("config: %+v", config)
 
