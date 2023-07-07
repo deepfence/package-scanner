@@ -35,6 +35,7 @@ type SBOMDocument struct {
 	Artifacts []Artifact   `json:"artifacts"` // Artifacts is the list of packages discovered and placed into the catalog
 	Source    Source       `json:"source"`    // Source represents the original object that was cataloged
 	Distro    LinuxRelease `json:"distro"`    // Distro represents the Linux distribution that was detected from the source
+	Schema    Schema       `json:"schema"`
 }
 
 type Source struct {
@@ -43,6 +44,11 @@ type Source struct {
 }
 
 type IDLikes []string
+
+type Schema struct {
+	Version string `json:"version"`
+	URL     string `json:"url"`
+}
 
 type LinuxRelease struct {
 	PrettyName       string  `json:"prettyName,omitempty"`
@@ -120,7 +126,6 @@ func (c *Client) SendScanStatustoConsole(vulnerabilityScanMsg string, status str
 		"image_name":              c.config.ImageName,
 		"registry_id":             c.config.RegistryId,
 	}
-
 
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{scanLog})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + cveScanLogsIndexName)
@@ -297,7 +302,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	sbomDoc["kubernetes_cluster_name"] = c.config.KubernetesClusterName
 	sbomDoc["@timestamp"] = time.Now().UTC().Format("2006-01-02T15:04:05.000") + "Z"
 	sbomDoc["time_stamp"] = time.Now().UTC().UnixNano() / 1000000
-	log.Errorf("sbom to es %+v", sbomDoc)
+	log.Debugf("sbom to es %+v", sbomDoc)
 	var resultSBOM SBOMDocument
 	err := json.Unmarshal(sbom, &resultSBOM)
 	if err != nil {
@@ -306,18 +311,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if resultSBOM.Source.Type == sourceTypeImage {
 		resultSBOM.Source.Target = c.config.ImageName
 	}
-	sbomDoc["artifacts"] = resultSBOM.Artifacts
-	if c.config.NodeType == "host" {
-		sbomDoc["source_host"] = resultSBOM.Source
-	} else {
-		sbomDoc["source"] = resultSBOM.Source
-	}
-	sbomDoc["distro"] = resultSBOM.Distro
-	// docBytes, err := json.Marshal(sbomDoc)
-	// if err != nil {
-	// 	return err
-	// }
-	// postReader := bytes.NewReader(docBytes)
+	sbomDoc["sbom"] = resultSBOM
 	postReader := util.ToKafkaRestFormat([]map[string]interface{}{sbomDoc})
 	ingestScanStatusAPI := fmt.Sprintf("https://" + c.mgmtConsoleUrl + "/ingest/topics/" + sbomCveScanLogsIndexName)
 
