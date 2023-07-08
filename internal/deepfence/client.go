@@ -33,6 +33,7 @@ type SBOMDocument struct {
 	Artifacts []Artifact   `json:"artifacts"` // Artifacts is the list of packages discovered and placed into the catalog
 	Source    Source       `json:"source"`    // Source represents the original object that was cataloged
 	Distro    LinuxRelease `json:"distro"`    // Distro represents the Linux distribution that was detected from the source
+	Schema    Schema       `json:"schema"`
 }
 
 type Source struct {
@@ -41,6 +42,11 @@ type Source struct {
 }
 
 type IDLikes []string
+
+type Schema struct {
+	Version string `json:"version"`
+	URL     string `json:"url"`
+}
 
 type LinuxRelease struct {
 	PrettyName       string  `json:"prettyName,omitempty"`
@@ -260,13 +266,7 @@ func (c *Client) SendSBOMtoES(sbom []byte) error {
 	if err != nil {
 		return err
 	}
-	sbomDoc["artifacts"] = resultSBOM.Artifacts
-	if c.config.NodeType == "host" {
-		sbomDoc["source_host"] = resultSBOM.Source
-	} else {
-		sbomDoc["source"] = resultSBOM.Source
-	}
-	sbomDoc["distro"] = resultSBOM.Distro
+	sbomDoc["sbom"] = resultSBOM
 	docBytes, err := json.Marshal(sbomDoc)
 	if err != nil {
 		return err
