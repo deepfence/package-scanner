@@ -12,6 +12,8 @@ LABEL MAINTAINER="Deepfence Inc"
 LABEL deepfence.role=system
 
 ENV PACKAGE_SCAN_CONCURRENCY=5
+ENV DOCKER_VERSION=24.0.2
+ENV NERDCTL_VERSION=1.4.0
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/package-scanner/tools/grype-bin/grype_linux_amd64 /usr/local/bin/grype
@@ -21,11 +23,16 @@ COPY grype.yaml /root/.grype.yaml
 COPY entrypoint.sh /entrypoint.sh
 
 RUN apt-get update
+
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl bash util-linux ca-certificates podman cron
-RUN nerdctl_version=1.4.0 \
-    && curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${nerdctl_version}/nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
-    && tar Cxzvvf /usr/local/bin nerdctl-${nerdctl_version}-linux-amd64.tar.gz \
-    && rm nerdctl-${nerdctl_version}-linux-amd64.tar.gz
+
+RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
+    && tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 -C /usr/local/bin docker/docker \
+    && rm docker-${DOCKER_VERSION}.tgz
+
+RUN curl -fsSLOk https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-amd64.tar.gz \
+    && tar Cxzvvf /usr/local/bin nerdctl-${NERDCTL_VERSION}-linux-amd64.tar.gz \
+    && rm nerdctl-${NERDCTL_VERSION}-linux-amd64.tar.gz
 
 #RUN echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
 RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
