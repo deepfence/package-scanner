@@ -287,9 +287,7 @@ func ExitOnSeverity(severity string, count int, failOnCount int) {
 }
 
 func FailOn(cfg *utils.Config, details *VulnerabilityScanDetail) {
-	if cfg.FailOnCount > 0 {
-		ExitOnSeverity("", details.Total, cfg.FailOnCount)
-	} else if cfg.FailOnCriticalCount > 0 {
+	if cfg.FailOnCriticalCount > 0 {
 		ExitOnSeverity(utils.CRITICAL, details.Severity.Critical, cfg.FailOnCriticalCount)
 	} else if cfg.FailOnHighCount > 0 {
 		ExitOnSeverity(utils.HIGH, details.Severity.High, cfg.FailOnHighCount)
@@ -297,6 +295,8 @@ func FailOn(cfg *utils.Config, details *VulnerabilityScanDetail) {
 		ExitOnSeverity(utils.MEDIUM, details.Severity.Medium, cfg.FailOnMediumCount)
 	} else if cfg.FailOnLowCount > 0 {
 		ExitOnSeverity(utils.LOW, details.Severity.Low, cfg.FailOnLowCount)
+	} else if cfg.FailOnCount > 0 {
+		ExitOnSeverity("", details.Total, cfg.FailOnCount)
 	}
 	if cfg.FailOnScore > 0.0 {
 		ExitOnSeverityScore(details.CveScore, cfg.FailOnScore)
