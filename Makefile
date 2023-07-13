@@ -39,11 +39,11 @@ rm-buildx:
 tools: grype syft
 
 .PHONY: grype
-grype: tools/grype-bin/grype_linux_amd64 tools/grype-bin/grype_linux_arm64 tools/grype-bin/grype_darwin_amd64 tools/grype-bin/grype_darwin_arm64
+grype: 
 	(cd tools/grype-bin && ./get_grype.sh)
 
 .PHONY: syft
-syft: tools/syft-bin/syft_linux_amd64 tools/syft-bin/syft_linux_arm64 tools/syft-bin/syft_darwin_amd64 tools/syft-bin/syft_darwin_arm64
+syft: 
 	(cd tools/syft-bin && ./get_syft.sh)
 
 .PHONY: install-goreleaser
