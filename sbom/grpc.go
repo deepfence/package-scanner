@@ -193,25 +193,25 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	publisher.StartStatusReporter(statusChan, &wg)
 	defer wg.Wait()
 
-	statusChan <- output.JobStatus{output.IN_PROGRESS, ""}
+	statusChan <- output.JobStatus{Status: output.IN_PROGRESS, Msg: ""}
 
 	// generate sbom
 	sbom, err = syft.GenerateSBOM(config)
 	if err != nil {
 		log.Error("error in generating sbom: " + err.Error())
-		statusChan <- output.JobStatus{output.ERROR, string(sbom) + " " + err.Error()}
+		statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
 		return err
 	}
 
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
-	if err := publisher.SendSbomToConsole(sbom); err != nil {
+	if err := publisher.SendSbomToConsole(sbom, false); err != nil {
 		log.Error(config.ScanId, " ", err.Error())
-		statusChan <- output.JobStatus{output.ERROR, string(sbom) + " " + err.Error()}
+		statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
 		return err
 	}
 
 	//This is to signal completion to the StatusChecker
-	statusChan <- output.JobStatus{output.COMPLETE, ""}
+	statusChan <- output.JobStatus{Status: output.COMPLETE, Msg: ""}
 
 	return nil
 }

@@ -45,10 +45,10 @@ github.com/cyphar/filepath-securejoin v0.2.3/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxG
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230626093937-bda1a01bece8 h1:n5YqjpJaxjLO1ornZR3LdpD90dEH16x87+/dWqkJk/U=
-github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230626093937-bda1a01bece8/go.mod h1:+rchMc4YNjCoHo0YAwKsT+DRBNr1hdDG0WrvAOOCc5k=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230626093937-bda1a01bece8 h1:nTsKwuvXkTOXjVtPv0fMleZ8Iioj73cfHcQ7DBUOuDY=
-github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230626093937-bda1a01bece8/go.mod h1:C3CqMr7oE9RmHZWXIVDWFLuGaNDDaoSBSlILLQJxlew=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230713115411-07b0df478c6b h1:Vjwj2CHHPnVX8/0vm55/1TZ4z0xVvKjytBY+suevTmw=
+github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20230713115411-07b0df478c6b/go.mod h1:+rchMc4YNjCoHo0YAwKsT+DRBNr1hdDG0WrvAOOCc5k=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230713115411-07b0df478c6b h1:4RejCps8QcvTtxVrZzO/PRlPA/J8E0tbHTWcKPognQ8=
+github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20230713115411-07b0df478c6b/go.mod h1:C3CqMr7oE9RmHZWXIVDWFLuGaNDDaoSBSlILLQJxlew=
 github.com/deepfence/vessel v0.11.1 h1:RSnPHv/HX9Vrcujxzp6l4cjzF7a/34lVvh+jr8Hq8YA=
 github.com/deepfence/vessel v0.11.1/go.mod h1:uSMZ7HZePuQzHH2kKdRJ/r8kYPz9ZgkffYhFiccmeHk=
 github.com/docker/distribution v2.8.1+incompatible h1:Q50tZOPR6T/hjNsyc9g8/syEs6bk8XXApsHjKukMl68=

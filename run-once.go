@@ -97,7 +97,7 @@ func RunOnce(config utils.Config) {
 	}
 
 	// send sbom to console if console url and key are configured
-	if config.ConsoleURL != "" && config.DeepfenceKey != "" {
+	if len(config.ConsoleURL) != 0 && len(config.DeepfenceKey) != 0 {
 		log.Infof("sending sbom to console at %s", config.ConsoleURL)
 		pub.RunVulnerabilityScan(sbomResult)
 	}
@@ -134,6 +134,13 @@ func RunOnce(config utils.Config) {
 	if err != nil {
 		log.Fatalf("error on generate vulnerability report: %s", err.Error())
 	}
+
+	// send vulnerability scan results to console
+	if len(config.ConsoleURL) != 0 && len(config.DeepfenceKey) != 0 {
+		log.Infof("sending scan result to console at %s", config.ConsoleURL)
+		pub.SendScanResultToConsole(report)
+	}
+
 	// scan details
 	details := out.CountBySeverity(&report)
 	// filter by severity

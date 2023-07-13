@@ -132,8 +132,6 @@ func (p *Publisher) StartScan() string {
 		log.Error(err)
 		return ""
 	}
-	// defer resp.Body.Close()
-	// io.Copy(io.Discard, resp.Body)
 
 	log.Debugf("start scan response: %+v", res)
 	log.Debugf("start scan response status: %s", resp.Status)
@@ -190,14 +188,15 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 
 	time.Sleep(3 * time.Second)
 
-	err := p.SendSbomToConsole(sbom)
+	// skip sbom scan on console
+	err := p.SendSbomToConsole(sbom, true)
 	if err != nil {
 		p.PublishScanError(err.Error())
 		log.Error(p.config.ScanId, " ", err.Error())
 	}
 }
 
-func (p *Publisher) SendSbomToConsole(sbom []byte) error {
+func (p *Publisher) SendSbomToConsole(sbom []byte, skipScan bool) error {
 	data := dsc.UtilsScanSbomRequest{}
 	data.SetImageName(p.config.NodeId)
 	data.SetImageId(p.config.ImageId)
@@ -209,6 +208,7 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 	data.SetScanType(p.config.ScanType)
 	data.SetContainerName(p.config.ContainerName)
 	data.SetMode(p.config.Mode)
+	data.SetSkipScan(skipScan)
 
 	// compress sbom and encode to base64
 	var out bytes.Buffer
@@ -236,10 +236,49 @@ func (p *Publisher) SendSbomToConsole(sbom []byte) error {
 		log.Error(err)
 		return err
 	}
-	// defer resp.Body.Close()
-	// io.Copy(io.Discard, resp.Body)
 
-	log.Infof("publish sbom to console response: %v", resp)
+	log.Debugf("publish sbom to console response: %v", resp)
+
+	return nil
+}
+
+func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.VulnerabilityScanReport) error {
+	data := []dsc.IngestersVulnerability{}
+
+	for _, v := range vulnerabilities {
+		n := dsc.NewIngestersVulnerability()
+		n.SetScanId(v.ScanId)
+		n.SetCveAttackVector(v.CveAttackVector)
+		n.SetCveCausedByPackage(v.CveCausedByPackage)
+		n.SetCveCausedByPackagePath(v.CveCausedByPackagePath)
+		n.SetCveContainerLayer(v.CveContainerLayer)
+		n.SetCveCvssScore(float32(v.CveCvssScore))
+		n.SetCveDescription(v.CveDescription)
+		n.SetCveFixedIn(v.CveFixedIn)
+		n.SetCveId(v.CveId)
+		n.SetCveLink(v.CveLink)
+		n.SetCveOverallScore(float32(v.CveOverallScore))
+		n.SetCveSeverity(v.CveSeverity)
+		n.SetExploitPoc(v.ExploitPOC)
+		n.SetExploitabilityScore(int32(v.ExploitabilityScore))
+		n.SetHasLiveConnection(v.HasLiveConnection)
+		n.SetInitExploitabilityScore(int32(v.InitExploitabilityScore))
+		n.SetParsedAttackVector(v.ParsedAttackVector)
+		n.SetUrls(v.URLs)
+
+		data = append(data, *n)
+	}
+
+	req := p.client.Client().VulnerabilityAPI.IngestVulnerabilities(context.Background())
+	req = req.IngestersVulnerability(data)
+
+	resp, err := p.client.Client().VulnerabilityAPI.IngestVulnerabilitiesExecute(req)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	log.Debugf("publish sbom scan result to console response: %v", resp)
 
 	return nil
 }
