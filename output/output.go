@@ -32,11 +32,11 @@ type JobStatus struct {
 }
 
 const (
-	IN_PROGRESS string = "IN_PROGRESS"
-	COMPLETE           = "COMPLETE"
-	ABORT              = "ABORT"
-	CANCELLED          = "CANCELLED"
-	ERROR              = "ERROR"
+	IN_PROGRESS = "IN_PROGRESS"
+	COMPLETE    = "COMPLETE"
+	ABORT       = "ABORT"
+	CANCELLED   = "CANCELLED"
+	ERROR       = "ERROR"
 )
 
 func NewPublisher(config utils.Config) (*Publisher, error) {
@@ -416,7 +416,7 @@ func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
 			}
 		}
 
-		if abort == true {
+		if abort {
 			p.PublishScanStatusMessage(msg, CANCELLED)
 		} else if err != nil {
 			p.PublishScanStatusMessage(err.Error(), ERROR)
