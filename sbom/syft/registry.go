@@ -239,11 +239,15 @@ func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId string
 	mySession := session.Must(session.NewSession(&awsConfig))
 
 	if useIAMRole {
-		creds = stscreds.NewCredentials(mySession, targetAccountRoleARN)
-		svc = ecr.New(mySession, &aws.Config{
-			Credentials: creds,
-			Region:      &awsRegionName,
-		})
+		if targetAccountRoleARN == "" {
+			svc = ecr.New(mySession, aws.NewConfig().WithRegion(awsRegionName))
+		} else {
+			creds = stscreds.NewCredentials(mySession, targetAccountRoleARN)
+			svc = ecr.New(mySession, &aws.Config{
+				Credentials: creds,
+				Region:      &awsRegionName,
+			})
+		}
 	} else {
 		svc = ecr.New(mySession, aws.NewConfig().WithRegion(awsRegionName))
 	}
