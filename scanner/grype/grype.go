@@ -89,6 +89,19 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			cvssScore, overallScore, attackVector = GetCvss(cveCVSSScoreList)
 		}
 
+		if cvssScore == 0.0 {
+			switch strings.ToLower(match.Vulnerability.Severity) {
+			case "critical":
+				cvssScore = DEFAULT_CVSS_CRITICAL
+			case "high":
+				cvssScore = DEFAULT_CVSS_HIGH
+			case "medium":
+				cvssScore = DEFAULT_CVSS_MEDIUM
+			case "low":
+				cvssScore = DEFAULT_CVSS_LOW
+			}
+		}
+
 		metasploitURL, urls := utils.ExtractExploitPocUrl(match.Vulnerability.URLs)
 
 		report := scanner.VulnerabilityScanReport{
