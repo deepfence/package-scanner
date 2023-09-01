@@ -1,4 +1,4 @@
-package package_sbom
+package sbom
 
 import (
 	"encoding/json"
@@ -8,9 +8,8 @@ import (
 	"strconv"
 
 	"github.com/Jeffail/tunny"
-
-	"github.com/deepfence/package-scanner/internal/deepfence"
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/sbom/syft"
+	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -37,13 +36,13 @@ func init() {
 	}
 }
 
-func RunHttpServer(config util.Config) error {
+func RunHttpServer(config utils.Config) error {
 	if config.Port == "" {
 		return fmt.Errorf("http-server mode requires port to be set")
 	}
 	http.HandleFunc("/registry", registryHandler)
 
-	fmt.Printf("Starting server at port %s\n", config.Port)
+	log.Infof("Starting server at port %s", config.Port)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil); err != nil {
 		return err
 	}
@@ -51,16 +50,16 @@ func RunHttpServer(config util.Config) error {
 }
 
 func processRegistryMessage(rInterface interface{}) interface{} {
-	r, ok := rInterface.(util.Config)
+	r, ok := rInterface.(utils.Config)
 	if !ok {
 		log.Error("Error processing input config")
 		return false
 	}
-	config := util.Config{
+	config := utils.Config{
 		Output:                "",
 		Quiet:                 true,
-		ManagementConsoleUrl:  managementConsoleUrl,
-		ManagementConsolePort: managementConsolePort,
+		ConsoleURL:            managementConsoleUrl,
+		ConsolePort:           managementConsolePort,
 		DeepfenceKey:          "",
 		Source:                r.Source,
 		ScanType:              r.ScanType,
@@ -69,19 +68,12 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		NodeType:              r.NodeType,
 		NodeId:                r.NodeId,
 		HostName:              r.HostName,
-		ImageName:             r.ImageName,
 		ImageId:               r.ImageId,
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
-	flock := deepfence.NewFlock()
-	if err := flock.LockFile(); err != nil {
-		log.Error(err.Error())
-		return false
-	}
-	defer flock.UnlockFile()
-	_, err := GenerateSBOM(config)
+	_, err := syft.GenerateSBOM(config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
 		return false
@@ -96,7 +88,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	decoder := json.NewDecoder(req.Body)
-	var config util.Config
+	var config utils.Config
 	err := decoder.Decode(&config)
 	if err != nil {
 		http.Error(w, "Unable to decode input JSON request", http.StatusBadRequest)
@@ -105,7 +97,7 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 	if config.Source == "" {
 		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
 	}
-	log.Infof("came to the registry handler: %+v", config)
+
 	go workerPool.Process(config)
 
 	w.WriteHeader(http.StatusOK)

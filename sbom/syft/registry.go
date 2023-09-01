@@ -1,4 +1,4 @@
-package package_sbom
+package syft
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/deepfence/package-scanner/util"
+	"github.com/deepfence/package-scanner/utils"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -53,6 +53,9 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 }
 
 func isRegistryInsecure(registryId string) bool {
+	if len(registryId) <= 0 {
+		return false
+	}
 	registryData, err := callRegistryCredentialApi(registryId)
 	if err != nil || !registryData.Success {
 		log.Error("unable to get registry credentials")
@@ -64,10 +67,7 @@ func isRegistryInsecure(registryId string) bool {
 	}
 	registryUrl, _, _ := GetDockerCredentials(registryData.Data)
 
-	if strings.Contains(registryUrl, "http:") {
-		return true
-	}
-	return false
+	return strings.Contains(registryUrl, "http:")
 }
 
 func GetConfigFileFromRegistry(registryId string) (string, error) {
@@ -205,7 +205,7 @@ func getDefaultDockerCredentials(registryData map[string]interface{}, registryUr
 }
 
 func createAuthFile(registryId, registryUrl, username, password string) (string, error) {
-	authFilePath := "/tmp/auth_" + registryId + "_" + util.RandomString(12)
+	authFilePath := "/tmp/auth_" + registryId + "_" + utils.RandomString(12)
 	if _, err := os.Stat(authFilePath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(authFilePath, os.ModePerm)
 		if err != nil {

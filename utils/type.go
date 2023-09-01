@@ -1,4 +1,4 @@
-package util
+package utils
 
 import "github.com/deepfence/vessel"
 
@@ -8,8 +8,8 @@ type Config struct {
 	Port                  string         `json:"port,omitempty"`
 	Output                string         `json:"output,omitempty"`
 	Quiet                 bool           `json:"quiet,omitempty"`
-	ManagementConsoleUrl  string         `json:"management_console_url,omitempty"`
-	ManagementConsolePort string         `json:"management_console_port,omitempty"`
+	ConsoleURL            string         `json:"console_url,omitempty"`
+	ConsolePort           string         `json:"console_port,omitempty"`
 	DeepfenceKey          string         `json:"deepfence_key,omitempty"`
 	Source                string         `json:"source,omitempty"`
 	ScanType              string         `json:"scan_type,omitempty"`
@@ -33,16 +33,37 @@ type Config struct {
 	ContainerRuntimeName  string         `json:"container_runtime_name,omitempty"`
 	ContainerRuntime      vessel.Runtime `json:"container_runtime,omitempty"`
 	ContainerID           string         `json:"container_id,omitempty"`
-	ImageName             string         `json:"image_name,omitempty"`
+	SyftBinPath           string         `json:"syft_bin_path,omitempty"`
+	GrypeBinPath          string         `json:"grype_bin_path,omitempty"`
+	GrypeConfigPath       string         `json:"grype_config_path,omitempty"`
+	KeepSbom              bool           `json:"keep_sbom,omitempty"`
+	RegistryCreds         RegistryCreds  `json:"registry_creds,omitempty"`
+}
+
+type RegistryCreds struct {
+	AuthFilePath  string
+	SkipTLSVerify bool
+	UseHttp       bool
 }
 
 const (
 	ModeLocal         = "local"
 	ModeGrpcServer    = "grpc-server"
 	ModeHttpServer    = "http-server"
+	ModeScannerOnly   = "scanner-only"
 	JsonOutput        = "json"
 	TableOutput       = "table"
 	NodeTypeHost      = "host"
 	NodeTypeImage     = "container_image"
 	NodeTypeContainer = "container"
+)
+
+// severity
+const (
+	CRITICAL   = "critical"
+	HIGH       = "high"
+	MEDIUM     = "medium"
+	LOW        = "low"
+	NEGLIGIBLE = "negligible"
+	UNKNOWN    = "unknown"
 )
