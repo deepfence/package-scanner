@@ -58,6 +58,20 @@ const (
 	NodeTypeContainer = "container"
 )
 
+const (
+	ScanTypeBase         = "base"
+	ScanTypeRuby         = "ruby"
+	ScanTypePython       = "python"
+	ScanTypeJavaScript   = "javascript"
+	ScanTypePhp          = "php"
+	ScanTypeGolang       = "golang"
+	ScanTypeGolangBinary = "golang-binary"
+	ScanTypeJava         = "java"
+	ScanTypeRust         = "rust"
+	ScanTypeRustBinary   = "rust-binary"
+	ScanTypeDotnet       = "dotnet"
+)
+
 // severity
 const (
 	CRITICAL   = "critical"
