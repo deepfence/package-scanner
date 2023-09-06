@@ -15,16 +15,19 @@ import (
 var (
 	matcherToLanguage = map[string]string{
 		"UnknownMatcherType": "unknown",
-		"stock-matcher":      "stock",
-		"apk-matcher":        "base",
-		"ruby-gem-matcher":   "ruby",
-		"dpkg-matcher":       "base",
-		"rpmdb-matcher":      "base",
-		"java-matcher":       "java",
-		"python-matcher":     "python",
-		"dotnet-matcher":     "dotnet",
-		"javascript-matcher": "javascript",
-		"msrc-matcher":       "dotnet",
+		"stock-matcher":      "unknown",
+		"apk-matcher":        utils.ScanTypeBase,
+		"ruby-gem-matcher":   utils.ScanTypeRuby,
+		"dpkg-matcher":       utils.ScanTypeBase,
+		"rpmdb-matcher":      utils.ScanTypeBase,
+		"rpm-matcher":        utils.ScanTypeBase,
+		"java-matcher":       utils.ScanTypeJava,
+		"python-matcher":     utils.ScanTypePython,
+		"dotnet-matcher":     utils.ScanTypeDotnet,
+		"javascript-matcher": utils.ScanTypeJavaScript,
+		"msrc-matcher":       utils.ScanTypeDotnet,
+		"portage-matcher":    utils.ScanTypeBase,
+		"go-module-matcher":  utils.ScanTypeGolang,
 	}
 	attackVectorRegex = regexp.MustCompile(`.*av:n.*`)
 )
@@ -158,7 +161,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 func getLanguageFromMatcher(matcher string) string {
 	lang := matcherToLanguage[matcher]
 	if lang == "" {
-		return "base"
+		return utils.ScanTypeBase
 	}
 	return lang
 }

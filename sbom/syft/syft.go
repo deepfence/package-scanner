@@ -222,35 +222,32 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 	return sbom, nil
 }
 
-// isRegistry is used to enable binary catalogers in case it's runnning on console (registry scan)
-// running binary catalogers are memory intensive and hence not enabled by default
 func buildCatalogersArg(scanType string, isRegistry bool) []string {
 	syftArgs := []string{}
 	scanTypes := strings.Split(scanType, ",")
-	for _, scanType := range scanTypes {
-		if scanType == "base" {
-			syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpm-db-cataloger", "--catalogers", "rpm-file-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger")
-		} else if scanType == "ruby" {
+	for _, s := range scanTypes {
+		switch s {
+		case utils.ScanTypeBase:
+			syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpm-db-cataloger", "--catalogers", "rpm-file-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger", "--catalogers", "linux-kernel-cataloger")
+		case utils.ScanTypeRuby:
 			syftArgs = append(syftArgs, "--catalogers", "ruby-gemfile-cataloger", "--catalogers", "ruby-gemspec-cataloger")
-		} else if scanType == "python" {
+		case utils.ScanTypePython:
 			syftArgs = append(syftArgs, "--catalogers", "python-index-cataloger", "--catalogers", "python-package-cataloger")
-		} else if scanType == "javascript" {
+		case utils.ScanTypeJavaScript:
 			syftArgs = append(syftArgs, "--catalogers", "javascript-lock-cataloger", "--catalogers", "javascript-package-cataloger")
-		} else if scanType == "php" {
+		case utils.ScanTypePhp:
 			syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
-		} else if scanType == "golang" {
-			if isRegistry {
-				syftArgs = append(syftArgs, "--catalogers", "go-module-binary-cataloger")
-			}
+		case utils.ScanTypeGolang:
 			syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
-		} else if scanType == "java" {
-			syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-pom-cataloger")
-		} else if scanType == "rust" {
-			if isRegistry {
-				syftArgs = append(syftArgs, "--catalogers", "cargo-auditable-binary-cataloger")
-			}
+		case utils.ScanTypeGolangBinary:
+			syftArgs = append(syftArgs, "--catalogers", "go-module-binary-cataloger")
+		case utils.ScanTypeJava:
+			syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-gradle-lockfile-cataloger", "--catalogers", "java-pom-cataloger")
+		case utils.ScanTypeRust:
 			syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger")
-		} else if scanType == "dotnet" {
+		case utils.ScanTypeRustBinary:
+			syftArgs = append(syftArgs, "--catalogers", "cargo-auditable-binary-cataloger")
+		case utils.ScanTypeDotnet:
 			syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
 		}
 	}
