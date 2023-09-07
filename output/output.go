@@ -285,21 +285,23 @@ func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.Vulnerabil
 
 func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 	table := tw.NewWriter(os.Stdout)
-	table.SetHeader([]string{"CVE ID", "Severity", "Package", "Description"})
+	table.SetHeader([]string{"CVE ID", "Severity", "CVE Type", "Package", "CVE link"})
 	table.SetHeaderLine(true)
 	table.SetBorder(true)
 	table.SetAutoWrapText(true)
 	table.SetAutoFormatHeaders(true)
-	table.SetColMinWidth(0, 15)
-	table.SetColMinWidth(1, 15)
+	table.SetColMinWidth(0, 10)
+	table.SetColMinWidth(1, 10)
+	table.SetColMinWidth(3, 10)
 	table.SetColMinWidth(2, 15)
-	table.SetColMinWidth(3, 50)
+	table.SetColMinWidth(3, 15)
+	table.SetColumnAlignment([]int{tw.ALIGN_CENTER, tw.ALIGN_CENTER, tw.ALIGN_CENTER, tw.ALIGN_DEFAULT, tw.ALIGN_DEFAULT})
 
 	for _, r := range *report {
 		if r.CveCausedByPackage == "" {
 			r.CveCausedByPackage = r.CveCausedByPackagePath
 		}
-		table.Append([]string{r.CveId, r.CveSeverity, r.CveCausedByPackage, r.CveDescription})
+		table.Append([]string{r.CveId, r.CveSeverity, r.CveType, r.CveCausedByPackage, r.CveLink})
 	}
 	table.Render()
 	return nil
