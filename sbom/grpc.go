@@ -36,6 +36,7 @@ type gRPCServer struct {
 var (
 	scanConcurrencyGrpc int
 	grpcScanWorkerPool  *tunny.Pool
+	scanMap             sync.Map
 )
 
 func init() {
@@ -45,6 +46,7 @@ func init() {
 		scanConcurrencyGrpc = DefaultPackageScanConcurrency
 	}
 	grpcScanWorkerPool = tunny.NewFunc(scanConcurrencyGrpc, processSbomGeneration)
+	scanMap = sync.Map{}
 }
 
 func RunGrpcServer(pluginName string, config utils.Config) error {
@@ -134,6 +136,7 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		nodeId = r.Source
 		nodeType = utils.NodeTypeImage
 	}
+
 	config := utils.Config{
 		Mode:                  s.config.Mode,
 		SocketPath:            s.config.SocketPath,
@@ -175,6 +178,13 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return fmt.Errorf("error processing grpc input for generating sbom")
 	}
 
+	log.Info("Adding to map:" + config.ScanId)
+	ctx, cancel := context.WithCancel(context.Background())
+	scanMap.Store(config.ScanId, cancel)
+	defer func() {
+		log.Info("Removing from map:" + config.ScanId)
+		scanMap.Delete(config.ScanId)
+	}()
 	var (
 		publisher *output.Publisher
 		err       error
@@ -196,10 +206,15 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	statusChan <- output.JobStatus{Status: output.IN_PROGRESS, Msg: ""}
 
 	// generate sbom
-	sbom, err = syft.GenerateSBOM(config)
+	sbom, err = syft.GenerateSBOM(ctx, config)
 	if err != nil {
-		log.Error("error in generating sbom: " + err.Error())
-		statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
+		if ctx.Err() == context.Canceled {
+			log.Infof("Stopping GenerateSBOM as per user request, scanID:", config.ScanId)
+			statusChan <- output.JobStatus{Status: output.ABORT, Msg: "CANCELLED"}
+		} else {
+			log.Error("error in generating sbom: " + err.Error())
+			statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
+		}
 		return err
 	}
 
@@ -214,4 +229,31 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	statusChan <- output.JobStatus{Status: output.COMPLETE, Msg: ""}
 
 	return nil
+}
+
+func (s *gRPCServer) StopScan(_ context.Context, req *pb.StopScanRequest) (*pb.StopScanResult, error) {
+	log.Infof("StopSBOM: %v", req)
+
+	scanID := req.ScanId
+	result := &pb.StopScanResult{
+		Success:     true,
+		Description: "",
+	}
+
+	cancelFnObj, found := scanMap.Load(scanID)
+	logMsg := ""
+	successFlag := true
+	if !found {
+		logMsg = "Failed to Stop scan, may have already completed"
+		successFlag = false
+	} else {
+		cancelFn := cancelFnObj.(context.CancelFunc)
+		cancelFn()
+		logMsg = "Stop GenerateSBOM request submitted"
+	}
+
+	log.Infof("%s, scan_id: %s", logMsg, scanID)
+	result.Success = successFlag
+	result.Description = logMsg
+	return result, nil
 }

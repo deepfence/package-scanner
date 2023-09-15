@@ -385,7 +385,6 @@ func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
 
 		ticker := time.NewTicker(30 * time.Second)
 		var err error
-		var msg string
 		var statusIn JobStatus
 		abort := false
 		start := time.Now()
@@ -401,11 +400,9 @@ func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
 					break loop
 				} else if status == ABORT {
 					abort = true
-					msg = statusIn.Msg
 					break loop
 				} else if status == ERROR {
 					err = fmt.Errorf(statusIn.Msg)
-					msg = statusIn.Msg
 					break loop
 				}
 			case <-ticker.C:
@@ -423,7 +420,7 @@ func (p *Publisher) StartStatusReporter(statusChan chan JobStatus,
 		}
 
 		if abort {
-			p.PublishScanStatusMessage(msg, CANCELLED)
+			p.PublishScanStatusMessage("Scan stopped by user", CANCELLED)
 		} else if err != nil {
 			p.PublishScanStatusMessage(err.Error(), ERROR)
 		}

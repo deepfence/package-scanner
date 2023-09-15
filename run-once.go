@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -90,7 +91,8 @@ func RunOnce(config utils.Config) {
 	log.Debugf("config: %+v", config)
 
 	log.Debugf("generating sbom for %s ...", config.Source)
-	sbomResult, err := syft.GenerateSBOM(config)
+	ctx, _ := context.WithCancel(context.Background())
+	sbomResult, err := syft.GenerateSBOM(ctx, config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
 		return
