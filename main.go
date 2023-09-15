@@ -31,7 +31,7 @@ var (
 	vulnerabilityScan     = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
 	deepfenceKey          = flag.String("deepfence-key", "", "Deepfence key for auth")
 	source                = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
-	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,golang,dotnet", "base,java,python,ruby,php,javascript,rust,golang,dotnet")
+	scanType              = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,rust-binary,golang,golang-binary,dotnet", "base,java,python,ruby,php,javascript,rust,golang,dotnet")
 	scanId                = flag.String("scan-id", "", "(Optional) Scan id")
 	failOnCount           = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
 	failOnCriticalCount   = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
