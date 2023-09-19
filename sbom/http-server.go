@@ -1,6 +1,7 @@
 package sbom
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -73,7 +74,8 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 		KubernetesClusterName: r.KubernetesClusterName,
 		RegistryId:            r.RegistryId,
 	}
-	_, err := syft.GenerateSBOM(config)
+	ctx, _ := context.WithCancel(context.Background())
+	_, err := syft.GenerateSBOM(ctx, config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
 		return false

@@ -2,6 +2,7 @@ package syft
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -81,14 +82,17 @@ func runCommand(cmd *exec.Cmd) (*bytes.Buffer, error) {
 	cmd.Stderr = &stderr
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
-		log.Errorf("cmd: %s", cmd.String())
-		log.Errorf("error: %s", errorOnRun)
-		return nil, errors.New(fmt.Sprint(errorOnRun) + ": " + stderr.String())
+		if errorOnRun != context.Canceled {
+			log.Errorf("cmd: %s", cmd.String())
+			log.Errorf("error: %s", errorOnRun)
+			errorOnRun = errors.New(fmt.Sprint(errorOnRun) + ": " + stderr.String())
+		}
+		return nil, errorOnRun
 	}
 	return &stdout, nil
 }
 
-func GenerateSBOM(config utils.Config) ([]byte, error) {
+func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	jsonFile := filepath.Join("/tmp", utils.RandomString(12)+"output.json")
 	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
@@ -196,7 +200,7 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 		}
 	}
 
-	cmd := exec.Command(config.SyftBinPath, syftArgs...)
+	cmd := exec.CommandContext(ctx, config.SyftBinPath, syftArgs...)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, syftEnv...)
 
@@ -205,10 +209,15 @@ func GenerateSBOM(config utils.Config) ([]byte, error) {
 
 	stdout, err := runCommand(cmd)
 	if err != nil {
-		log.Errorf("failed command: %s", cmd.String())
-		log.Errorf("failed command Env: %s", cmd.Env)
-		log.Errorf("err: %s", err)
-		log.Errorf("stdout: %s", stdout.String())
+		if err == context.Canceled {
+			log.Infof("Command cacelled as context was cancelled %v",
+				context.Canceled)
+		} else {
+			log.Errorf("failed command: %s", cmd.String())
+			log.Errorf("failed command Env: %s", cmd.Env)
+			log.Errorf("err: %s", err)
+			log.Errorf("stdout: %s", stdout.String())
+		}
 		return []byte(""), err
 	}
 
