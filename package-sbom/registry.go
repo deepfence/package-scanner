@@ -21,6 +21,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	api_service_host = util.GetEnv("API_SERVICE_HOST", "deepfence-api")
+	api_service_port = util.GetEnv("API_SERVICE_PORT", "9997")
+	api_service_url  = fmt.Sprintf("http://%s:%s", api_service_host, api_service_port)
+)
+
 type registryCredentialResponse struct {
 	Data    map[string]interface{} `json:"data,omitempty"`
 	Error   interface{}            `json:"error,omitempty"`
@@ -30,7 +36,7 @@ type registryCredentialResponse struct {
 func callRegistryCredentialApi(registryId string) (registryCredentialResponse, error) {
 	var registryCredentialsOutput registryCredentialResponse
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", "http://deepfence-api:9997/registry_credential",
+	req, err := http.NewRequest("POST", api_service_url+"/registry_credential",
 		bytes.NewBuffer([]byte(`{"id":"`+registryId+`"}`)))
 	if err != nil {
 		return registryCredentialsOutput, err
