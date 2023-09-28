@@ -23,7 +23,7 @@ import (
 
 var (
 	api_service_host = util.GetEnv("API_SERVICE_HOST", "deepfence-api")
-	api_service_port = util.GetEnv("API_SERVICE_PORT", "9997")
+	api_service_port = util.GetEnv("API_SERVICE_PORT_INTERNAL", "9997")
 	api_service_url  = fmt.Sprintf("http://%s:%s", api_service_host, api_service_port)
 )
 
