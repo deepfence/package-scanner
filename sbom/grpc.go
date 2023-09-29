@@ -15,6 +15,7 @@ import (
 	"github.com/Jeffail/tunny"
 	pb "github.com/deepfence/agent-plugins-grpc/srcgo"
 	dschttp "github.com/deepfence/golang_deepfence_sdk/utils/http"
+	"github.com/deepfence/golang_deepfence_sdk/utils/tasks"
 	"github.com/deepfence/package-scanner/jobs"
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom/syft"
@@ -168,9 +169,35 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 }
 
 func processSbomGeneration(configInterface interface{}) interface{} {
+	var (
+		publisher *output.Publisher
+		err       error
+		sbom      []byte
+	)
 
 	jobs.StartScanJob()
 	defer jobs.StopScanJob()
+
+	res, ctx := tasks.StartStatusReporter(
+		"",
+		func(ss tasks.ScanStatus) error {
+			if publisher != nil {
+				publisher.PublishScanStatusMessage(ss.ScanMessage, ss.ScanStatus)
+			}
+			return nil
+		},
+		tasks.StatusValues{
+			IN_PROGRESS: "IN_PROGRESS",
+			CANCELLED:   "CANCELLED",
+			FAILED:      "ERROR",
+			SUCCESS:     "COMPLETE",
+		},
+		5*time.Hour,
+	)
+	defer func() {
+		res <- err
+		close(res)
+	}()
 
 	config, ok := configInterface.(utils.Config)
 	if !ok {
@@ -179,17 +206,6 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 	}
 
 	log.Info("Adding to map:" + config.ScanId)
-	ctx, cancel := context.WithCancel(context.Background())
-	scanMap.Store(config.ScanId, cancel)
-	defer func() {
-		log.Info("Removing from map:" + config.ScanId)
-		scanMap.Delete(config.ScanId)
-	}()
-	var (
-		publisher *output.Publisher
-		err       error
-		sbom      []byte
-	)
 
 	publisher, err = output.NewPublisher(config)
 	if err != nil {
@@ -197,36 +213,30 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return err
 	}
 
-	statusChan := make(chan output.JobStatus)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	publisher.StartStatusReporter(statusChan, &wg)
-	defer wg.Wait()
+	scanMap.Store(config.ScanId, ctx)
+	defer func() {
+		log.Info("Removing from map:" + config.ScanId)
+		scanMap.Delete(config.ScanId)
+	}()
 
-	statusChan <- output.JobStatus{Status: output.IN_PROGRESS, Msg: ""}
+	err = ctx.Checkpoint("Before generating SBOM")
+	if err != nil {
+		return err
+	}
 
 	// generate sbom
-	sbom, err = syft.GenerateSBOM(ctx, config)
+	sbom, err = syft.GenerateSBOM(ctx.Context, config)
+
+	err = ctx.Checkpoint("After generating SBOM")
 	if err != nil {
-		if ctx.Err() == context.Canceled {
-			log.Infof("Stopping GenerateSBOM as per user request, scanID:", config.ScanId)
-			statusChan <- output.JobStatus{Status: output.ABORT, Msg: "CANCELLED"}
-		} else {
-			log.Error("error in generating sbom: " + err.Error())
-			statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
-		}
 		return err
 	}
 
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
-	if err := publisher.SendSbomToConsole(sbom, false); err != nil {
-		log.Error(config.ScanId, " ", err.Error())
-		statusChan <- output.JobStatus{Status: output.ERROR, Msg: string(sbom) + " " + err.Error()}
+	err = publisher.SendSbomToConsole(sbom, false)
+	if err != nil {
 		return err
 	}
-
-	//This is to signal completion to the StatusChecker
-	statusChan <- output.JobStatus{Status: output.COMPLETE, Msg: ""}
 
 	return nil
 }
@@ -240,15 +250,16 @@ func (s *gRPCServer) StopScan(_ context.Context, req *pb.StopScanRequest) (*pb.S
 		Description: "",
 	}
 
-	cancelFnObj, found := scanMap.Load(scanID)
+	obj, found := scanMap.Load(scanID)
 	logMsg := ""
 	successFlag := true
 	if !found {
 		logMsg = "Failed to Stop scan, may have already completed"
 		successFlag = false
 	} else {
-		cancelFn := cancelFnObj.(context.CancelFunc)
-		cancelFn()
+		ctx := obj.(*tasks.ScanContext)
+		ctx.StopTriggered.Store(true)
+		ctx.Cancel()
 		logMsg = "Stop GenerateSBOM request submitted"
 	}
 
