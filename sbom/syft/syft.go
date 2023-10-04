@@ -15,6 +15,7 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	podmanRuntime "github.com/deepfence/vessel/podman"
 	vesselConstants "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,11 +48,13 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	var containerRuntimeInterface vessel.Runtime
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		containerRuntimeInterface = dockerRuntime.New()
+		containerRuntimeInterface = dockerRuntime.New(endpoint)
 	case vesselConstants.CONTAINERD:
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
 	case vesselConstants.CRIO:
 		containerRuntimeInterface = crioRuntime.New(endpoint)
+	case vesselConstants.PODMAN:
+		containerRuntimeInterface = podmanRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
 		log.Error("Error: Could not detect container runtime")
@@ -118,7 +121,8 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		}
 
 		if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
-			config.ContainerRuntimeName == vesselConstants.CRIO) &&
+			config.ContainerRuntimeName == vesselConstants.CRIO ||
+			config.ContainerRuntimeName == vesselConstants.PODMAN) &&
 			config.ContainerRuntime != nil {
 			// This means the underlying container runtime is containerd
 			// in case of image scan, we need to generate image tar file and
@@ -146,6 +150,8 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			case vesselConstants.CONTAINERD:
 				syftArgs[1] = "oci-archive:" + tarFile
 			case vesselConstants.CRIO:
+				syftArgs[1] = "docker-archive:" + tarFile
+			case vesselConstants.PODMAN:
 				syftArgs[1] = "docker-archive:" + tarFile
 			}
 		} else if config.NodeType == utils.NodeTypeContainer {
