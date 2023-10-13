@@ -196,7 +196,8 @@ func main() {
 		case vc.CRIO:
 			config.ContainerRuntime = crioRuntime.New(endpoint)
 		default:
-			log.Fatalf("unsupported container runtime %s", containerRuntime)
+			// don't fail if runtime is not detected
+			log.Warnf("unsupported container runtime %s", containerRuntime)
 		}
 	}
 
