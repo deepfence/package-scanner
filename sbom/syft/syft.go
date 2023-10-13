@@ -108,7 +108,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		}
 		scanDir, _ = filepath.Abs(scanDir)
 		for _, excludeDir := range mntDirs {
-			if strings.Index(excludeDir, scanDir) == 0 {
+			if strings.Index(excludeDir, scanDir) == 0 && os.Getenv("DF_SERVERLESS") != "true" {
 				excludeDir = strings.Replace(excludeDir, scanDir, "", 1)
 			}
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
