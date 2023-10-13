@@ -19,6 +19,7 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	podmanRuntime "github.com/deepfence/vessel/podman"
 	vc "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +29,7 @@ const (
 )
 
 var (
-	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO}
+	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO, vc.PODMAN}
 	modes            = []string{utils.ModeLocal, utils.ModeGrpcServer, utils.ModeHttpServer, utils.ModeScannerOnly}
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
 )
@@ -146,11 +147,13 @@ func main() {
 				endpoint = vc.CONTAINERD_SOCKET_URI
 			case vc.CRIO:
 				endpoint = vc.CRIO_SOCKET_URI
+			case vc.PODMAN:
+				endpoint = vc.PODMAN_SOCKET_URI
 			}
 		} else {
 			containerRuntime, endpoint, err = vessel.AutoDetectRuntime()
 			if err != nil {
-				log.Errorf("error detecting container runtime: %v", err)
+				log.Warnf("error detecting container runtime: %v", err)
 			}
 		}
 	}
@@ -190,11 +193,13 @@ func main() {
 	if !strings.HasPrefix(*source, "dir:") {
 		switch containerRuntime {
 		case vc.DOCKER:
-			config.ContainerRuntime = dockerRuntime.New()
+			config.ContainerRuntime = dockerRuntime.New(endpoint)
 		case vc.CONTAINERD:
 			config.ContainerRuntime = containerdRuntime.New(endpoint)
 		case vc.CRIO:
 			config.ContainerRuntime = crioRuntime.New(endpoint)
+		case vc.PODMAN:
+			config.ContainerRuntime = podmanRuntime.New(endpoint)
 		default:
 			// don't fail if runtime is not detected
 			log.Warnf("unsupported container runtime %s", containerRuntime)

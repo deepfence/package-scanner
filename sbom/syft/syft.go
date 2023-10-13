@@ -15,6 +15,7 @@ import (
 	containerdRuntime "github.com/deepfence/vessel/containerd"
 	crioRuntime "github.com/deepfence/vessel/crio"
 	dockerRuntime "github.com/deepfence/vessel/docker"
+	podmanRuntime "github.com/deepfence/vessel/podman"
 	vesselConstants "github.com/deepfence/vessel/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,11 +48,13 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	var containerRuntimeInterface vessel.Runtime
 	switch containerRuntime {
 	case vesselConstants.DOCKER:
-		containerRuntimeInterface = dockerRuntime.New()
+		containerRuntimeInterface = dockerRuntime.New(endpoint)
 	case vesselConstants.CONTAINERD:
 		containerRuntimeInterface = containerdRuntime.New(endpoint)
 	case vesselConstants.CRIO:
 		containerRuntimeInterface = crioRuntime.New(endpoint)
+	case vesselConstants.PODMAN:
+		containerRuntimeInterface = podmanRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
 		log.Error("Error: Could not detect container runtime")
