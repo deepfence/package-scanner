@@ -121,8 +121,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		}
 
 		if (config.ContainerRuntimeName == vesselConstants.CONTAINERD ||
-			config.ContainerRuntimeName == vesselConstants.CRIO ||
-			config.ContainerRuntimeName == vesselConstants.PODMAN) &&
+			config.ContainerRuntimeName == vesselConstants.CRIO) &&
 			config.ContainerRuntime != nil {
 			// This means the underlying container runtime is containerd
 			// in case of image scan, we need to generate image tar file and
@@ -150,8 +149,6 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			case vesselConstants.CONTAINERD:
 				syftArgs[1] = "oci-archive:" + tarFile
 			case vesselConstants.CRIO:
-				syftArgs[1] = "docker-archive:" + tarFile
-			case vesselConstants.PODMAN:
 				syftArgs[1] = "docker-archive:" + tarFile
 			}
 		} else if config.NodeType == utils.NodeTypeContainer {
