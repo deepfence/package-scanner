@@ -2,7 +2,7 @@
 
 set -x -e
 
-git clone https://github.com/deepfence/syft.git --branch optimise-resolver-1 || true
+git clone https://github.com/deepfence/syft.git --branch optimise-resolver-2 || true
 cd syft/cmd/syft
 export CGO_ENABLED=0
 go mod vendor

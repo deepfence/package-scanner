@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=0.63.0
+VERSION=0.72.0
 
 set -x -e
 
