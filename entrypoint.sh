@@ -5,4 +5,4 @@
 
 # /usr/local/bin/grype db update
 
-/usr/local/bin/package-scanner $@
+/usr/local/bin/package-scanner "$@"

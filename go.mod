@@ -8,8 +8,8 @@ require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.45.21
 	github.com/deepfence/agent-plugins-grpc v1.1.0
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231004102503-2fc0ef2007cd
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231004102503-2fc0ef2007cd
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231030062708-5506162b00b7
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231030062708-5506162b00b7
 	github.com/deepfence/vessel v0.12.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.1
