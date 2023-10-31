@@ -182,7 +182,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType, isRegistry)...)
 	}
 
-	if config.RegistryCreds.AuthFilePath != "" {
+	if config.IsRegistry {
 		if !strings.HasPrefix(syftArgs[1], registryPrefix) {
 			syftArgs[1] = registryPrefix + syftArgs[1]
 		}
