@@ -38,6 +38,7 @@ type Config struct {
 	GrypeConfigPath       string         `json:"grype_config_path,omitempty"`
 	KeepSbom              bool           `json:"keep_sbom,omitempty"`
 	RegistryCreds         RegistryCreds  `json:"registry_creds,omitempty"`
+	IsRegistry            bool           `json:"is_registry,omitempty"`
 }
 
 type RegistryCreds struct {
