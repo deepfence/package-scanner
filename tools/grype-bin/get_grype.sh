@@ -1,22 +1,23 @@
 #!/bin/bash
 
+set -eux
+
 VERSION=0.72.0
 
-set -x -e
+HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+HOST_ARCH=$(uname -p)
 
-rm -rf grype_*.tar.gz darwin_* linux_*
+if [ "$HOST_ARCH" = "x86_64" ]; then
+    HOST_ARCH="amd64"
+elif [ "$HOST_ARCH" = "aarch64" ]; then
+    HOST_ARCH="arm64"
+fi
 
-# linux
-curl -L -O -s https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_linux_arm64.tar.gz
-mkdir linux_arm64 && tar -zxvf grype_${VERSION}_linux_arm64.tar.gz -C linux_arm64 && mv linux_arm64/grype grype_linux_arm64
-curl -L -O -s https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_linux_amd64.tar.gz
-mkdir linux_amd64 && tar -zxvf grype_${VERSION}_linux_amd64.tar.gz -C linux_amd64 && mv linux_amd64/grype grype_linux_amd64
+ARCHITECTURE="${TARGETPLATFORM:-$HOST_OS/$HOST_ARCH}"
 
-# macos
-curl -L -O -s https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_darwin_arm64.tar.gz
-mkdir darwin_arm64 && tar -zxvf grype_${VERSION}_darwin_arm64.tar.gz -C darwin_arm64 && mv darwin_arm64/grype grype_darwin_arm64
-curl -L -O -s https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_darwin_amd64.tar.gz
-mkdir darwin_amd64 && tar -zxvf grype_${VERSION}_darwin_amd64.tar.gz -C darwin_amd64 && mv darwin_amd64/grype grype_darwin_amd64
+IFS=/ read BUILD_OS BUILD_ARCH <<< $ARCHITECTURE
 
-rm -rf darwin_* linux_*
+rm -rf grype_*.tar.gz grype
 
+curl -fsSLO https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_${BUILD_OS}_${BUILD_ARCH}.tar.gz
+tar -zxvf grype_${VERSION}_${BUILD_OS}_${BUILD_ARCH}.tar.gz grype
