@@ -3,7 +3,7 @@
 set -eux
 
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-HOST_ARCH=$(uname -p)
+HOST_ARCH=$(uname -m)
 
 if [ "$HOST_ARCH" = "x86_64" ]; then
     HOST_ARCH="amd64"
