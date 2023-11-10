@@ -2,7 +2,7 @@
 
 set -eux
 
-VERSION=0.72.0
+VERSION=0.73.1
 
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH=$(uname -m)
