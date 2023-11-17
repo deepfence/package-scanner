@@ -51,7 +51,7 @@ install-goreleaser:
 	go install github.com/goreleaser/goreleaser@latest
 
 .PHONY: release
-release: proto install-goreleaser
+release: install-goreleaser
 	goreleaser release --snapshot --clean
 
 .PHONY: update-sdk
