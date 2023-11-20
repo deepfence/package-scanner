@@ -30,11 +30,11 @@ type JobStatus struct {
 }
 
 const (
-	IN_PROGRESS = "IN_PROGRESS"
-	COMPLETE    = "COMPLETE"
-	ABORT       = "ABORT"
-	CANCELLED   = "CANCELLED"
-	ERROR       = "ERROR"
+	StatusInProgress = "IN_PROGRESS"
+	StatusComplete   = "COMPLETE"
+	StatusAbort      = "ABORT"
+	StatisCancelled  = "CANCELLED"
+	StatusError      = "ERROR"
 )
 
 func NewPublisher(config utils.Config) (*Publisher, error) {
@@ -49,8 +49,8 @@ func NewPublisher(config utils.Config) (*Publisher, error) {
 	}, nil
 }
 
-func (p *Publisher) SetScanId(scanId string) {
-	p.config.ScanId = scanId
+func (p *Publisher) SetScanID(scanID string) {
+	p.config.ScanID = scanID
 }
 
 func (p *Publisher) SendReport() {
@@ -71,9 +71,9 @@ func (p *Publisher) SendReport() {
 	if !(strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".")) {
 		image := map[string]interface{}{
 			"docker_image_name_with_tag": p.config.Source,
-			"docker_image_id":            p.config.ImageId,
-			"node_id":                    p.config.ImageId,
-			"node_name":                  p.config.ImageId,
+			"docker_image_id":            p.config.ImageID,
+			"node_id":                    p.config.ImageID,
+			"node_name":                  p.config.ImageID,
 			"node_type":                  p.config.NodeType,
 		}
 		s := strings.Split(p.config.Source, ":")
@@ -83,7 +83,7 @@ func (p *Publisher) SendReport() {
 		}
 		containerImageEdge := map[string]interface{}{
 			"source":       p.config.HostName,
-			"destinations": p.config.ImageId,
+			"destinations": p.config.ImageID,
 		}
 		report.ContainerImageBatch = []map[string]interface{}{image}
 		report.ContainerImageEdgeBatch = []map[string]interface{}{containerImageEdge}
@@ -111,7 +111,7 @@ func (p *Publisher) StartScan() string {
 		ScanConfig: []dsc.ModelVulnerabilityScanConfigLanguage{},
 	}
 
-	nodeIds := dsc.ModelNodeIdentifier{NodeId: p.config.NodeId, NodeType: "image"}
+	nodeIds := dsc.ModelNodeIdentifier{NodeId: p.config.NodeID, NodeType: "image"}
 	if strings.HasPrefix(p.config.Source, "dir:") || (p.config.Source == ".") {
 		nodeIds.NodeType = "host"
 	}
@@ -139,7 +139,7 @@ func (p *Publisher) StartScan() string {
 
 func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 	data := dsc.IngestersVulnerabilityScanStatus{}
-	data.SetScanId(p.config.ScanId)
+	data.SetScanId(p.config.ScanID)
 	data.SetScanStatus(status)
 	data.SetScanMessage(message)
 
@@ -190,18 +190,18 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	err := p.SendSbomToConsole(sbom, true)
 	if err != nil {
 		p.PublishScanError(err.Error())
-		log.Error(p.config.ScanId, " ", err.Error())
+		log.Error(p.config.ScanID, " ", err.Error())
 	}
 }
 
 func (p *Publisher) SendSbomToConsole(sbom []byte, skipScan bool) error {
 	data := dsc.UtilsScanSbomRequest{}
-	data.SetImageName(p.config.NodeId)
-	data.SetImageId(p.config.ImageId)
-	data.SetScanId(p.config.ScanId)
+	data.SetImageName(p.config.NodeID)
+	data.SetImageId(p.config.ImageID)
+	data.SetScanId(p.config.ScanID)
 	data.SetKubernetesClusterName(p.config.KubernetesClusterName)
 	data.SetHostName(p.config.HostName)
-	data.SetNodeId(p.config.NodeId)
+	data.SetNodeId(p.config.NodeID)
 	data.SetNodeType(p.config.NodeType)
 	data.SetScanType(p.config.ScanType)
 	data.SetContainerName(p.config.ContainerName)
@@ -221,10 +221,10 @@ func (p *Publisher) SendSbomToConsole(sbom []byte, skipScan bool) error {
 		float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
 
 	bb := out.Bytes()
-	c_sbom := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
-	base64.StdEncoding.Encode(c_sbom, bb)
+	cSBOM := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
+	base64.StdEncoding.Encode(cSBOM, bb)
 
-	data.SetSbom(string(c_sbom))
+	data.SetSbom(string(cSBOM))
 
 	req := p.client.Client().VulnerabilityAPI.IngestSbom(context.Background())
 	req = req.UtilsScanSbomRequest(data)
@@ -245,7 +245,7 @@ func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.Vulnerabil
 
 	for _, v := range vulnerabilities {
 		n := dsc.NewIngestersVulnerability()
-		n.SetScanId(v.ScanId)
+		n.SetScanId(v.ScanID)
 		n.SetCveAttackVector(v.CveAttackVector)
 		n.SetCveCausedByPackage(v.CveCausedByPackage)
 		n.SetCveCausedByPackagePath(v.CveCausedByPackagePath)
@@ -253,7 +253,7 @@ func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.Vulnerabil
 		n.SetCveCvssScore(float32(v.CveCvssScore))
 		n.SetCveDescription(v.CveDescription)
 		n.SetCveFixedIn(v.CveFixedIn)
-		n.SetCveId(v.CveId)
+		n.SetCveId(v.CveID)
 		n.SetCveLink(v.CveLink)
 		n.SetCveOverallScore(float32(v.CveOverallScore))
 		n.SetCveSeverity(v.CveSeverity)
@@ -299,7 +299,7 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 		if r.CveCausedByPackage == "" {
 			r.CveCausedByPackage = r.CveCausedByPackagePath
 		}
-		table.Append([]string{r.CveId, r.CveSeverity, r.CveType, r.CveCausedByPackage, r.CveLink})
+		table.Append([]string{r.CveID, r.CveSeverity, r.CveType, r.CveCausedByPackage, r.CveLink})
 	}
 	table.Render()
 	return nil

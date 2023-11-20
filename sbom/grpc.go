@@ -59,13 +59,15 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 
 	var lis net.Listener
 	var err error
-	if config.SocketPath != "" {
+	switch {
+	case config.SocketPath != "":
 		lis, err = net.Listen("unix", config.SocketPath)
-	} else if config.Port != "" {
+	case config.Port != "":
 		lis, err = net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", config.Port))
-	} else {
+	default:
 		return fmt.Errorf("grpc mode requires either socket-path or port to be set")
 	}
+
 	if err != nil {
 		return err
 	}
@@ -125,16 +127,17 @@ func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReport
 
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
 	log.Infof("SBOMRequest: %v", r)
-	var nodeId string
+	var nodeID string
 	var nodeType string
-	if strings.HasPrefix(r.Source, "dir:") || r.Source == "." {
-		nodeId = r.HostName
+	switch {
+	case strings.HasPrefix(r.Source, "dir:") || r.Source == ".":
+		nodeID = r.HostName
 		nodeType = utils.NodeTypeHost
-	} else if r.NodeType == utils.NodeTypeContainer {
-		nodeId = r.Source
+	case r.NodeType == utils.NodeTypeContainer:
+		nodeID = r.Source
 		nodeType = utils.NodeTypeContainer
-	} else {
-		nodeId = r.Source
+	default:
+		nodeID = r.Source
 		nodeType = utils.NodeTypeImage
 	}
 
@@ -149,14 +152,14 @@ func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBO
 		Source:                r.Source,
 		ScanType:              r.ScanType,
 		VulnerabilityScan:     true,
-		ScanId:                r.ScanId,
+		ScanID:                r.ScanId,
 		NodeType:              nodeType,
-		NodeId:                nodeId,
+		NodeID:                nodeID,
 		HostName:              r.HostName,
-		ImageId:               r.ImageId,
+		ImageID:               r.ImageId,
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
-		RegistryId:            r.RegistryId,
+		RegistryID:            r.RegistryId,
 		ContainerID:           r.ContainerId,
 		SyftBinPath:           s.config.SyftBinPath,
 		GrypeBinPath:          s.config.GrypeBinPath,
@@ -205,7 +208,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return fmt.Errorf("error processing grpc input for generating sbom")
 	}
 
-	log.Info("Adding to map:" + config.ScanId)
+	log.Info("Adding to map:" + config.ScanID)
 
 	publisher, err = output.NewPublisher(config)
 	if err != nil {
@@ -213,10 +216,10 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 		return err
 	}
 
-	scanMap.Store(config.ScanId, ctx)
+	scanMap.Store(config.ScanID, ctx)
 	defer func() {
-		log.Info("Removing from map:" + config.ScanId)
-		scanMap.Delete(config.ScanId)
+		log.Info("Removing from map:" + config.ScanID)
+		scanMap.Delete(config.ScanID)
 	}()
 
 	err = ctx.Checkpoint("Before generating SBOM")

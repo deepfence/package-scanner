@@ -14,14 +14,14 @@ type Config struct {
 	Source                string         `json:"source,omitempty"`
 	ScanType              string         `json:"scan_type,omitempty"`
 	VulnerabilityScan     bool           `json:"vulnerability_scan,omitempty"`
-	ScanId                string         `json:"scan_id,omitempty"`
+	ScanID                string         `json:"scan_id,omitempty"`
 	NodeType              string         `json:"node_type,omitempty"`
-	NodeId                string         `json:"node_id,omitempty"`
+	NodeID                string         `json:"node_id,omitempty"`
 	HostName              string         `json:"host_name,omitempty"`
-	ImageId               string         `json:"image_id,omitempty"`
+	ImageID               string         `json:"image_id,omitempty"`
 	ContainerName         string         `json:"container_name,omitempty"`
 	KubernetesClusterName string         `json:"kubernetes_cluster_name,omitempty"`
-	RegistryId            string         `json:"registry_id,omitempty"`
+	RegistryID            string         `json:"registry_id,omitempty"`
 	FailOnCount           int            `json:"fail_on_count,omitempty"`
 	FailOnCriticalCount   int            `json:"fail_on_critical_count,omitempty"`
 	FailOnHighCount       int            `json:"fail_on_high_count,omitempty"`
@@ -44,15 +44,15 @@ type Config struct {
 type RegistryCreds struct {
 	AuthFilePath  string
 	SkipTLSVerify bool
-	UseHttp       bool
+	UseHTTP       bool
 }
 
 const (
 	ModeLocal         = "local"
-	ModeGrpcServer    = "grpc-server"
-	ModeHttpServer    = "http-server"
+	ModeGRPCServer    = "grpc-server"
+	ModeHTTPServer    = "http-server"
 	ModeScannerOnly   = "scanner-only"
-	JsonOutput        = "json"
+	JSONOutput        = "json"
 	TableOutput       = "table"
 	NodeTypeHost      = "host"
 	NodeTypeImage     = "container_image"
