@@ -3,10 +3,10 @@ package grype
 import "strings"
 
 const (
-	DEFAULT_CVSS_CRITICAL = 9.0
-	DEFAULT_CVSS_HIGH     = 7.0
-	DEFAULT_CVSS_MEDIUM   = 5.0
-	DEFAULT_CVSS_LOW      = 2.0
+	DefaultCVSSCritical = 9.0
+	DefaultCVSSHigh     = 7.0
+	DefaultCVSSMedium   = 5.0
+	DefaultCVSSLow      = 2.0
 )
 
 // Cvss is a struct that represents the CVSS object

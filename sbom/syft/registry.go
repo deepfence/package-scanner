@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
-	log "github.com/sirupsen/logrus"
 )
 
 type registryCredentialResponse struct {
@@ -27,11 +26,11 @@ type registryCredentialResponse struct {
 	Success bool                   `json:"success,omitempty"`
 }
 
-func callRegistryCredentialApi(registryId string) (registryCredentialResponse, error) {
+func callRegistryCredentialAPI(registryID string) (registryCredentialResponse, error) {
 	var registryCredentialsOutput registryCredentialResponse
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", "http://deepfence-api:9997/registry_credential",
-		bytes.NewBuffer([]byte(`{"id":"`+registryId+`"}`)))
+		bytes.NewBuffer([]byte(`{"id":"`+registryID+`"}`)))
 	if err != nil {
 		return registryCredentialsOutput, err
 	}
@@ -52,45 +51,30 @@ func callRegistryCredentialApi(registryId string) (registryCredentialResponse, e
 	return registryCredentialsOutput, err
 }
 
-func isRegistryInsecure(registryId string) bool {
-	if len(registryId) <= 0 {
-		return false
+func GetConfigFileFromRegistry(registryID string) (string, error) {
+	registryURL, username, password, err := GetCredentialsFromRegistry(registryID)
+	if err != nil {
+		return "", fmt.Errorf("GetCredentialsFromRegistry: %w", err)
 	}
-	registryData, err := callRegistryCredentialApi(registryId)
-	if err != nil || !registryData.Success {
-		log.Error("unable to get registry credentials")
-		return false
-	}
-	if registryData.Data == nil {
-		log.Error("invalid registry credentials obtained from API")
-		return false
-	}
-	registryUrl, _, _ := GetDockerCredentials(registryData.Data)
-
-	return strings.Contains(registryUrl, "http:")
-}
-
-func GetConfigFileFromRegistry(registryId string) (string, error) {
-	registryUrl, username, password, err := GetCredentialsFromRegistry(registryId)
 	if username == "" {
 		return "", nil
 	}
-	authFile, err := createAuthFile(registryId, registryUrl, username, password)
+	authFile, err := createAuthFile(registryID, registryURL, username, password)
 	if err != nil {
-		return "", fmt.Errorf("unable to create credential file for docker")
+		return "", fmt.Errorf("unable to create credential file for docker: %w", err)
 	}
 	return authFile, nil
 }
 
-func GetCredentialsFromRegistry(registryId string) (string, string, string, error) {
-	registryData, err := callRegistryCredentialApi(registryId)
+func GetCredentialsFromRegistry(registryID string) (string, string, string, error) {
+	registryData, err := callRegistryCredentialAPI(registryID)
 	if err != nil || !registryData.Success {
 		return "", "", "", fmt.Errorf("unable to get registry credentials")
 	}
 	if registryData.Data == nil {
 		return "", "", "", fmt.Errorf("invalid registry credentials obtained from API")
 	}
-	registryUrl, username, password := GetDockerCredentials(registryData.Data)
+	registryURL, username, password := GetDockerCredentials(registryData.Data)
 
 	if username == "" {
 		return "", "", "", fmt.Errorf("unable to get credentials for specified registry")
@@ -107,7 +91,7 @@ func GetCredentialsFromRegistry(registryId string) (string, string, string, erro
 		username = splitCredentials[0]
 		password = splitCredentials[1]
 	}
-	return registryUrl, username, password, nil
+	return registryURL, username, password, nil
 }
 
 func GetDockerCredentials(registryData map[string]interface{}) (string, string, string) {
@@ -118,7 +102,7 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 	}
 	switch registryType {
 	case "ecr":
-		var awsAccessKey, awsSecret, awsRegionName, registryId, targetAccountRoleARN string
+		var awsAccessKey, awsSecret, awsRegionName, registryID, targetAccountRoleARN string
 		var useIAMRole bool
 		if awsAccessKey, ok = registryData["aws_access_key_id"].(string); !ok {
 			awsAccessKey = ""
@@ -129,8 +113,8 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 		if awsRegionName, ok = registryData["aws_region_name"].(string); !ok {
 			return "", "", ""
 		}
-		if registryId, ok = registryData["registry_id"].(string); !ok {
-			registryId = ""
+		if registryID, ok = registryData["registry_id"].(string); !ok {
+			registryID = ""
 		}
 		if useIAMRole, ok = registryData["use_iam_role"].(bool); !ok {
 			useIAMRole = false
@@ -138,8 +122,8 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 		if targetAccountRoleARN, ok = registryData["target_account_role_arn"].(string); !ok {
 			targetAccountRoleARN = ""
 		}
-		ecrProxyUrl, ecrAuth := getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId, useIAMRole, targetAccountRoleARN)
-		return ecrProxyUrl, ecrAuth, ""
+		ecrProxyURL, ecrAuth := getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryID, useIAMRole, targetAccountRoleARN)
+		return ecrProxyURL, ecrAuth, ""
 	case "docker_hub":
 		var dockerUsername, dockerPassword string
 		if dockerUsername, ok = registryData["docker_hub_username"].(string); !ok {
@@ -154,34 +138,34 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 	case "azure_container_registry":
 		return getDefaultDockerCredentials(registryData, "azure_registry_url", "azure_registry_username", "azure_registry_password")
 	case "google_container_registry":
-		var dockerPassword, registryUrl string
+		var dockerPassword, registryURL string
 		if dockerPassword, ok = registryData["service_account_json"].(string); !ok {
 			return "", "", ""
 		}
-		if registryUrl, ok = registryData["registry_hostname"].(string); !ok {
+		if registryURL, ok = registryData["registry_hostname"].(string); !ok {
 			return "", "", ""
 		}
-		return registryUrl, "_json_key", dockerPassword
+		return registryURL, "_json_key", dockerPassword
 	case "harbor":
 		return getDefaultDockerCredentials(registryData, "harbor_registry_url", "harbor_username", "harbor_password")
 	case "quay":
-		var dockerPassword, registryUrl string
+		var dockerPassword, registryURL string
 		if dockerPassword, ok = registryData["quay_access_token"].(string); !ok {
 			return "", "", ""
 		}
-		if registryUrl, ok = registryData["quay_registry_url"].(string); !ok {
+		if registryURL, ok = registryData["quay_registry_url"].(string); !ok {
 			return "", "", ""
 		}
-		return registryUrl, "$oauthtoken", dockerPassword
+		return registryURL, "$oauthtoken", dockerPassword
 	case "gitlab":
-		var dockerPassword, registryUrl string
+		var dockerPassword, registryURL string
 		if dockerPassword, ok = registryData["gitlab_access_token"].(string); !ok {
 			return "", "", ""
 		}
-		if registryUrl, ok = registryData["gitlab_registry_url"].(string); !ok {
+		if registryURL, ok = registryData["gitlab_registry_url"].(string); !ok {
 			return "", "", ""
 		}
-		return registryUrl, "gitlab-ci-token", dockerPassword
+		return registryURL, "gitlab-ci-token", dockerPassword
 	case "jfrog_container_registry":
 		return getDefaultDockerCredentials(registryData, "jfrog_registry_url", "jfrog_username", "jfrog_password")
 	default:
@@ -189,8 +173,8 @@ func GetDockerCredentials(registryData map[string]interface{}) (string, string, 
 	}
 }
 
-func getDefaultDockerCredentials(registryData map[string]interface{}, registryUrlKey, registryUsernameKey, registryPasswordKey string) (string, string, string) {
-	var dockerUsername, dockerPassword, dockerRegistryUrl string
+func getDefaultDockerCredentials(registryData map[string]interface{}, registryURLKey, registryUsernameKey, registryPasswordKey string) (string, string, string) {
+	var dockerUsername, dockerPassword, dockerRegistryURL string
 	var ok bool
 	if dockerUsername, ok = registryData[registryUsernameKey].(string); !ok {
 		return "", "", ""
@@ -198,14 +182,14 @@ func getDefaultDockerCredentials(registryData map[string]interface{}, registryUr
 	if dockerPassword, ok = registryData[registryPasswordKey].(string); !ok {
 		return "", "", ""
 	}
-	if dockerRegistryUrl, ok = registryData[registryUrlKey].(string); !ok {
+	if dockerRegistryURL, ok = registryData[registryURLKey].(string); !ok {
 		return "", "", ""
 	}
-	return dockerRegistryUrl, dockerUsername, dockerPassword
+	return dockerRegistryURL, dockerUsername, dockerPassword
 }
 
-func createAuthFile(registryId, registryUrl, username, password string) (string, error) {
-	authFilePath := "/tmp/auth_" + registryId + "_" + utils.RandomString(12)
+func createAuthFile(registryID, registryURL, username, password string) (string, error) {
+	authFilePath := "/tmp/auth_" + registryID + "_" + utils.RandomString(12)
 	if _, err := os.Stat(authFilePath); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(authFilePath, os.ModePerm)
 		if err != nil {
@@ -213,14 +197,14 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 		}
 	}
 	if password == "" {
-		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\"} } }")
-		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
+		configJSON := []byte("{\"auths\": {\"" + registryURL + "\": {\"auth\": \"" + strings.ReplaceAll(username, "\"", "\\\"") + "\"} } }")
+		err := os.WriteFile(authFilePath+"/config.json", configJSON, 0644)
 		if err != nil {
 			return "", err
 		}
 	} else {
-		configJson := []byte("{\"auths\": {\"" + registryUrl + "\": {\"auth\": \"" + base64.StdEncoding.EncodeToString([]byte(username+":"+password)) + "\"} } }")
-		err := os.WriteFile(authFilePath+"/config.json", configJson, 0644)
+		configJSON := []byte("{\"auths\": {\"" + registryURL + "\": {\"auth\": \"" + base64.StdEncoding.EncodeToString([]byte(username+":"+password)) + "\"} } }")
+		err := os.WriteFile(authFilePath+"/config.json", configJSON, 0644)
 		if err != nil {
 			return "", err
 		}
@@ -228,7 +212,7 @@ func createAuthFile(registryId, registryUrl, username, password string) (string,
 	return authFilePath, nil
 }
 
-func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId string, useIAMRole bool, targetAccountRoleARN string) (string, string) {
+func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryID string, useIAMRole bool, targetAccountRoleARN string) (string, string) {
 	var awsConfig aws.Config
 	var svc *ecr.ECR
 	var creds *credentials.Credentials
@@ -253,8 +237,8 @@ func getEcrCredentials(awsAccessKey, awsSecret, awsRegionName, registryId string
 	}
 
 	var authorizationTokenRequestInput ecr.GetAuthorizationTokenInput
-	if registryId != "" {
-		authorizationTokenRequestInput.SetRegistryIds([]*string{&registryId})
+	if registryID != "" {
+		authorizationTokenRequestInput.SetRegistryIds([]*string{&registryID})
 	}
 	authorizationTokenResponse, err := svc.GetAuthorizationToken(&authorizationTokenRequestInput)
 	if err != nil {

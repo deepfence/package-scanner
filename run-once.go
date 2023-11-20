@@ -26,14 +26,14 @@ func RunOnce(config utils.Config) {
 	if config.FailOnScore > 10.0 {
 		log.Fatal("error: fail-on-score should be between -1 and 10")
 	}
-	if config.Output != utils.TableOutput && config.Output != utils.JsonOutput {
-		log.Errorf("error: output should be %s or %s", utils.JsonOutput, utils.TableOutput)
+	if config.Output != utils.TableOutput && config.Output != utils.JSONOutput {
+		log.Errorf("error: output should be %s or %s", utils.JSONOutput, utils.TableOutput)
 	}
 	// trim any spaces from severities passed from command line
-	c_severity := []string{}
+	cSeverity := []string{}
 	if len(*severity) > 0 {
 		for _, s := range strings.Split(*severity, ",") {
-			c_severity = append(c_severity, strings.TrimSpace(s))
+			cSeverity = append(cSeverity, strings.TrimSpace(s))
 		}
 	}
 
@@ -41,30 +41,30 @@ func RunOnce(config utils.Config) {
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		hostname := utils.GetHostname()
 		config.HostName = hostname
-		config.NodeId = hostname
+		config.NodeID = hostname
 		config.NodeType = utils.NodeTypeHost
-		if config.ScanId == "" {
-			config.ScanId = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
+		if config.ScanID == "" {
+			config.ScanID = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
 	} else {
-		config.NodeId = config.Source
+		config.NodeID = config.Source
 		config.HostName = hostname
 		config.NodeType = utils.NodeTypeImage
-		if config.ScanId == "" {
-			config.ScanId = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
+		if config.ScanID == "" {
+			config.ScanID = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
-		if image_id, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
+		if imageID, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
 			log.Error(err)
 			// generate image_id if we are unable to get it from runtime
-			image_id = []byte(uuid.New().String())
-			config.ImageId = string(image_id)
-			config.NodeId = string(image_id)
+			imageID = []byte(uuid.New().String())
+			config.ImageID = string(imageID)
+			config.NodeID = string(imageID)
 		} else {
-			sp := strings.Split(strings.TrimSpace(string(image_id)), ":")
-			config.ImageId = sp[len(sp)-1]
-			config.NodeId = sp[len(sp)-1]
+			sp := strings.Split(strings.TrimSpace(string(imageID)), ":")
+			config.ImageID = sp[len(sp)-1]
+			config.NodeID = sp[len(sp)-1]
 		}
-		log.Debugf("image_id: %s", config.ImageId)
+		log.Debugf("image_id: %s", config.ImageID)
 	}
 
 	// try to get image id
@@ -78,20 +78,21 @@ func RunOnce(config utils.Config) {
 			log.Error(err)
 		}
 		pub.SendReport()
-		scanId := pub.StartScan()
-		if scanId == "" {
+		scanID := pub.StartScan()
+		if scanID == "" {
 			log.Warn("console scan id is empty")
-			scanId = fmt.Sprintf("%s-%d", config.ImageId, time.Now().UnixMilli())
+			scanID = fmt.Sprintf("%s-%d", config.ImageID, time.Now().UnixMilli())
 		}
-		config.ScanId = scanId
-		pub.SetScanId(scanId)
+		config.ScanID = scanID
+		pub.SetScanID(scanID)
 	}
-	log.Infof("scan id %s", config.ScanId)
+	log.Infof("scan id %s", config.ScanID)
 
 	log.Debugf("config: %+v", config)
 
 	log.Debugf("generating sbom for %s ...", config.Source)
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	sbomResult, err := syft.GenerateSBOM(ctx, config)
 	if err != nil {
 		log.Errorf("Error: %v", err)
@@ -119,7 +120,7 @@ func RunOnce(config utils.Config) {
 	// get user cache dir
 	cacheDir, dirErr := os.UserCacheDir()
 	if dirErr != nil {
-		log.Fatal(dirErr)
+		log.Panic(dirErr)
 	}
 
 	env := []string{
@@ -129,32 +130,32 @@ func RunOnce(config utils.Config) {
 	log.Debug("scanning sbom for vulnerabilities ...")
 	vulnerabilities, err := grype.Scan(config.GrypeBinPath, config.GrypeConfigPath, file.Name(), &env)
 	if err != nil {
-		log.Fatalf("error on sbom scan: %s %s", err.Error(), vulnerabilities)
+		log.Panicf("error on sbom scan: %s %s", err.Error(), vulnerabilities)
 	}
 
 	report, err := grype.PopulateFinalReport(vulnerabilities, config)
 	if err != nil {
-		log.Fatalf("error on generate vulnerability report: %s", err.Error())
+		log.Panicf("error on generate vulnerability report: %s", err.Error())
 	}
 
 	// send vulnerability scan results to console
 	if len(config.ConsoleURL) != 0 && len(config.DeepfenceKey) != 0 {
 		log.Infof("sending scan result to console at %s", config.ConsoleURL)
-		pub.SendScanResultToConsole(report)
+		_ = pub.SendScanResultToConsole(report)
 	}
 
 	// scan details
 	details := out.CountBySeverity(&report)
 	// filter by severity
-	filtered := FilterBySeverity(&report, c_severity)
+	filtered := FilterBySeverity(&report, cSeverity)
 	// sort by severity
-	sort.Slice(filtered[:], func(i, j int) bool {
+	sort.Slice(filtered, func(i, j int) bool {
 		return severityToInt(filtered[i].CveSeverity) > severityToInt(filtered[j].CveSeverity)
 	})
 
 	exploitable, others := GroupByExploitability(&filtered)
 
-	if *output != utils.JsonOutput {
+	if *output != utils.JSONOutput {
 		fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
 			details.Total,
 			utils.CRITICAL, details.Severity.Critical,
@@ -163,11 +164,11 @@ func RunOnce(config utils.Config) {
 			utils.LOW, details.Severity.Low)
 		if len(exploitable) > 0 {
 			fmt.Println("\nMost Exploitable Vulnerabilities:")
-			out.TableOutput(&exploitable)
+			_ = out.TableOutput(&exploitable)
 		}
 		if len(others) > 0 {
 			fmt.Println("\nOther Vulnerabilities:")
-			out.TableOutput(&others)
+			_ = out.TableOutput(&others)
 		}
 		// out.TableOutput(&filtered)
 	} else {
@@ -178,7 +179,7 @@ func RunOnce(config utils.Config) {
 		}
 		data, err := json.MarshalIndent(final, "", "  ")
 		if err != nil {
-			log.Fatalf("error converting report to json, %s", err)
+			log.Panicf("error converting report to json, %s", err)
 		}
 		fmt.Println(string(data))
 	}

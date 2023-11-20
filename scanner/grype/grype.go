@@ -57,16 +57,15 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 		return []scanner.VulnerabilityScanReport{}, err
 	}
 
-	var currentlyMaskedCveIds []string
 	var fullReport []scanner.VulnerabilityScanReport
 
-	//currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
-	//if err != nil {
+	// currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
+	// if err != nil {
 	//	currentlyMaskedCveIds = []string{}
 	//}
 
 	maskCveIdsInArgs := strings.Split(cfg.MaskCveIds, ",")
-	maskCveIds := append(currentlyMaskedCveIds, maskCveIdsInArgs...)
+	maskCveIds := append([]string{}, maskCveIdsInArgs...)
 	for _, match := range grypeDocument.Matches {
 		description := match.Vulnerability.Description
 		if description == "" {
@@ -95,23 +94,23 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 		if cvssScore == 0.0 {
 			switch strings.ToLower(match.Vulnerability.Severity) {
 			case "critical":
-				cvssScore = DEFAULT_CVSS_CRITICAL
+				cvssScore = DefaultCVSSCritical
 			case "high":
-				cvssScore = DEFAULT_CVSS_HIGH
+				cvssScore = DefaultCVSSHigh
 			case "medium":
-				cvssScore = DEFAULT_CVSS_MEDIUM
+				cvssScore = DefaultCVSSMedium
 			case "low":
-				cvssScore = DEFAULT_CVSS_LOW
+				cvssScore = DefaultCVSSLow
 			}
 		}
 
-		metasploitURL, urls := utils.ExtractExploitPocUrl(match.Vulnerability.URLs)
+		metasploitURL, urls := utils.ExtractExploitPocURL(match.Vulnerability.URLs)
 
 		report := scanner.VulnerabilityScanReport{
 			Type:               "cve",
 			Masked:             utils.Contains(maskCveIds, match.Vulnerability.ID),
-			ScanId:             cfg.ScanId,
-			CveId:              match.Vulnerability.ID,
+			ScanID:             cfg.ScanID,
+			CveID:              match.Vulnerability.ID,
 			CveType:            getLanguageFromMatcher(match.MatchDetails[0].Matcher),
 			CveSeverity:        strings.ToLower(match.Vulnerability.Severity),
 			CveCausedByPackage: match.Artifact.Name + ":" + match.Artifact.Version,
@@ -171,5 +170,5 @@ func combinePaths(paths []Coordinates) string {
 	for _, path := range paths {
 		combinedPath += path.RealPath + ":"
 	}
-	return utils.TrimSuffix(combinedPath, ":")
+	return strings.TrimSuffix(combinedPath, ":")
 }

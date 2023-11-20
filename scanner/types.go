@@ -3,11 +3,11 @@ package scanner
 type VulnerabilityScanReport struct {
 	Type                    string   `json:"type"`
 	Masked                  bool     `json:"masked"`
-	ScanId                  string   `json:"scan_id"`
-	CveId                   string   `json:"cve_id"`
+	ScanID                  string   `json:"scan_id"`
+	CveID                   string   `json:"cve_id"`
 	CveType                 string   `json:"cve_type"`
 	CveContainerImage       string   `json:"cve_container_image"`
-	CveContainerImageId     string   `json:"cve_container_image_id"`
+	CveContainerImageID     string   `json:"cve_container_image_id"`
 	CveContainerName        string   `json:"cve_container_name"`
 	CveSeverity             string   `json:"cve_severity"`
 	CveCausedByPackage      string   `json:"cve_caused_by_package"`

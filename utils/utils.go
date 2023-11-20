@@ -3,10 +3,8 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -77,12 +75,12 @@ func Escape(userInput []byte) []byte {
 	st := string(userInput)
 	// re is \"
 	re := `\"`
-	st = strings.Replace(st, "\"", re, -1)
+	st = strings.ReplaceAll(st, "\"", re)
 	return []byte(st)
 }
 
 func CreateTempFile(userInput []byte) (*os.File, error) {
-	file, err := ioutil.TempFile("/tmp", "sbom.*.json")
+	file, err := os.CreateTemp("/tmp", "sbom.*.json")
 	if err != nil {
 		return nil, err
 	}
@@ -92,13 +90,6 @@ func CreateTempFile(userInput []byte) (*os.File, error) {
 	}
 
 	return file, err
-}
-
-func TrimSuffix(s, suffix string) string {
-	if strings.HasSuffix(s, suffix) {
-		s = s[:len(s)-len(suffix)]
-	}
-	return s
 }
 
 func Contains(s []string, str string) bool {
@@ -111,7 +102,7 @@ func Contains(s []string, str string) bool {
 	return false
 }
 
-func ExtractExploitPocUrl(url []string) (string, []string) {
+func ExtractExploitPocURL(url []string) (string, []string) {
 	if len(url) == 0 {
 		return "", nil
 	}
@@ -125,16 +116,4 @@ func ExtractExploitPocUrl(url []string) (string, []string) {
 		}
 	}
 	return metasploitURL, nonExploitPocUrls
-}
-
-func getTimestamp() string {
-	return strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
-}
-
-func getIntTimestamp() int64 {
-	return time.Now().UTC().UnixNano() / 1000000
-}
-
-func getDatetimeNow() string {
-	return time.Now().UTC().Format("2006-01-02T15:04:05.000")
 }

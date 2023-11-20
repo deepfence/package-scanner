@@ -32,7 +32,7 @@ var (
 const registryPrefix = "registry:"
 
 type ContainerScan struct {
-	containerId string
+	containerID string
 	tempDir     string
 	namespace   string
 }
@@ -62,7 +62,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 	}
 
 	err = containerRuntimeInterface.ExtractFileSystemContainer(
-		containerScan.containerId, containerScan.namespace,
+		containerScan.containerID, containerScan.namespace,
 		containerScan.tempDir+".tar")
 	if err != nil {
 		log.Errorf("errored: %s", err)
@@ -163,9 +163,9 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 
 			var containerScan ContainerScan
 			if config.KubernetesClusterName != "" {
-				containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: ""}
+				containerScan = ContainerScan{containerID: config.ContainerID, tempDir: tmpDir, namespace: ""}
 			} else {
-				containerScan = ContainerScan{containerId: config.ContainerID, tempDir: tmpDir, namespace: "default"}
+				containerScan = ContainerScan{containerID: config.ContainerID, tempDir: tmpDir, namespace: "default"}
 			}
 
 			err = containerScan.exportFileSystemTar()
@@ -178,7 +178,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	}
 
 	if config.ScanType != "" && config.ScanType != "all" {
-		isRegistry := config.RegistryId != "" && config.NodeType == utils.NodeTypeImage
+		isRegistry := config.RegistryID != "" && config.NodeType == utils.NodeTypeImage
 		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType, isRegistry)...)
 	}
 
@@ -187,18 +187,18 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			syftArgs[1] = registryPrefix + syftArgs[1]
 		}
 	} else {
-		syftArgs[1] = strings.Replace(syftArgs[1], registryPrefix, "", -1)
+		syftArgs[1] = strings.ReplaceAll(syftArgs[1], registryPrefix, "")
 	}
 
 	syftEnv := []string{}
-	if config.RegistryId != "" && config.NodeType == utils.NodeTypeImage {
+	if config.RegistryID != "" && config.NodeType == utils.NodeTypeImage {
 		if config.RegistryCreds.AuthFilePath != "" {
 			syftEnv = append(syftEnv, fmt.Sprintf("DOCKER_CONFIG=%s", config.RegistryCreds.AuthFilePath))
 		}
 		if config.RegistryCreds.SkipTLSVerify {
 			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_SKIP_TLS_VERIFY=%s", "true"))
 		}
-		if config.RegistryCreds.UseHttp {
+		if config.RegistryCreds.UseHTTP {
 			syftEnv = append(syftEnv, fmt.Sprintf("SYFT_REGISTRY_INSECURE_USE_HTTP=%s", "true"))
 		}
 	}

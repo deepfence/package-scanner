@@ -16,7 +16,7 @@ import (
 
 var (
 	scanConcurrency       int
-	managementConsoleUrl  string
+	managementConsoleURL  string
 	managementConsolePort string
 	workerPool            *tunny.Pool
 )
@@ -30,14 +30,14 @@ func init() {
 		scanConcurrency = DefaultPackageScanConcurrency
 	}
 	workerPool = tunny.NewFunc(scanConcurrency, processRegistryMessage)
-	managementConsoleUrl = os.Getenv("MGMT_CONSOLE_URL")
+	managementConsoleURL = os.Getenv("MGMT_CONSOLE_URL")
 	managementConsolePort = os.Getenv("MGMT_CONSOLE_PORT")
 	if managementConsolePort == "" {
 		managementConsolePort = "443"
 	}
 }
 
-func RunHttpServer(config utils.Config) error {
+func RunHTTPServer(config utils.Config) error {
 	if config.Port == "" {
 		return fmt.Errorf("http-server mode requires port to be set")
 	}
@@ -59,22 +59,22 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 	config := utils.Config{
 		Output:                "",
 		Quiet:                 true,
-		ConsoleURL:            managementConsoleUrl,
+		ConsoleURL:            managementConsoleURL,
 		ConsolePort:           managementConsolePort,
 		DeepfenceKey:          "",
 		Source:                r.Source,
 		ScanType:              r.ScanType,
 		VulnerabilityScan:     true,
-		ScanId:                r.ScanId,
+		ScanID:                r.ScanID,
 		NodeType:              r.NodeType,
-		NodeId:                r.NodeId,
+		NodeID:                r.NodeID,
 		HostName:              r.HostName,
-		ImageId:               r.ImageId,
+		ImageID:               r.ImageID,
 		ContainerName:         r.ContainerName,
 		KubernetesClusterName: r.KubernetesClusterName,
-		RegistryId:            r.RegistryId,
+		RegistryID:            r.RegistryID,
 	}
-	ctx, _ := context.WithCancel(context.Background())
+	ctx := context.Background()
 	_, err := syft.GenerateSBOM(ctx, config)
 	if err != nil {
 		log.Errorf("Error processing SBOM: %s", err.Error())
@@ -97,11 +97,11 @@ func registryHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if config.Source == "" {
-		config.Source = fmt.Sprintf("registry:%s", config.NodeId)
+		config.Source = fmt.Sprintf("registry:%s", config.NodeID)
 	}
 
 	go workerPool.Process(config)
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Success"))
+	_, _ = w.Write([]byte("Success"))
 }

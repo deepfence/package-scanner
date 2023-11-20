@@ -30,7 +30,7 @@ const (
 
 var (
 	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO, vc.PODMAN}
-	modes            = []string{utils.ModeLocal, utils.ModeGrpcServer, utils.ModeHttpServer, utils.ModeScannerOnly}
+	modes            = []string{utils.ModeLocal, utils.ModeGRPCServer, utils.ModeHTTPServer, utils.ModeScannerOnly}
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
 )
 
@@ -45,13 +45,13 @@ var (
 	port                = flag.String("port", "", "Port for grpc server")
 	output              = flag.String("output", utils.TableOutput, "Output format: json or table")
 	quiet               = flag.Bool("quiet", false, "Don't display any output in stdout")
-	consoleUrl          = flag.String("console-url", "", "Deepfence Management Console URL")
+	consoleURL          = flag.String("console-url", "", "Deepfence Management Console URL")
 	consolePort         = flag.Int("console-port", 443, "Deepfence Management Console Port")
 	vulnerabilityScan   = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
 	deepfenceKey        = flag.String("deepfence-key", "", "Deepfence key for auth")
 	source              = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
 	scanType            = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,rust-binary,golang,golang-binary,dotnet", "base,java,python,ruby,php,javascript,rust,rust-binary,golang,golang-binary,dotnet")
-	scanId              = flag.String("scan-id", "", "(Optional) Scan id")
+	scanID              = flag.String("scan-id", "", "(Optional) Scan id")
 	failOnCount         = flag.Int("fail-on-count", -1, "Exit with status 1 if number of vulnerabilities found is >= this value (Default: -1)")
 	failOnCriticalCount = flag.Int("fail-on-critical-count", -1, "Exit with status 1 if number of critical vulnerabilities found is >= this value (Default: -1)")
 	failOnHighCount     = flag.Int("fail-on-high-count", -1, "Exit with status 1 if number of high vulnerabilities found is >= this value (Default: -1)")
@@ -60,7 +60,7 @@ var (
 	failOnSeverityCount = flag.String("fail-on-count-severity", "", "Exit with status 1 if number of vulnerabilities of given severity found is >= fail-on-count")
 	failOnScore         = flag.Float64("fail-on-score", -1, "Exit with status 1 if cumulative CVE score is >= this value (Default: -1)")
 	maskCveIds          = flag.String("mask-cve-ids", "", "Comma separated cve id's to mask. Example: \"CVE-2019-9168,CVE-2019-9169\"")
-	c_runtime           = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
+	cRuntime            = flag.String("container-runtime", "auto", "container runtime to be used can be one of "+strings.Join(supportedRuntime, "/"))
 	severity            = flag.String("severity", "", "Filter Vulnerabilities by severity, can be one or comma separated values of "+strings.Join(severities, "/"))
 	systemBin           = flag.Bool("system-bin", false, "use system tools")
 	debug               = flag.Bool("debug", false, "show debug logs")
@@ -135,12 +135,12 @@ func main() {
 
 	// no need to determine runtime if local directory
 	if !strings.HasPrefix(*source, "dir:") {
-		if *c_runtime != "auto" {
-			if !utils.Contains(supportedRuntime, *c_runtime) {
-				log.Fatalf("unsupported runtime has to be one of %s", strings.Join(supportedRuntime, "/"))
+		if *cRuntime != "auto" {
+			if !utils.Contains(supportedRuntime, *cRuntime) {
+				log.Panicf("unsupported runtime has to be one of %s", strings.Join(supportedRuntime, "/"))
 			}
-			containerRuntime = *c_runtime
-			switch *c_runtime {
+			containerRuntime = *cRuntime
+			switch *cRuntime {
 			case vc.DOCKER:
 				endpoint = vc.DOCKER_SOCKET_URI
 			case vc.CONTAINERD:
@@ -164,13 +164,13 @@ func main() {
 		Port:                 *port,
 		Output:               *output,
 		Quiet:                *quiet,
-		ConsoleURL:           *consoleUrl,
+		ConsoleURL:           *consoleURL,
 		ConsolePort:          strconv.Itoa(*consolePort),
 		DeepfenceKey:         *deepfenceKey,
 		Source:               *source,
 		ScanType:             *scanType,
 		VulnerabilityScan:    *vulnerabilityScan,
-		ScanId:               *scanId,
+		ScanID:               *scanID,
 		FailOnScore:          *failOnScore,
 		FailOnCount:          *failOnCount,
 		FailOnCriticalCount:  *failOnCriticalCount,
@@ -209,15 +209,15 @@ func main() {
 	switch *mode {
 	case utils.ModeLocal:
 		RunOnce(config)
-	case utils.ModeGrpcServer:
+	case utils.ModeGRPCServer:
 		err := sbom.RunGrpcServer(PluginName, config)
 		if err != nil {
-			log.Fatalf("error running grpc server: %v", err)
+			log.Panicf("error running grpc server: %v", err)
 		}
-	case utils.ModeHttpServer:
-		err := sbom.RunHttpServer(config)
+	case utils.ModeHTTPServer:
+		err := sbom.RunHTTPServer(config)
 		if err != nil {
-			log.Fatalf("error running http server: %v", err)
+			log.Panicf("error running http server: %v", err)
 		}
 	case utils.ModeScannerOnly:
 		r := router.New()
@@ -226,8 +226,8 @@ func main() {
 			*port = "8001"
 		}
 		log.Infof("listen on port: %s", *port)
-		log.Fatal(r.Run(":" + *port))
+		log.Panic(r.Run(":" + *port))
 	default:
-		log.Fatalf("unsupported mode %s", *mode)
+		log.Panicf("unsupported mode %s", *mode)
 	}
 }

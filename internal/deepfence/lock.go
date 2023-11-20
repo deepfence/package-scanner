@@ -17,12 +17,12 @@ func NewFlock() *Flock {
 	return &Flock{}
 }
 
-func getBootId() ([]byte, error) {
-	bootId, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
+func getBootID() ([]byte, error) {
+	bootID, err := os.ReadFile("/proc/sys/kernel/random/boot_id")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read boot id: %w", err)
 	}
-	return bootId, nil
+	return bootID, nil
 }
 
 // Acquires a shared lock on the file.
@@ -36,13 +36,13 @@ func (f *Flock) LockFile() error {
 	}
 	defer fd.Close()
 
-	bootId, err := getBootId()
+	bootID, err := getBootID()
 	if err != nil {
 		return err
 	}
 
 	file := os.NewFile(fd.Fd(), lockFilePath)
-	file.Write(bootId)
+	_, _ = file.Write(bootID)
 
 	if err := syscall.Flock(int(fd.Fd()), syscall.LOCK_SH); err != nil {
 		return fmt.Errorf("failed to acquire the lock file: %w", err)
