@@ -1,6 +1,37 @@
-# package-scanner
+# Package Scanner
 
-### how to build cli
+Scan for vulnerabilities in your docker image or a directory
+
+## Download
+
+Every [release](https://github.com/deepfence/package-scanner/releases/tag/v2.0.1) of package scanner provides binary releases for a variety of OSes. These binary versions can be manually downloaded and installed.
+
+1. Download your [desired](https://github.com/deepfence/package-scanner/releases/tag/v2.0.1) version
+    ```shell
+    wget https://github.com/deepfence/package-scanner/releases/download/v2.0.1/package-scanner_Linux_x86_64.tar
+    ```
+2. Unpack it
+    ```shell
+   tar -zxvf package-scanner_Linux_x86_64.tar
+    ```
+
+## Usage
+
+### Image scan
+```shell
+docker pull longhornio/csi-snapshotter:v6.2.1
+./package-scanner -source longhornio/csi-snapshotter:v6.2.1 -container-runtime docker
+
+docker pull nginx:latest
+./package-scanner -source nginx:latest -severity critical
+```
+
+### Directory scan
+```shell
+./package-scanner --source dir:<directory full path>
+```
+
+## Build
 1. make tools
 2. make release
 3. dist directory contains tar.gz packages for linux and macos as shown below
@@ -21,22 +52,7 @@ drwxr-xr-x 2 root root 4.0K Dec 29 09:40 package-scanner_linux_amd64_v1
 drwxr-xr-x 2 root root 4.0K Dec 29 09:40 package-scanner_linux_arm64
 ```
 
-### cli usage examples
-- please add security exception for MacOS to run package-scanner if required
-- scan a docker image for vulnerabilities
-```
-./package-scanner -source nginx:latest
-```
-- scan a docker image, filter for critical vulnerabilities
-```
-./package-scanner -source nginx:latest -severity critical
-```
-- scan current directory for vulnerabilities
-```
-./package-scanner -source dir:./
-```
-
-### how to build docker image
+## Build docker image
 1. make tools
 2. make docker
 3. docker images should show new image with name deepfenceio/deepfence_package_scanner:latest
@@ -47,7 +63,7 @@ deepfenceio/deepfence_package_scanner   latest    e06fb1cd3868   About an hour a
 nginx                                   latest    1403e55ab369   8 days ago          142MB
 ```
 
-### docker image standalone usage example
+## Docker image standalone usage example
 ```
 docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock deepfenceio/deepfence_package_scanner:latest package-scanner -source nginx:latest
 ```
