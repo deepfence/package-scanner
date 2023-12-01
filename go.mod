@@ -8,8 +8,8 @@ require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/aws/aws-sdk-go v1.45.21
 	github.com/deepfence/agent-plugins-grpc v1.1.0
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231030062708-5506162b00b7
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231030062708-5506162b00b7
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20231201173641-092afefd00a2
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20231201173641-092afefd00a2
 	github.com/deepfence/vessel v0.12.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.1
@@ -50,7 +50,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
