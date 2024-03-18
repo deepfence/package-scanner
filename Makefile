@@ -8,6 +8,12 @@ bootstrap: vendor
 clean:
 	-rm package-scanner
 
+.PHONY: clean-all
+clean-all: clean
+	-rm -rf vendor
+	(cd tools/grype-bin && rm -rf grype*)
+	(cd tools/syft-bin && rm -rf syft*)
+
 .PHONY: vendor
 vendor:
 	go mod tidy -v
