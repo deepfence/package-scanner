@@ -5,19 +5,26 @@ set -eux
 VERSION=0.73.1
 
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-HOST_ARCH=$(uname -m)
+HOST_ARCH="${GOARCH:=$(uname -m)}"
 
 if [ "$HOST_ARCH" = "x86_64" ]; then
     HOST_ARCH="amd64"
 elif [ "$HOST_ARCH" = "aarch64" ]; then
     HOST_ARCH="arm64"
+elif [ "$HOST_ARCH" = "arm" ]; then
+    HOST_ARCH="arm"
 fi
 
 ARCHITECTURE="${TARGETPLATFORM:-$HOST_OS/$HOST_ARCH}"
 
 IFS=/ read BUILD_OS BUILD_ARCH <<< $ARCHITECTURE
 
-rm -rf grype_*.tar.gz grype
+rm -rf grype*
 
-curl -fsSLO https://github.com/anchore/grype/releases/download/v${VERSION}/grype_${VERSION}_${BUILD_OS}_${BUILD_ARCH}.tar.gz
-tar -zxvf grype_${VERSION}_${BUILD_OS}_${BUILD_ARCH}.tar.gz grype
+git clone https://github.com/anchore/grype.git --branch v$VERSION || true
+(
+    cd grype/cmd/grype
+    export CGO_ENABLED=0
+    GOOS="$BUILD_OS" GOARCH="$BUILD_ARCH" go build -o grype.bin .
+    cp grype.bin ../../../
+)
