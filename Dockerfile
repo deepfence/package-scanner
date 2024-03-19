@@ -21,7 +21,7 @@ ENV NERDCTL_VERSION=1.4.0
 ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
-COPY --from=build /go/package-scanner/tools/grype-bin/grype /usr/local/bin/grype
+COPY --from=build /go/package-scanner/tools/grype-bin/grype.bin /usr/local/bin/grype
 COPY --from=build /go/package-scanner/tools/syft-bin/syft.bin /usr/local/bin/syft
 
 COPY grype.yaml /root/.grype.yaml
