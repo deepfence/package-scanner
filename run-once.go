@@ -161,7 +161,8 @@ func RunOnce(config utils.Config) {
 			utils.CRITICAL, details.Severity.Critical,
 			utils.HIGH, details.Severity.High,
 			utils.MEDIUM, details.Severity.Medium,
-			utils.LOW, details.Severity.Low)
+			utils.LOW, details.Severity.Low,
+			utils.UNKNOWN, details.Severity.Unknown)
 		if len(exploitable) > 0 {
 			fmt.Println("\nMost Exploitable Vulnerabilities:")
 			_ = out.TableOutput(&exploitable)
