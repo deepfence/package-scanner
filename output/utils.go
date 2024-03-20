@@ -17,6 +17,7 @@ type VulnerabilityScanDetail struct {
 		High     int `json:"high,omitempty"`
 		Medium   int `json:"medium,omitempty"`
 		Low      int `json:"low,omitempty"`
+		Unknown  int `json:"unknown,omitempty"`
 	} `json:"severity,omitempty"`
 	TimeStamp time.Time `json:"time_stamp,omitempty"`
 	Total     int       `json:"total,omitempty"`

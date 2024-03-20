@@ -363,7 +363,10 @@ func CountBySeverity(report *[]scanner.VulnerabilityScanReport) *VulnerabilitySc
 			detail.Severity.Medium += 1
 		case utils.LOW:
 			detail.Severity.Low += 1
+		case utils.UNKNOWN:
+			detail.Severity.Unknown += 1
 		}
+
 	}
 
 	detail.CveScore = math.Min((cveScore*10.0)/500.0, 10.0)
