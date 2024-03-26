@@ -25,6 +25,6 @@ git clone https://github.com/deepfence/syft.git --branch $RELEASE || true
 (
     cd syft/cmd/syft
     export CGO_ENABLED=0
-    GOOS="$BUILD_OS" GOARCH="$BUILD_ARCH" go build -o syft.bin .
+    GOOS="$BUILD_OS" GOARCH="$BUILD_ARCH" go build -o syft.bin -ldflags="-s -w -extldflags=-static" .
     cp syft.bin ../../../ && chmod +x syft.bin
 )

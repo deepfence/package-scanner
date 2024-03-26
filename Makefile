@@ -20,7 +20,7 @@ vendor:
 	go mod vendor
 
 package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
-	CGO_ENABLED=0 go build -buildvcs=false -v .
+	CGO_ENABLED=0 go build -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
 
 .PHONY: docker
 docker:

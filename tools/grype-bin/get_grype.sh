@@ -25,6 +25,6 @@ git clone https://github.com/anchore/grype.git --branch v$VERSION || true
 (
     cd grype/cmd/grype
     export CGO_ENABLED=0
-    GOOS="$BUILD_OS" GOARCH="$BUILD_ARCH" go build -o grype.bin .
+    GOOS="$BUILD_OS" GOARCH="$BUILD_ARCH" go build -o grype.bin -ldflags="-s -w -extldflags=-static" .
     cp grype.bin ../../../ && chmod +x grype.bin
 )
