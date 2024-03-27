@@ -19,6 +19,10 @@ vendor:
 	go mod tidy -v
 	go mod vendor
 
+.PHONY: cli
+cli: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
+	CGO_ENABLED=0 go build -tags cli -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
+
 package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 	CGO_ENABLED=0 go build -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
 
@@ -45,11 +49,11 @@ rm-buildx:
 tools: grype syft
 
 .PHONY: grype
-grype: 
+grype:
 	(cd tools/grype-bin && ./get_grype.sh)
 
 .PHONY: syft
-syft: 
+syft:
 	(cd tools/syft-bin && ./get_syft.sh)
 
 .PHONY: install-goreleaser
