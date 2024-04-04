@@ -101,7 +101,7 @@ func main() {
 
 	// remove tmpPath on exit
 	defer func() {
-		log.Debugf("remove tools cache %s", tmpPath)
+		log.Infof("remove tools cache %s", tmpPath)
 		if err := os.RemoveAll(tmpPath); err != nil {
 			log.Fatal(err)
 		}
@@ -111,8 +111,8 @@ func main() {
 	grypeBinPath := path.Join(tmpPath, "grype")
 	grypeConfigPath := path.Join(tmpPath, "grype.yaml")
 
-	log.Debugf("tools cache dir: %s", tmpPath)
-	log.Debugf("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
+	log.Infof("tools cache dir: %s", tmpPath)
+	log.Infof("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
 
 	// extract embedded binaries
 	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0755); err != nil {
