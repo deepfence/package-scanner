@@ -93,17 +93,28 @@ func main() {
 	if dirErr != nil {
 		log.Fatal(dirErr)
 	}
-	tmpPath := path.Join(cacheDir, "package-scanner")
+
+	tmpPath, tmpErr := os.MkdirTemp(cacheDir, "package-scanner-*")
+	if tmpErr != nil {
+		log.Fatal(tmpErr)
+	}
+
+	// remove tmpPath on exit
+	defer func() {
+		log.Debugf("remove tools cache %s", tmpPath)
+		if err := os.RemoveAll(tmpPath); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	syftBinPath := path.Join(tmpPath, "syft")
 	grypeBinPath := path.Join(tmpPath, "grype")
 	grypeConfigPath := path.Join(tmpPath, "grype.yaml")
-	log.Debugf("user cache dir: %s", cacheDir)
+
+	log.Debugf("tools cache dir: %s", tmpPath)
 	log.Debugf("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
 
 	// extract embedded binaries
-	if err := os.MkdirAll(tmpPath, 0755); err != nil {
-		log.Fatal(err)
-	}
 	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0755); err != nil {
 		log.Fatal(err)
 	}
@@ -113,13 +124,6 @@ func main() {
 	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0755); err != nil {
 		log.Fatal(err)
 	}
-	// remove on exit
-	defer func() {
-		log.Debugf("remove tools cache %s", tmpPath)
-		if err := os.RemoveAll(tmpPath); err != nil {
-			log.Fatal(err)
-		}
-	}()
 
 	// make sure logs come to stdout in other modes except local
 	// local logs go to stderr to keep stdout clean for redirecting to file
