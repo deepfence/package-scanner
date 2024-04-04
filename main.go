@@ -94,6 +94,10 @@ func main() {
 		log.Fatal(dirErr)
 	}
 
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		log.Fatal(err)
+	}
+
 	tmpPath, tmpErr := os.MkdirTemp(cacheDir, "package-scanner-*")
 	if tmpErr != nil {
 		log.Fatal(tmpErr)
