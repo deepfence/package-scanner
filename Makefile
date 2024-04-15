@@ -28,11 +28,11 @@ package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 
 .PHONY: docker
 docker:
-	docker build -t deepfenceio/deepfence_package_scanner:latest .
+	docker build -t quay.io/deepfenceio/deepfence_package_scanner:2.2.0 .
 
 .PHONY: docker-multi-arch
 docker-multi-arch:
-	docker buildx build --platform linux/arm64,linux/amd64 --tag deepfenceio/deepfence_package_scanner:latest .
+	docker buildx build --platform linux/arm64,linux/amd64 --tag quay.io/deepfenceio/deepfence_package_scanner:2.2.0 .
 
 .PHONY: buildx
 buildx:
