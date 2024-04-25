@@ -45,5 +45,6 @@ nginx                                               latest    1403e55ab369   8 d
 
 ## Docker image standalone usage example
 ```
+docker pull nginx:latest
 docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.2.0 -source nginx:latest
 ```
