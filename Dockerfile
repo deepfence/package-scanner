@@ -6,10 +6,11 @@ WORKDIR /go/package-scanner/
 COPY . .
 
 ARG TARGETPLATFORM
+ARG MAKE_CMD=package-scanner
 # TODO(tjonak): not sure whether I need to expose TARGETPLATFORM to make or is ARG automatically available
 # test that
 RUN TARGETPLATFORM=$TARGETPLATFORM make tools
-RUN CGO_ENABLED=0 make package-scanner
+RUN CGO_ENABLED=0 make $MAKE_CMD
 
 FROM debian:bullseye-slim
 LABEL MAINTAINER="Deepfence Inc"

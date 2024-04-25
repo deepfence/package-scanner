@@ -1,3 +1,6 @@
+export IMAGE_REPOSITORY?=quay.io/deepfenceio
+export DF_IMG_TAG?=2.2.0
+
 all: package-scanner
 
 .PHONY: bootstrap
@@ -28,11 +31,19 @@ package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 
 .PHONY: docker
 docker:
-	docker build -t quay.io/deepfenceio/deepfence_package_scanner:2.2.0 .
+	docker build -t $(IMAGE_REPOSITORY)/deepfence_package_scanner:$(DF_IMG_TAG) .
+
+.PHONY: docker-cli
+docker-cli:
+	docker build --build-arg MAKE_CMD="cli" -t $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) .
+
+.PHONY: docker-cli-multi-arch-push
+docker-cli-multi-arch-push: buildx
+	docker buildx build --build-arg MAKE_CMD="cli" --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) . --push
 
 .PHONY: docker-multi-arch
 docker-multi-arch:
-	docker buildx build --platform linux/arm64,linux/amd64 --tag quay.io/deepfenceio/deepfence_package_scanner:2.2.0 .
+	docker buildx build --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner:$(DF_IMG_TAG) .
 
 .PHONY: buildx
 buildx:
