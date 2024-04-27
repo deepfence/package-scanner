@@ -224,20 +224,27 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 
 	err = ctx.Checkpoint("Before generating SBOM")
 	if err != nil {
+		log.Errorf("error in checkpoint: %s", err)
 		return err
 	}
 
 	// generate sbom
 	sbom, err = syft.GenerateSBOM(ctx.Context, config)
+	if err != nil {
+		log.Errorf("error in GenerateSBOM: %s", err)
+		return err
+	}
 
 	err = ctx.Checkpoint("After generating SBOM")
 	if err != nil {
+		log.Errorf("error in checkpoint: %s", err)
 		return err
 	}
 
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	err = publisher.SendSbomToConsole(sbom, false)
 	if err != nil {
+		log.Errorf("error in SendSbomToConsole: %s", err)
 		return err
 	}
 
