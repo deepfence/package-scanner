@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/deepfence/package-scanner/utils"
@@ -179,9 +180,11 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		}
 	}
 
-	if config.ScanType != "" && config.ScanType != "all" {
-		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
+	// scan all if no scan type is provided
+	if len(config.ScanType) == 0 {
+		config.ScanType = utils.ScanAll
 	}
+	syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 
 	if config.IsRegistry {
 		if !strings.HasPrefix(syftArgs[1], registryPrefix) {
@@ -236,36 +239,53 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 }
 
 func buildCatalogersArg(scanType string) []string {
-	syftArgs := []string{}
+	catalogers := []string{}
+
 	scanTypes := strings.Split(scanType, ",")
+
 	for _, s := range scanTypes {
 		switch s {
+		case utils.ScanAll:
+			// doesnot include binary scanners
+			catalogers = append(catalogers, base...)
+			catalogers = append(catalogers, ruby...)
+			catalogers = append(catalogers, python...)
+			catalogers = append(catalogers, javascript...)
+			catalogers = append(catalogers, php...)
+			catalogers = append(catalogers, golang...)
+			catalogers = append(catalogers, java...)
+			catalogers = append(catalogers, rust...)
+			catalogers = append(catalogers, dotnet...)
 		case utils.ScanTypeBase:
-			syftArgs = append(syftArgs, "--select-catalogers", "os")
+			catalogers = append(catalogers, base...)
 		case utils.ScanTypeRuby:
-			syftArgs = append(syftArgs, "--select-catalogers", "ruby")
+			catalogers = append(catalogers, ruby...)
 		case utils.ScanTypePython:
-			syftArgs = append(syftArgs, "--select-catalogers", "python")
+			catalogers = append(catalogers, python...)
 		case utils.ScanTypeJavaScript:
-			syftArgs = append(syftArgs, "--select-catalogers", "javascript")
+			catalogers = append(catalogers, javascript...)
 		case utils.ScanTypePhp:
-			syftArgs = append(syftArgs, "--select-catalogers", "php")
+			catalogers = append(catalogers, php...)
 		case utils.ScanTypeGolang:
-			syftArgs = append(syftArgs, "--select-catalogers", "golang")
+			catalogers = append(catalogers, golang...)
 		case utils.ScanTypeGolangBinary:
-			syftArgs = append(syftArgs, "--select-catalogers", "golang")
+			catalogers = append(catalogers, golangBin...)
 		case utils.ScanTypeJava:
-			syftArgs = append(syftArgs, "--select-catalogers", "java")
+			catalogers = append(catalogers, java...)
 		case utils.ScanTypeRust:
-			syftArgs = append(syftArgs, "--select-catalogers", "rust")
+			catalogers = append(catalogers, rust...)
 		case utils.ScanTypeRustBinary:
-			syftArgs = append(syftArgs, "--select-catalogers", "rust")
+			catalogers = append(catalogers, rustBin...)
 		case utils.ScanTypeDotnet:
-			syftArgs = append(syftArgs, "--select-catalogers", "dotnet")
-
+			catalogers = append(catalogers, dotnet...)
+		case utils.ScanTypeDotnetBinary:
+			catalogers = append(catalogers, dotnetBin...)
 		}
 	}
-	return syftArgs
+
+	slices.Sort(catalogers)
+
+	return []string{"--override-default-catalogers", strings.Join(slices.Compact(catalogers), ",")}
 }
 
 func getNfsMountsDirs() []string {
