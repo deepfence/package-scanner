@@ -2,7 +2,7 @@
 
 set -eux
 
-VERSION=0.73.1
+VERSION=v0.77.2
 
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH="${GOARCH:=$(uname -m)}"
@@ -21,7 +21,7 @@ IFS=/ read BUILD_OS BUILD_ARCH <<< $ARCHITECTURE
 
 rm -rf grype*
 
-git clone https://github.com/anchore/grype.git --branch v$VERSION || true
+git clone https://github.com/anchore/grype.git --branch $VERSION || true
 (
     cd grype/cmd/grype
     export CGO_ENABLED=0

@@ -71,6 +71,8 @@ const (
 	ScanTypeRust         = "rust"
 	ScanTypeRustBinary   = "rust-binary"
 	ScanTypeDotnet       = "dotnet"
+	ScanTypeDotnetBinary = "dotnet-binary"
+	ScanAll              = "all"
 )
 
 // severity

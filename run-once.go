@@ -156,7 +156,7 @@ func RunOnce(config utils.Config) {
 	exploitable, others := GroupByExploitability(&filtered)
 
 	if *output != utils.JSONOutput {
-		fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d\n",
+		fmt.Printf("summary:\n total=%d %s=%d %s=%d %s=%d %s=%d %s=%d\n",
 			details.Total,
 			utils.CRITICAL, details.Severity.Critical,
 			utils.HIGH, details.Severity.High,

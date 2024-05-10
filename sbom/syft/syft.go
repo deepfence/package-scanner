@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/deepfence/package-scanner/utils"
@@ -97,7 +98,9 @@ func runCommand(cmd *exec.Cmd) (*bytes.Buffer, error) {
 
 func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	jsonFile := filepath.Join("/tmp", utils.RandomString(12)+"output.json")
-	syftArgs := []string{"packages", config.Source, "-o", "json", "--file", jsonFile, "-q"}
+
+	syftArgs := []string{"scan", config.Source, "-o", fmt.Sprintf("syft-json=%s", jsonFile), "-q"}
+
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
 		for _, excludeDir := range linuxExcludeDirs {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
@@ -177,10 +180,11 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		}
 	}
 
-	if config.ScanType != "" && config.ScanType != "all" {
-		isRegistry := config.RegistryID != "" && config.NodeType == utils.NodeTypeImage
-		syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType, isRegistry)...)
+	// scan all if no scan type is provided
+	if len(config.ScanType) == 0 {
+		config.ScanType = utils.ScanAll
 	}
+	syftArgs = append(syftArgs, buildCatalogersArg(config.ScanType)...)
 
 	if config.IsRegistry {
 		if !strings.HasPrefix(syftArgs[1], registryPrefix) {
@@ -234,36 +238,54 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	return sbom, nil
 }
 
-func buildCatalogersArg(scanType string, isRegistry bool) []string {
-	syftArgs := []string{}
+func buildCatalogersArg(scanType string) []string {
+	catalogers := []string{}
+
 	scanTypes := strings.Split(scanType, ",")
+
 	for _, s := range scanTypes {
 		switch s {
+		case utils.ScanAll:
+			// doesnot include binary scanners
+			catalogers = append(catalogers, base...)
+			catalogers = append(catalogers, ruby...)
+			catalogers = append(catalogers, python...)
+			catalogers = append(catalogers, javascript...)
+			catalogers = append(catalogers, php...)
+			catalogers = append(catalogers, golang...)
+			catalogers = append(catalogers, java...)
+			catalogers = append(catalogers, rust...)
+			catalogers = append(catalogers, dotnet...)
 		case utils.ScanTypeBase:
-			syftArgs = append(syftArgs, "--catalogers", "dpkgdb-cataloger", "--catalogers", "rpm-db-cataloger", "--catalogers", "rpm-file-cataloger", "--catalogers", "apkdb-cataloger", "--catalogers", "alpmdb-cataloger", "--catalogers", "linux-kernel-cataloger")
+			catalogers = append(catalogers, base...)
 		case utils.ScanTypeRuby:
-			syftArgs = append(syftArgs, "--catalogers", "ruby-gemfile-cataloger", "--catalogers", "ruby-gemspec-cataloger")
+			catalogers = append(catalogers, ruby...)
 		case utils.ScanTypePython:
-			syftArgs = append(syftArgs, "--catalogers", "python-index-cataloger", "--catalogers", "python-package-cataloger")
+			catalogers = append(catalogers, python...)
 		case utils.ScanTypeJavaScript:
-			syftArgs = append(syftArgs, "--catalogers", "javascript-lock-cataloger", "--catalogers", "javascript-package-cataloger")
+			catalogers = append(catalogers, javascript...)
 		case utils.ScanTypePhp:
-			syftArgs = append(syftArgs, "--catalogers", "php-composer-installed-cataloger", "--catalogers", "php-composer-lock-cataloger")
+			catalogers = append(catalogers, php...)
 		case utils.ScanTypeGolang:
-			syftArgs = append(syftArgs, "--catalogers", "go-mod-file-cataloger")
+			catalogers = append(catalogers, golang...)
 		case utils.ScanTypeGolangBinary:
-			syftArgs = append(syftArgs, "--catalogers", "go-module-binary-cataloger")
+			catalogers = append(catalogers, golangBin...)
 		case utils.ScanTypeJava:
-			syftArgs = append(syftArgs, "--catalogers", "java-cataloger", "--catalogers", "java-gradle-lockfile-cataloger", "--catalogers", "java-pom-cataloger")
+			catalogers = append(catalogers, java...)
 		case utils.ScanTypeRust:
-			syftArgs = append(syftArgs, "--catalogers", "rust-cargo-lock-cataloger")
+			catalogers = append(catalogers, rust...)
 		case utils.ScanTypeRustBinary:
-			syftArgs = append(syftArgs, "--catalogers", "cargo-auditable-binary-cataloger")
+			catalogers = append(catalogers, rustBin...)
 		case utils.ScanTypeDotnet:
-			syftArgs = append(syftArgs, "--catalogers", "dotnet-deps-cataloger")
+			catalogers = append(catalogers, dotnet...)
+		case utils.ScanTypeDotnetBinary:
+			catalogers = append(catalogers, dotnetBin...)
 		}
 	}
-	return syftArgs
+
+	slices.Sort(catalogers)
+
+	return []string{"--override-default-catalogers", strings.Join(slices.Compact(catalogers), ",")}
 }
 
 func getNfsMountsDirs() []string {
