@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -98,7 +99,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tmpPath, tmpErr := os.MkdirTemp(cacheDir, "package-scanner-*")
+	tmpPathPattern := "package-scanner-*"
+
+	// clean up old cache dir files if present
+	if dirs, err := filepath.Glob(path.Join(cacheDir, tmpPathPattern)); err != nil {
+		log.Error(err)
+	} else {
+		for _, dir := range dirs {
+			if err := os.RemoveAll(dir); err != nil {
+				log.Error(err)
+			}
+		}
+	}
+
+	tmpPath, tmpErr := os.MkdirTemp(cacheDir, tmpPathPattern)
 	if tmpErr != nil {
 		log.Fatal(tmpErr)
 	}
