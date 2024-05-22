@@ -29,9 +29,13 @@ cli: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
 	CGO_ENABLED=0 go build -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
 
-.PHONY: docker
-docker:
-	docker build -t $(IMAGE_REPOSITORY)/deepfence_package_scanner:$(DF_IMG_TAG) .
+.PHONY: package-scanner-cli
+package-scanner-cli:
+	docker build -t $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) .
+
+.PHONY: publish-packagescanner-cli
+publish-packagescanner-cli:
+	docker push $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG)
 
 .PHONY: docker-cli
 docker-cli:
