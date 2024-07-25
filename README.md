@@ -35,16 +35,16 @@ docker pull nginx:latest
 
 ## Build docker image
 1. make docker-cli
-2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.2.0
+2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.3.0
 ```
 $ docker images
 REPOSITORY                                          TAG       IMAGE ID       CREATED             SIZE
-quay.io/deepfenceio/deepfence_package_scanner_cli   2.2.0     e06fb1cd3868   About an hour ago   569MB
+quay.io/deepfenceio/deepfence_package_scanner_cli   2.3.0     e06fb1cd3868   About an hour ago   569MB
 nginx                                               latest    1403e55ab369   8 days ago          142MB
 ```
 
 ## Docker image standalone usage example
 ```
 docker pull nginx:latest
-docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.2.0 -source nginx:latest
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.3.0 -source nginx:latest
 ```
