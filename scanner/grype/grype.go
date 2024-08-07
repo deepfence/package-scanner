@@ -107,7 +107,6 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 		metasploitURL, urls := utils.ExtractExploitPocURL(match.Vulnerability.URLs)
 
 		report := scanner.VulnerabilityScanReport{
-			Type:               "cve",
 			Masked:             utils.Contains(maskCveIds, match.Vulnerability.ID),
 			ScanID:             cfg.ScanID,
 			CveID:              match.Vulnerability.ID,
@@ -124,6 +123,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			URLs:               urls,
 			ExploitPOC:         metasploitURL,
 			ParsedAttackVector: "",
+			Namespace:          match.Vulnerability.Namespace,
 		}
 
 		if report.CveType == "base" {

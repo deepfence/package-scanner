@@ -263,6 +263,7 @@ func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.Vulnerabil
 		n.SetInitExploitabilityScore(int32(v.InitExploitabilityScore))
 		n.SetParsedAttackVector(v.ParsedAttackVector)
 		n.SetUrls(v.URLs)
+		n.SetNamespace(v.Namespace)
 
 		data = append(data, *n)
 	}
