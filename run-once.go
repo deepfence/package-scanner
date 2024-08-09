@@ -235,7 +235,7 @@ func GroupByExploitability(
 ) {
 
 	for _, r := range *reports {
-		if r.ExploitabilityScore > 0 {
+		if r.InitExploitabilityScore > 0 {
 			exploitable = append(exploitable, r)
 		} else {
 			others = append(others, r)
