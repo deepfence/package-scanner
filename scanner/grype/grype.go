@@ -147,7 +147,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			score = 1
 		}
 
-		report.ExploitabilityScore = score
+		report.ExploitabilityScore = 0
 		report.InitExploitabilityScore = score
 		report.HasLiveConnection = false
 
