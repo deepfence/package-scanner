@@ -16,8 +16,8 @@ Every [release](https://github.com/deepfence/package-scanner/releases) of packag
 
 ### Image scan
 ```shell
-docker pull longhornio/csi-snapshotter:v6.2.1
-./package-scanner -source longhornio/csi-snapshotter:v6.2.1 -container-runtime docker
+docker pull longhornio/csi-snapshotter:v8.1.0
+./package-scanner -source longhornio/csi-snapshotter:v8.1.0 -container-runtime docker
 
 docker pull nginx:latest
 ./package-scanner -source nginx:latest -severity critical
@@ -35,16 +35,16 @@ docker pull nginx:latest
 
 ## Build docker image
 1. make docker-cli
-2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.3.1
+2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.4.0
 ```
 $ docker images
 REPOSITORY                                          TAG       IMAGE ID       CREATED             SIZE
-quay.io/deepfenceio/deepfence_package_scanner_cli   2.3.1     e06fb1cd3868   About an hour ago   569MB
+quay.io/deepfenceio/deepfence_package_scanner_cli   2.4.0     e06fb1cd3868   About an hour ago   569MB
 nginx                                               latest    1403e55ab369   8 days ago          142MB
 ```
 
 ## Docker image standalone usage example
 ```
 docker pull nginx:latest
-docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.3.1 -source nginx:latest
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.4.0 -source nginx:latest
 ```

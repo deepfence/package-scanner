@@ -1,5 +1,5 @@
 export IMAGE_REPOSITORY?=quay.io/deepfenceio
-export DF_IMG_TAG?=2.3.1
+export DF_IMG_TAG?=2.4.0
 
 all: package-scanner
 
