@@ -3,6 +3,7 @@ package grype
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -10,6 +11,13 @@ import (
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
+)
+
+const (
+	grypeDBVersion = "5"
 )
 
 var (
@@ -51,6 +59,24 @@ func Parse(p []byte) (Document, error) {
 	return doc, nil
 }
 
+func getGrypeDBPath(cfg utils.Config) (string, error) {
+	yamlFile, err := os.ReadFile(cfg.GrypeConfigPath)
+	if err != nil {
+		return "", err
+	}
+	var c GrypeConfig
+	err = yaml.Unmarshal(yamlFile, &c)
+	if err != nil {
+		return "", err
+	}
+
+	if !strings.HasPrefix(c.DB.Dir, "/") {
+		c.DB.Dir = "/" + c.DB.Dir
+	}
+
+	return fmt.Sprintf("%s/%s/vulnerability.db", c.DB.Dir, grypeDBVersion), nil
+}
+
 func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
 	grypeDocument, err := Parse(vulnerabilities)
 	if err != nil {
@@ -59,10 +85,15 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 
 	var fullReport []scanner.VulnerabilityScanReport
 
-	// currentlyMaskedCveIds, err = utils.GetCurrentlyMaskedCveIds(cfg.NodeId, cfg.NodeType)
-	// if err != nil {
-	//	currentlyMaskedCveIds = []string{}
-	//}
+	grypeDBPath, err := getGrypeDBPath(cfg)
+	if err != nil {
+		return fullReport, err
+	}
+	conn, err := sqlite.OpenConn(grypeDBPath, sqlite.OpenReadWrite)
+	if err != nil {
+		return fullReport, err
+	}
+	defer conn.Close()
 
 	maskCveIdsInArgs := strings.Split(cfg.MaskCveIds, ",")
 	maskCveIds := append([]string{}, maskCveIdsInArgs...)
@@ -106,6 +137,21 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 
 		metasploitURL, urls := utils.ExtractExploitPocURL(match.Vulnerability.URLs)
 
+		var cisaKev bool
+		var epssScore float64
+		err = sqlitex.Execute(conn, "SELECT cisakev,epss FROM vulnerability_metadata WHERE id=? AND namespace=?", &sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				cisaKev = stmt.ColumnBool(0)
+				epssScore = stmt.ColumnFloat(1)
+				return nil
+			},
+			Args: []any{match.Vulnerability.ID, match.Vulnerability.Namespace},
+		})
+		if err != nil {
+			log.Error(err.Error())
+			// Don't exit, continue with default values
+		}
+
 		report := scanner.VulnerabilityScanReport{
 			Masked:             utils.Contains(maskCveIds, match.Vulnerability.ID),
 			ScanID:             cfg.ScanID,
@@ -124,6 +170,8 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			ExploitPOC:         metasploitURL,
 			ParsedAttackVector: "",
 			Namespace:          match.Vulnerability.Namespace,
+			CISAKEV:            cisaKev,
+			EPSSScore:          epssScore,
 		}
 
 		if report.CveType == "base" {
