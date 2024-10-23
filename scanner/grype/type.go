@@ -127,3 +127,11 @@ type descriptor struct {
 	Configuration         interface{} `json:"configuration,omitempty"`
 	VulnerabilityDBStatus interface{} `json:"db,omitempty"`
 }
+
+type GrypeConfigDB struct {
+	Dir string `yaml:"cache-dir"`
+}
+
+type GrypeConfig struct {
+	DB GrypeConfigDB `yaml:"db"`
+}

@@ -22,4 +22,6 @@ type VulnerabilityScanReport struct {
 	ExploitabilityScore     int      `json:"exploitability_score"`
 	InitExploitabilityScore int      `json:"init_exploitability_score"`
 	HasLiveConnection       bool     `json:"has_live_connection"`
+	CISAKEV                 bool     `json:"cisa_kev"`
+	EPSSScore               float64  `json:"epss_score"`
 }
