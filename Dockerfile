@@ -1,4 +1,5 @@
-FROM golang:1.21-bullseye AS build
+FROM golang:1.23-bookworm AS build
+
 RUN apt-get clean && apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make apt-utils
@@ -7,18 +8,16 @@ COPY . .
 
 ARG TARGETPLATFORM
 ARG MAKE_CMD=package-scanner
-# TODO(tjonak): not sure whether I need to expose TARGETPLATFORM to make or is ARG automatically available
-# test that
 RUN TARGETPLATFORM=$TARGETPLATFORM make tools
 RUN CGO_ENABLED=0 make $MAKE_CMD
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 LABEL MAINTAINER="Deepfence Inc"
 LABEL deepfence.role=system
 
 ENV PACKAGE_SCAN_CONCURRENCY=5
-ENV DOCKER_VERSION=24.0.2
-ENV NERDCTL_VERSION=1.4.0
+ENV DOCKER_VERSION=27.3.1
+ENV NERDCTL_VERSION=1.7.7
 ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
