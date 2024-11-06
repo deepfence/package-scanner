@@ -15,10 +15,10 @@ FROM debian:bookworm-slim
 LABEL MAINTAINER="Deepfence Inc"
 LABEL deepfence.role=system
 
-ENV PACKAGE_SCAN_CONCURRENCY=5
-ENV DOCKER_VERSION=27.3.1
-ENV NERDCTL_VERSION=1.7.7
-ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
+ENV PACKAGE_SCAN_CONCURRENCY=5 \
+    DOCKER_VERSION=27.3.1 \
+    NERDCTL_VERSION=1.7.7
+# ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/package-scanner/tools/grype-bin/grype.bin /usr/local/bin/grype
@@ -66,9 +66,9 @@ rm nerdctl-${NERDCTL_VERSION}-linux-${ARCHITECTURE}.tar.gz
 EOF
 
 #RUN echo "0 */4 * * * /usr/local/bin/grype db update" >> /etc/crontabs/root \
-RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
-    && chmod +x /entrypoint.sh
-RUN grype db update
+#RUN crontab -l | { cat; echo "0 */4 * * * /usr/local/bin/grype db update"; } | crontab - \
+#    && chmod +x /entrypoint.sh
+#RUN grype db update
 
 EXPOSE 8001 8002 8005
 ENTRYPOINT ["/entrypoint.sh"]
