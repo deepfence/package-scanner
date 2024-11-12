@@ -6,10 +6,9 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc/
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/aws/aws-sdk-go v1.55.5
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241104185440-230d22a0d173
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241104185440-230d22a0d173
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241112090544-f42aabb5dc7f
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241112090544-f42aabb5dc7f
 	github.com/deepfence/vessel v0.13.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
@@ -61,7 +60,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
