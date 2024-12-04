@@ -35,6 +35,8 @@ var (
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
 	productENV       = utils.GetEnvOrDefault("DEEPFENCE_PRODUCT", "ThreatMapper")
 	licenseENV       = utils.GetEnvOrDefault("DEEPFENCE_LICENSE", "")
+	dfConsoleURL     = utils.GetEnvOrDefault("DEEPFENCE_MGMT_CONSOLE_URL", "")
+	dfKey            = utils.GetEnvOrDefault("DEEPFENCE_KEY", "")
 	version          string
 	userCacheDir     string
 )
@@ -50,10 +52,10 @@ var (
 	port                = flag.String("port", "", "Port for grpc server")
 	output              = flag.String("output", utils.TableOutput, "Output format: json or table")
 	quiet               = flag.Bool("quiet", false, "Don't display any output in stdout")
-	consoleURL          = flag.String("console-url", "", "Deepfence Management Console URL")
+	consoleURL          = flag.String("console-url", dfConsoleURL, "Deepfence Management Console URL")
 	consolePort         = flag.Int("console-port", 443, "Deepfence Management Console Port")
 	vulnerabilityScan   = flag.Bool("vulnerability-scan", false, "Publish SBOM to Deepfence Management Console and run Vulnerability Scan")
-	deepfenceKey        = flag.String("deepfence-key", "", "Deepfence key for auth")
+	deepfenceKey        = flag.String("deepfence-key", dfKey, "Deepfence key for auth")
 	source              = flag.String("source", "", "Image name (nginx:latest) or directory (dir:/)")
 	scanType            = flag.String("scan-type", "base,java,python,ruby,php,javascript,rust,rust-binary,golang,golang-binary,dotnet", "base,java,python,ruby,php,javascript,rust,rust-binary,golang,golang-binary,dotnet")
 	scanID              = flag.String("scan-id", "", "(Optional) Scan id")
