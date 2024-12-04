@@ -33,6 +33,10 @@ var (
 	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO, vc.PODMAN}
 	modes            = []string{utils.ModeLocal, utils.ModeGRPCServer, utils.ModeHTTPServer, utils.ModeScannerOnly}
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
+	productENV       = utils.GetEnvOrDefault("DEEPFENCE_PRODUCT", "ThreatMapper")
+	licenseENV       = utils.GetEnvOrDefault("DEEPFENCE_LICENSE", "")
+	version          string
+	userCacheDir     string
 )
 
 var (
@@ -66,6 +70,8 @@ var (
 	systemBin           = flag.Bool("system-bin", false, "use system tools")
 	debug               = flag.Bool("debug", false, "show debug logs")
 	keepSbom            = flag.Bool("keep-sbom", false, "keep generated sbom file")
+	product             = flag.String("product", productENV, "Deepfence Product type can be ThreatMapper or ThreatStryker, also supports env var DEEPFENCE_PRODUCT")
+	license             = flag.String("license", licenseENV, "TheratMapper or ThreatStryker license, also supports env var DEEPFENCE_LICENSE")
 )
 
 func main() {
@@ -85,24 +91,27 @@ func main() {
 
 	flag.Parse()
 
+	log.Infof("version: %s", version)
+
 	if *debug {
 		log.SetOutput(os.Stdout)
 		log.SetLevel(log.DebugLevel)
 	}
 
-	cacheDir, dirErr := os.UserCacheDir()
+	var dirErr error
+	userCacheDir, dirErr = os.UserCacheDir()
 	if dirErr != nil {
 		log.Fatal(dirErr)
 	}
 
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+	if err := os.MkdirAll(userCacheDir, 0755); err != nil {
 		log.Fatal(err)
 	}
 
 	tmpPathPattern := "package-scanner-*"
 
 	// clean up old cache dir files if present
-	if dirs, err := filepath.Glob(path.Join(cacheDir, tmpPathPattern)); err != nil {
+	if dirs, err := filepath.Glob(path.Join(userCacheDir, tmpPathPattern)); err != nil {
 		log.Error(err)
 	} else {
 		for _, dir := range dirs {
@@ -112,7 +121,7 @@ func main() {
 		}
 	}
 
-	tmpPath, tmpErr := os.MkdirTemp(cacheDir, tmpPathPattern)
+	tmpPath, tmpErr := os.MkdirTemp(userCacheDir, tmpPathPattern)
 	if tmpErr != nil {
 		log.Fatal(tmpErr)
 	}
@@ -206,6 +215,8 @@ func main() {
 		GrypeBinPath:         "/usr/local/bin/grype",
 		GrypeConfigPath:      grypeConfigPath,
 		KeepSbom:             *keepSbom,
+		Product:              *product,
+		License:              *license,
 	}
 	if !*systemBin {
 		config.SyftBinPath = syftBinPath

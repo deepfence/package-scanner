@@ -117,3 +117,11 @@ func ExtractExploitPocURL(url []string) (string, []string) {
 	}
 	return metasploitURL, nonExploitPocUrls
 }
+
+func GetEnvOrDefault(envVar string, defaultValue string) string {
+	envValue := os.Getenv(envVar)
+	if len(envValue) == 0 {
+		return defaultValue
+	}
+	return envValue
+}

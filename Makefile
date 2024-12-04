@@ -24,10 +24,10 @@ vendor:
 
 .PHONY: cli
 cli: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
-	CGO_ENABLED=0 go build -tags cli -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
+	CGO_ENABLED=0 go build -tags cli -buildvcs=false -v -ldflags="-s -w -extldflags=-static -X 'main.version=$(DF_IMG_TAG)'" .
 
 package-scanner: vendor $(PWD)/**/*.go $(PWD)/agent-plugins-grpc/**/*.go
-	CGO_ENABLED=0 go build -buildvcs=false -v -ldflags="-s -w -extldflags=-static" .
+	CGO_ENABLED=0 go build -buildvcs=false -v -ldflags="-s -w -extldflags=-static -X 'main.version=$(DF_IMG_TAG)'" .
 
 .PHONY: publish-docker-cli
 publish-docker-cli:
@@ -79,3 +79,4 @@ release: install-goreleaser
 update-sdk:
 	go get -u -v github.com/deepfence/golang_deepfence_sdk/client@latest
 	go get -u -v github.com/deepfence/golang_deepfence_sdk/utils@latest
+	go get -u -v github.com/deepfence/YaraHunter@latest

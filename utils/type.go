@@ -39,6 +39,8 @@ type Config struct {
 	KeepSbom              bool           `json:"keep_sbom,omitempty"`
 	RegistryCreds         RegistryCreds  `json:"registry_creds,omitempty"`
 	IsRegistry            bool           `json:"is_registry,omitempty"`
+	Product               string         `json:"product,omitempty"`
+	License               string         `json:"license,omitempty"`
 }
 
 type RegistryCreds struct {
