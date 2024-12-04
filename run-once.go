@@ -1,15 +1,21 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/deepfence/YaraHunter/pkg/threatintel"
 	out "github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/scanner"
@@ -17,6 +23,11 @@ import (
 	"github.com/deepfence/package-scanner/utils"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	checksumFile = "checksum.txt"
+	grypeDBPath  = "grype/db/5"
 )
 
 func RunOnce(config utils.Config) {
@@ -36,6 +47,10 @@ func RunOnce(config utils.Config) {
 			cSeverity = append(cSeverity, strings.TrimSpace(s))
 		}
 	}
+
+	ctx := context.Background()
+	// update vulnerability db
+	updateRules(ctx, config)
 
 	hostname := utils.GetHostname()
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
@@ -117,14 +132,10 @@ func RunOnce(config utils.Config) {
 		log.Infof("generated sbom file at %s", file.Name())
 	}
 
-	// get user cache dir
-	cacheDir, dirErr := os.UserCacheDir()
-	if dirErr != nil {
-		log.Panic(dirErr)
-	}
-
 	env := []string{
-		fmt.Sprintf("GRYPE_DB_CACHE_DIR=%s", path.Join(cacheDir, "grype", "db")),
+		fmt.Sprintf("XDG_CACHE_HOME=%s", userCacheDir),
+		fmt.Sprintf("GRYPE_DB_CACHE_DIR=%s", path.Join(userCacheDir, "grype", "db")),
+		"GRYPE_DB_AUTO_UPDATE=false",
 	}
 
 	log.Debug("scanning sbom for vulnerabilities ...")
@@ -242,4 +253,87 @@ func GroupByExploitability(
 		}
 	}
 	return
+}
+
+func updateRules(ctx context.Context, opts utils.Config) {
+	log.Infof("check and update vulnerability db")
+
+	listing, err := threatintel.FetchThreatIntelListing(ctx, version, opts.Product, opts.License)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	rulesInfo, err := listing.GetLatest(version, "vulnerability")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Debugf("rulesInfo: %+v", rulesInfo)
+
+	rulesPath := filepath.Join(userCacheDir, grypeDBPath)
+
+	log.Debugf("database path: %s", rulesPath)
+
+	// make sure output rules directory exists
+	os.MkdirAll(rulesPath, fs.ModePerm)
+
+	// check if update required
+	if threatintel.SkipRulesUpdate(filepath.Join(rulesPath, checksumFile), rulesInfo.Checksum) {
+		log.Info("skip rules update")
+		return
+	}
+
+	log.Info("download new rules")
+	content, err := threatintel.DownloadFile(ctx, rulesInfo.URL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Infof("vulnerability db file size: %d bytes", content.Len())
+
+	checksumPath := filepath.Join(rulesPath, checksumFile)
+	log.Debugf("checksum path: %s", checksumPath)
+	// write new checksum
+	if err := os.WriteFile(
+		checksumPath, []byte(rulesInfo.Checksum), fs.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	// Uncompress the gzipped content
+	gzipReader, err := gzip.NewReader(content)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer gzipReader.Close()
+
+	// Create a tar reader to read the uncompressed data
+	tarReader := tar.NewReader(gzipReader)
+
+	// Iterate over the files in the tar archive
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break // End of tar archive
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// skip some files
+		if header.FileInfo().IsDir() {
+			continue
+		}
+
+		outPath := filepath.Join(rulesPath, header.Name)
+		log.Infof("extract db file %s", outPath)
+
+		outFile, err := os.Create(outPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if _, err := io.Copy(outFile, tarReader); err != nil {
+			log.Fatal(err)
+		}
+		outFile.Close()
+
+	}
 }

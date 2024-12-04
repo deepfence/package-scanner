@@ -18,6 +18,7 @@ LABEL deepfence.role=system
 ENV PACKAGE_SCAN_CONCURRENCY=5 \
     DOCKER_VERSION=27.3.1 \
     NERDCTL_VERSION=1.7.7
+
 # ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
