@@ -6,16 +6,16 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc/
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/deepfence/YaraHunter v0.0.0-20241115044445-a6856d5f05f1
+	github.com/deepfence/YaraHunter v0.0.0-20241220175410-f07b2ac891bb
 	github.com/deepfence/agent-plugins-grpc v1.1.0
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241112090544-f42aabb5dc7f
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241112090544-f42aabb5dc7f
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241220101350-67a37a759769
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241220101350-67a37a759769
 	github.com/deepfence/vessel v0.13.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/sirupsen/logrus v1.9.3
-	google.golang.org/grpc v1.68.0
+	google.golang.org/grpc v1.69.2
 	gopkg.in/yaml.v3 v3.0.1
 	zombiezen.com/go/sqlite v1.4.0
 
