@@ -48,16 +48,16 @@ export DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key>
 
 ## Build docker image
 1. make docker-cli
-2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.2
+2. docker images should show new image with name quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.5
 ```
 $ docker images
 REPOSITORY                                          TAG       IMAGE ID       CREATED             SIZE
-quay.io/deepfenceio/deepfence_package_scanner_cli   2.5.2     e06fb1cd3868   About an hour ago   569MB
+quay.io/deepfenceio/deepfence_package_scanner_cli   2.5.5     e06fb1cd3868   About an hour ago   569MB
 nginx                                               latest    1403e55ab369   8 days ago          142MB
 ```
 
 ## Docker image standalone usage example
 ```
 docker pull nginx:latest
-docker run -it --rm -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.2 -source nginx:latest
+docker run -it --rm -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.5 -source nginx:latest
 ```
