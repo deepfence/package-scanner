@@ -6,7 +6,7 @@ replace github.com/deepfence/agent-plugins-grpc => ./agent-plugins-grpc/
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/deepfence/YaraHunter v0.0.0-20250410122752-408a46275a54
+	github.com/deepfence/YaraHunter v0.0.0-20250410123229-ca2b40d5d431
 	github.com/deepfence/agent-plugins-grpc v1.1.0
 	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20241220101350-67a37a759769
 	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20241220101350-67a37a759769
