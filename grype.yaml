@@ -24,7 +24,8 @@ file: ""
 #   - '/etc/**'
 #   - './out/**/*.json'
 # same as --exclude ; GRYPE_EXCLUDE env var
-exclude: []
+exclude:
+- '/opt/deepfence/**'
 
 # os and/or architecture to use when referencing container images (e.g. "windows/armv6" or "arm64")
 # same as --platform; GRYPE_PLATFORM env var
