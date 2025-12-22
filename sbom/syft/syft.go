@@ -18,7 +18,7 @@ import (
 	dockerRuntime "github.com/deepfence/vessel/docker"
 	podmanRuntime "github.com/deepfence/vessel/podman"
 	vesselConstants "github.com/deepfence/vessel/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -39,7 +39,7 @@ type ContainerScan struct {
 }
 
 func (containerScan *ContainerScan) exportFileSystemTar() error {
-	log.Infof("ContainerScan: %+v", containerScan)
+	log.Info().Interface("container_scan", containerScan).Msg("ContainerScan")
 
 	// Auto-detect underlying container runtime
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
@@ -58,7 +58,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerRuntimeInterface = podmanRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		log.Error("Error: Could not detect container runtime")
+		log.Error().Msg("Could not detect container runtime")
 		return fmt.Errorf("failed to detect container runtime")
 	}
 
@@ -66,13 +66,13 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerScan.containerID, containerScan.namespace,
 		containerScan.tempDir+".tar")
 	if err != nil {
-		log.Errorf("errored: %s", err)
+		log.Error().Err(err).Msg("failed to extract filesystem")
 		return err
 	}
 	tarCmd := exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir)
 	stdout, err := runCommand(tarCmd)
 	if err != nil {
-		log.Errorf("error: %s output: %s", err, stdout.String())
+		log.Error().Err(err).Str("output", stdout.String()).Msg("tar command failed")
 		return err
 	}
 
@@ -87,8 +87,7 @@ func runCommand(cmd *exec.Cmd) (*bytes.Buffer, error) {
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
 		if errorOnRun != context.Canceled {
-			log.Errorf("cmd: %s", cmd.String())
-			log.Errorf("error: %s", errorOnRun)
+			log.Error().Str("command", cmd.String()).Err(errorOnRun).Msg("command failed")
 			errorOnRun = errors.New(fmt.Sprint(errorOnRun) + ": " + stderr.String())
 		}
 		return nil, errorOnRun
@@ -136,7 +135,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			// create a temp directory for tar
 			tmpDir, err := os.MkdirTemp("", "syft-")
 			if err != nil {
-				log.Errorf("Error creating temp directory: %v", err)
+				log.Error().Err(err).Msg("Error creating temp directory")
 				return nil, err
 			}
 			defer os.RemoveAll(tmpDir)
@@ -144,7 +143,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			tarFile := filepath.Join(tmpDir, "image.tar")
 			_, err = config.ContainerRuntime.Save(config.Source, tarFile)
 			if err != nil {
-				log.Errorf("Error creating tar file: %v", err)
+				log.Error().Err(err).Msg("Error creating tar file")
 				return nil, err
 			}
 			// feed the tar file to syft
@@ -157,7 +156,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		} else if config.NodeType == utils.NodeTypeContainer {
 			tmpDir, err := os.MkdirTemp("", "syft-")
 			if err != nil {
-				log.Errorf("Error creating temp directory: %v", err)
+				log.Error().Err(err).Msg("Error creating temp directory")
 				return nil, err
 			}
 
@@ -173,7 +172,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 
 			err = containerScan.exportFileSystemTar()
 			if err != nil {
-				log.Error(err)
+				log.Error().Err(err).Msg("failed to export filesystem")
 				return nil, err
 			}
 			syftArgs[1] = "dir:" + tmpDir
@@ -211,26 +210,23 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, syftEnv...)
 
-	log.Debugf("execute command: %s", cmd.String())
-	log.Debugf("execute command with env: %s", syftEnv)
+	log.Debug().Str("command", cmd.String()).Msg("execute command")
+	log.Debug().Strs("env", syftEnv).Msg("execute command with env")
 
 	stdout, err := runCommand(cmd)
 	if err != nil {
 		if err == context.Canceled {
-			log.Infof("Command cacelled as context was cancelled %v",
-				context.Canceled)
+			log.Info().Err(context.Canceled).Msg("Command cancelled as context was cancelled")
 		} else {
-			log.Errorf("failed command: %s", cmd.String())
-			log.Errorf("failed command Env: %s", cmd.Env)
-			log.Errorf("err: %s", err)
-			log.Errorf("stdout: %s", stdout.String())
+			log.Error().Str("command", cmd.String()).Strs("env", cmd.Env).Err(err).
+				Str("stdout", stdout.String()).Msg("failed command")
 		}
 		return []byte(""), err
 	}
 
 	sbom, err := os.ReadFile(jsonFile)
 	if err != nil {
-		log.Error("error reading internal file", err)
+		log.Error().Err(err).Msg("error reading internal file")
 		return nil, err
 	}
 	defer os.RemoveAll(jsonFile)

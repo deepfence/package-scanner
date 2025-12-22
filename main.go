@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -22,7 +21,8 @@ import (
 	dockerRuntime "github.com/deepfence/vessel/docker"
 	podmanRuntime "github.com/deepfence/vessel/podman"
 	vc "github.com/deepfence/vessel/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -33,8 +33,6 @@ var (
 	supportedRuntime = []string{vc.DOCKER, vc.CONTAINERD, vc.CRIO, vc.PODMAN}
 	modes            = []string{utils.ModeLocal, utils.ModeGRPCServer, utils.ModeHTTPServer, utils.ModeScannerOnly}
 	severities       = []string{utils.CRITICAL, utils.HIGH, utils.MEDIUM, utils.LOW}
-	productENV       = utils.GetEnvOrDefault("DEEPFENCE_PRODUCT", "ThreatMapper")
-	licenseENV       = utils.GetEnvOrDefault("DEEPFENCE_LICENSE", "")
 	dfConsoleURL     = utils.GetEnvOrDefault("DEEPFENCE_MGMT_CONSOLE_URL", "")
 	dfKey            = utils.GetEnvOrDefault("DEEPFENCE_KEY", "")
 	version          string
@@ -72,67 +70,62 @@ var (
 	systemBin           = flag.Bool("system-bin", false, "use system tools")
 	debug               = flag.Bool("debug", false, "show debug logs")
 	keepSbom            = flag.Bool("keep-sbom", false, "keep generated sbom file")
-	product             = flag.String("product", productENV, "Deepfence Product type can be ThreatMapper or ThreatStryker, also supports env var DEEPFENCE_PRODUCT")
-	license             = flag.String("license", licenseENV, "TheratMapper or ThreatStryker license, also supports env var DEEPFENCE_LICENSE")
 )
 
 func main() {
 
 	// setup logger
-	log.SetOutput(os.Stderr)
-	log.SetLevel(log.InfoLevel)
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		DisableColors: false,
-		ForceColors:   true,
-		FullTimestamp: true,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			return "", " " + path.Base(f.File) + ":" + strconv.Itoa(f.Line)
-		},
-	})
+	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+		return path.Base(file) + ":" + strconv.Itoa(line)
+	}
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-01-02T15:04:05Z07:00"}).
+		With().Timestamp().Caller().Logger()
 
 	flag.Parse()
 
-	log.Infof("version: %s", version)
+	log.Info().Str("version", version).Msg("starting")
 
 	if *debug {
-		log.SetOutput(os.Stdout)
-		log.SetLevel(log.DebugLevel)
+		log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05Z07:00"}).
+			With().Timestamp().Caller().Logger()
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	var dirErr error
 	userCacheDir, dirErr = os.UserCacheDir()
 	if dirErr != nil {
-		log.Fatal(dirErr)
+		log.Fatal().Err(dirErr).Msg("failed to get user cache dir")
 	}
 
 	if err := os.MkdirAll(userCacheDir, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("failed to create user cache dir")
 	}
 
 	tmpPathPattern := "package-scanner-*"
 
 	// clean up old cache dir files if present
 	if dirs, err := filepath.Glob(path.Join(userCacheDir, tmpPathPattern)); err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to glob cache dir")
 	} else {
 		for _, dir := range dirs {
 			if err := os.RemoveAll(dir); err != nil {
-				log.Error(err)
+				log.Error().Err(err).Msg("failed to remove old cache dir")
 			}
 		}
 	}
 
 	tmpPath, tmpErr := os.MkdirTemp(userCacheDir, tmpPathPattern)
 	if tmpErr != nil {
-		log.Fatal(tmpErr)
+		log.Fatal().Err(tmpErr).Msg("failed to create temp dir")
 	}
 
 	// remove tmpPath on exit
 	defer func() {
-		log.Infof("remove tools cache %s", tmpPath)
+		log.Info().Str("path", tmpPath).Msg("remove tools cache")
 		if err := os.RemoveAll(tmpPath); err != nil {
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("failed to remove temp dir")
 		}
 	}()
 
@@ -140,24 +133,25 @@ func main() {
 	grypeBinPath := path.Join(tmpPath, "grype")
 	grypeConfigPath := path.Join(tmpPath, "grype.yaml")
 
-	log.Infof("tools cache dir: %s", tmpPath)
-	log.Infof("tools paths: %s %s %s", syftBinPath, grypeBinPath, grypeConfigPath)
+	log.Info().Str("path", tmpPath).Msg("tools cache dir")
+	log.Info().Str("syft", syftBinPath).Str("grype", grypeBinPath).Str("grype_config", grypeConfigPath).Msg("tools paths")
 
 	// extract embedded binaries
 	if err := os.WriteFile(syftBinPath, tools.SyftBin, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("failed to write syft bin")
 	}
 	if err := os.WriteFile(grypeBinPath, tools.GrypeBin, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("failed to write grype bin")
 	}
 	if err := os.WriteFile(grypeConfigPath, grypeYaml, 0755); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("failed to write grype config")
 	}
 
 	// make sure logs come to stdout in other modes except local
 	// local logs go to stderr to keep stdout clean for redirecting to file
 	if *mode != utils.ModeLocal {
-		log.SetOutput(os.Stdout)
+		log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "2006-01-02T15:04:05Z07:00"}).
+			With().Timestamp().Caller().Logger()
 	}
 
 	var (
@@ -170,7 +164,7 @@ func main() {
 	if !strings.HasPrefix(*source, "dir:") {
 		if *cRuntime != "auto" {
 			if !utils.Contains(supportedRuntime, *cRuntime) {
-				log.Panicf("unsupported runtime has to be one of %s", strings.Join(supportedRuntime, "/"))
+				log.Panic().Msgf("unsupported runtime has to be one of %s", strings.Join(supportedRuntime, "/"))
 			}
 			containerRuntime = *cRuntime
 			switch *cRuntime {
@@ -186,7 +180,7 @@ func main() {
 		} else {
 			containerRuntime, endpoint, err = vessel.AutoDetectRuntime()
 			if err != nil {
-				log.Warnf("error detecting container runtime: %v", err)
+				log.Warn().Err(err).Msg("error detecting container runtime")
 			}
 		}
 	}
@@ -217,8 +211,6 @@ func main() {
 		GrypeBinPath:         "/usr/local/bin/grype",
 		GrypeConfigPath:      grypeConfigPath,
 		KeepSbom:             *keepSbom,
-		Product:              *product,
-		License:              *license,
 	}
 	if !*systemBin {
 		config.SyftBinPath = syftBinPath
@@ -237,7 +229,7 @@ func main() {
 			config.ContainerRuntime = podmanRuntime.New(endpoint)
 		default:
 			// don't fail if runtime is not detected
-			log.Warnf("unsupported container runtime %s", containerRuntime)
+			log.Warn().Str("runtime", containerRuntime).Msg("unsupported container runtime")
 		}
 	}
 
@@ -247,12 +239,12 @@ func main() {
 	case utils.ModeGRPCServer:
 		err := sbom.RunGrpcServer(PluginName, config)
 		if err != nil {
-			log.Panicf("error running grpc server: %v", err)
+			log.Panic().Err(err).Msg("error running grpc server")
 		}
 	case utils.ModeHTTPServer:
 		err := sbom.RunHTTPServer(config)
 		if err != nil {
-			log.Panicf("error running http server: %v", err)
+			log.Panic().Err(err).Msg("error running http server")
 		}
 	case utils.ModeScannerOnly:
 		r := router.New()
@@ -260,9 +252,9 @@ func main() {
 		if *port == "" {
 			*port = "8001"
 		}
-		log.Infof("listen on port: %s", *port)
-		log.Panic(r.Run(":" + *port))
+		log.Info().Str("port", *port).Msg("listen on port")
+		log.Panic().Err(r.Run(":" + *port)).Msg("server error")
 	default:
-		log.Panicf("unsupported mode %s", *mode)
+		log.Panic().Str("mode", *mode).Msg("unsupported mode")
 	}
 }

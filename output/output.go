@@ -15,7 +15,7 @@ import (
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
 	tw "github.com/olekukonko/tablewriter"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type Publisher struct {
@@ -89,18 +89,16 @@ func (p *Publisher) SendReport() {
 		report.ContainerImageEdgeBatch = []map[string]interface{}{containerImageEdge}
 	}
 
-	log.Debugf("report: %+v", report)
+	log.Debug().Interface("report", report).Msg("sending report")
 
 	req := p.client.Client().TopologyAPI.IngestSyncAgentReport(context.Background())
 	req = req.IngestersReportIngestionData(report)
 
 	resp, err := p.client.Client().TopologyAPI.IngestSyncAgentReportExecute(req)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to send report")
 	}
-	// defer resp.Body.Close()
-	// io.Copy(io.Discard, resp.Body)
-	log.Debugf("report response %s", resp.Status)
+	log.Debug().Str("status", resp.Status).Msg("report response")
 }
 
 func (p *Publisher) StartScan() string {
@@ -127,12 +125,12 @@ func (p *Publisher) StartScan() string {
 	req = req.ModelVulnerabilityScanTriggerReq(scanTrigger)
 	res, resp, err := p.client.Client().VulnerabilityAPI.StartVulnerabilityScanExecute(req)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to start scan")
 		return ""
 	}
 
-	log.Debugf("start scan response: %+v", res)
-	log.Debugf("start scan response status: %s", resp.Status)
+	log.Debug().Interface("response", res).Msg("start scan response")
+	log.Debug().Str("status", resp.Status).Msg("start scan response status")
 
 	return res.GetScanIds()[0]
 }
@@ -148,12 +146,10 @@ func (p *Publisher) PublishScanStatusMessage(message string, status string) {
 
 	resp, err := p.client.Client().VulnerabilityAPI.IngestVulnerabilitiesScanStatusExecute(req)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to publish scan status")
 	}
-	// defer resp.Body.Close()
-	// io.Copy(io.Discard, resp.Body)
 
-	log.Debugf("publish scan status response: %v", resp)
+	log.Debug().Interface("response", resp).Msg("publish scan status response")
 }
 
 func (p *Publisher) PublishScanError(errMsg string) {
@@ -190,7 +186,7 @@ func (p *Publisher) RunVulnerabilityScan(sbom []byte) {
 	err := p.SendSbomToConsole(sbom, true)
 	if err != nil {
 		p.PublishScanError(err.Error())
-		log.Error(p.config.ScanID, " ", err.Error())
+		log.Error().Str("scan_id", p.config.ScanID).Err(err).Msg("failed to send SBOM to console")
 	}
 }
 
@@ -212,13 +208,13 @@ func (p *Publisher) SendSbomToConsole(sbom []byte, skipScan bool) error {
 	var out bytes.Buffer
 	gzw := gzip.NewWriter(&out)
 	if _, err := gzw.Write(sbom); err != nil {
-		log.Errorf("compress error: %s", err)
+		log.Error().Err(err).Msg("compress error")
 		return err
 	}
 	gzw.Close()
 
-	log.Infof("sbom size: %.4fmb compressed: %.4fmb",
-		float64(len(sbom))/1000.0/1000.0, float64(out.Len())/1000.0/1000.0)
+	log.Info().Float64("sbom_mb", float64(len(sbom))/1000.0/1000.0).
+		Float64("compressed_mb", float64(out.Len())/1000.0/1000.0).Msg("sbom size")
 
 	bb := out.Bytes()
 	cSBOM := make([]byte, base64.StdEncoding.EncodedLen(len(bb)))
@@ -231,11 +227,11 @@ func (p *Publisher) SendSbomToConsole(sbom []byte, skipScan bool) error {
 
 	resp, err := p.client.Client().VulnerabilityAPI.IngestSbomExecute(req)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to send SBOM")
 		return err
 	}
 
-	log.Debugf("publish sbom to console response: %v", resp)
+	log.Debug().Interface("response", resp).Msg("publish sbom to console response")
 
 	return nil
 }
@@ -273,28 +269,19 @@ func (p *Publisher) SendScanResultToConsole(vulnerabilities []scanner.Vulnerabil
 
 	resp, err := p.client.Client().VulnerabilityAPI.IngestVulnerabilitiesExecute(req)
 	if err != nil {
-		log.Error(err)
+		log.Error().Err(err).Msg("failed to send scan results")
 		return err
 	}
 
-	log.Debugf("publish sbom scan result to console response: %v", resp)
+	log.Debug().Interface("response", resp).Msg("publish sbom scan result to console response")
 
 	return nil
 }
 
 func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
-	table := tw.NewWriter(os.Stdout)
-	table.SetHeader([]string{"CVE ID", "Severity", "CVE Type", "Package", "CVE link"})
-	table.SetHeaderLine(true)
-	table.SetBorder(true)
-	table.SetAutoWrapText(true)
-	table.SetAutoFormatHeaders(true)
-	table.SetColMinWidth(0, 10)
-	table.SetColMinWidth(1, 10)
-	table.SetColMinWidth(3, 10)
-	table.SetColMinWidth(2, 15)
-	table.SetColMinWidth(3, 15)
-	table.SetColumnAlignment([]int{tw.ALIGN_CENTER, tw.ALIGN_CENTER, tw.ALIGN_CENTER, tw.ALIGN_DEFAULT, tw.ALIGN_DEFAULT})
+	table := tw.NewTable(os.Stdout,
+		tw.WithHeader([]string{"CVE ID", "SEVERITY", "CVE TYPE", "PACKAGE", "CVE LINK"}),
+	)
 
 	for _, r := range *report {
 		if r.CveCausedByPackage == "" {
@@ -307,22 +294,22 @@ func TableOutput(report *[]scanner.VulnerabilityScanReport) error {
 }
 
 func ExitOnSeverityScore(score float64, failOnScore float64) {
-	log.Debugf("ExitOnSeverityScore count=%f failOnCount=%f", score, failOnScore)
+	log.Debug().Float64("score", score).Float64("failOnScore", failOnScore).Msg("ExitOnSeverityScore")
 	if score >= failOnScore {
-		log.Fatalf("Exit vulnerability scan. Vulnerability score (%f) reached/exceeded the limit (%f).",
-			score, failOnScore)
+		log.Fatal().Float64("score", score).Float64("limit", failOnScore).
+			Msg("Exit vulnerability scan. Vulnerability score reached/exceeded the limit.")
 	}
 }
 
 func ExitOnSeverity(severity string, count int, failOnCount int) {
-	log.Debugf("ExitOnSeverity severity=%s count=%d failOnCount=%d", severity, count, failOnCount)
+	log.Debug().Str("severity", severity).Int("count", count).Int("failOnCount", failOnCount).Msg("ExitOnSeverity")
 	if count >= failOnCount {
 		if len(severity) > 0 {
-			msg := "Exit vulnerability scan. Number of %s vulnerabilities (%d) reached/exceeded the limit (%d)."
-			log.Fatalf(msg, severity, count, failOnCount)
+			log.Fatal().Str("severity", severity).Int("count", count).Int("limit", failOnCount).
+				Msg("Exit vulnerability scan. Number of vulnerabilities reached/exceeded the limit.")
 		}
-		msg := "Exit vulnerability scan. Number of vulnerabilities (%d) reached/exceeded the limit (%d)."
-		log.Fatalf(msg, count, failOnCount)
+		log.Fatal().Int("count", count).Int("limit", failOnCount).
+			Msg("Exit vulnerability scan. Number of vulnerabilities reached/exceeded the limit.")
 	}
 }
 

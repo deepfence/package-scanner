@@ -20,7 +20,7 @@ import (
 	"github.com/deepfence/package-scanner/output"
 	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -90,11 +90,11 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	if dschttp.IsConsoleAgent(config.ConsoleURL) && strings.Trim(config.DeepfenceKey, "\"") == "" {
 		internalURL := os.Getenv("MGMT_CONSOLE_URL_INTERNAL")
 		internalPort := os.Getenv("MGMT_CONSOLE_PORT_INTERNAL")
-		log.Info("fetch token for console agent")
+		log.Info().Msg("fetch token for console agent")
 		for {
 			var err error
 			if config.DeepfenceKey, err = dschttp.GetConsoleApiToken(internalURL, internalPort); err != nil {
-				log.Error(err)
+				log.Error().Err(err).Msg("failed to get console api token")
 				time.Sleep(5 * time.Second)
 			} else {
 				break
@@ -109,13 +109,13 @@ func RunGrpcServer(pluginName string, config utils.Config) error {
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 
-	log.Infof("main: server listening at %v", lis.Addr())
+	log.Info().Str("address", lis.Addr().String()).Msg("server listening")
 	if err := s.Serve(lis); err != nil {
 		return err
 	}
 
 	<-done
-	log.Info("main: exiting gracefully")
+	log.Info().Msg("exiting gracefully")
 	return nil
 }
 
@@ -126,7 +126,7 @@ func (s *gRPCServer) ReportJobsStatus(context.Context, *pb.Empty) (*pb.JobReport
 }
 
 func (s *gRPCServer) GenerateSBOM(_ context.Context, r *pb.SBOMRequest) (*pb.SBOMResult, error) {
-	log.Infof("SBOMRequest: %v", r)
+	log.Info().Interface("request", r).Msg("SBOMRequest")
 	var nodeID string
 	var nodeType string
 	switch {
@@ -204,47 +204,47 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 
 	config, ok := configInterface.(utils.Config)
 	if !ok {
-		log.Error("error processing grpc input for generating sbom")
+		log.Error().Msg("error processing grpc input for generating sbom")
 		return fmt.Errorf("error processing grpc input for generating sbom")
 	}
 
-	log.Info("Adding to map:" + config.ScanID)
+	log.Info().Str("scan_id", config.ScanID).Msg("Adding to map")
 
 	publisher, err = output.NewPublisher(config)
 	if err != nil {
-		log.Errorf("error in creating publisher %s", err)
+		log.Error().Err(err).Msg("error in creating publisher")
 		return err
 	}
 
 	scanMap.Store(config.ScanID, ctx)
 	defer func() {
-		log.Info("Removing from map:" + config.ScanID)
+		log.Info().Str("scan_id", config.ScanID).Msg("Removing from map")
 		scanMap.Delete(config.ScanID)
 	}()
 
 	err = ctx.Checkpoint("Before generating SBOM")
 	if err != nil {
-		log.Errorf("error in checkpoint: %s", err)
+		log.Error().Err(err).Msg("error in checkpoint")
 		return err
 	}
 
 	// generate sbom
 	sbom, err = syft.GenerateSBOM(ctx.Context, config)
 	if err != nil {
-		log.Errorf("error in GenerateSBOM: %s", err)
+		log.Error().Err(err).Msg("error in GenerateSBOM")
 		return err
 	}
 
 	err = ctx.Checkpoint("After generating SBOM")
 	if err != nil {
-		log.Errorf("error in checkpoint: %s", err)
+		log.Error().Err(err).Msg("error in checkpoint")
 		return err
 	}
 
 	// Send sbom to Deepfence Management Console for Vulnerability Scan
 	err = publisher.SendSbomToConsole(sbom, false)
 	if err != nil {
-		log.Errorf("error in SendSbomToConsole: %s", err)
+		log.Error().Err(err).Msg("error in SendSbomToConsole")
 		return err
 	}
 
@@ -252,7 +252,7 @@ func processSbomGeneration(configInterface interface{}) interface{} {
 }
 
 func (s *gRPCServer) StopScan(_ context.Context, req *pb.StopScanRequest) (*pb.StopScanResult, error) {
-	log.Infof("StopSBOM: %v", req)
+	log.Info().Interface("request", req).Msg("StopSBOM")
 
 	scanID := req.ScanId
 	result := &pb.StopScanResult{
@@ -273,7 +273,7 @@ func (s *gRPCServer) StopScan(_ context.Context, req *pb.StopScanRequest) (*pb.S
 		logMsg = "Stop GenerateSBOM request submitted"
 	}
 
-	log.Infof("%s, scan_id: %s", logMsg, scanID)
+	log.Info().Str("scan_id", scanID).Str("message", logMsg).Msg("stop scan result")
 	result.Success = successFlag
 	result.Description = logMsg
 	return result, nil

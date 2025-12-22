@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 const metasploitURLPattern = "github.com/rapid7/metasploit-framework"
@@ -57,7 +57,7 @@ func ToKafkaRestFormat(data []map[string]interface{}) *bytes.Buffer {
 	for i, d := range data {
 		encoded, err := json.Marshal(&d)
 		if err != nil {
-			log.Errorf("failed to encode doc: %s", err)
+			log.Error().Err(err).Msg("failed to encode doc")
 			continue
 		}
 		values[i] = "{\"value\":" + string(encoded) + "}"

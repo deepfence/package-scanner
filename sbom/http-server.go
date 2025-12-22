@@ -11,7 +11,7 @@ import (
 	"github.com/Jeffail/tunny"
 	"github.com/deepfence/package-scanner/sbom/syft"
 	"github.com/deepfence/package-scanner/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -43,7 +43,7 @@ func RunHTTPServer(config utils.Config) error {
 	}
 	http.HandleFunc("/registry", registryHandler)
 
-	log.Infof("Starting server at port %s", config.Port)
+	log.Info().Str("port", config.Port).Msg("Starting server")
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil); err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func RunHTTPServer(config utils.Config) error {
 func processRegistryMessage(rInterface interface{}) interface{} {
 	r, ok := rInterface.(utils.Config)
 	if !ok {
-		log.Error("Error processing input config")
+		log.Error().Msg("Error processing input config")
 		return false
 	}
 	config := utils.Config{
@@ -77,7 +77,7 @@ func processRegistryMessage(rInterface interface{}) interface{} {
 	ctx := context.Background()
 	_, err := syft.GenerateSBOM(ctx, config)
 	if err != nil {
-		log.Errorf("Error processing SBOM: %s", err.Error())
+		log.Error().Err(err).Msg("Error processing SBOM")
 		return false
 	}
 	return true

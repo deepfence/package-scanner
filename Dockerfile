@@ -1,23 +1,28 @@
-FROM golang:1.23-bookworm AS build
+FROM golang:1.25-trixie AS build
 
 RUN apt-get clean && apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential git gcc libc-dev libffi-dev bash make apt-utils
+
+# Copy YaraHunter first (for local replace directive)
+WORKDIR /go
+COPY YaraHunter/ YaraHunter/
+
 WORKDIR /go/package-scanner/
-COPY . .
+COPY package-scanner/ .
 
 ARG TARGETPLATFORM
 ARG MAKE_CMD=package-scanner
 RUN TARGETPLATFORM=$TARGETPLATFORM make tools
 RUN CGO_ENABLED=0 make $MAKE_CMD
 
-FROM debian:bookworm-slim
-LABEL MAINTAINER="Deepfence Inc"
+FROM debian:trixie-slim
+LABEL maintainer="Deepfence Inc"
 LABEL deepfence.role=system
 
 ENV PACKAGE_SCAN_CONCURRENCY=5 \
-    DOCKER_VERSION=27.3.1 \
-    NERDCTL_VERSION=1.7.7
+    DOCKER_VERSION=29.1.3 \
+    NERDCTL_VERSION=2.2.0
 
 # ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
 
@@ -25,8 +30,8 @@ COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-sca
 COPY --from=build /go/package-scanner/tools/grype-bin/grype.bin /usr/local/bin/grype
 COPY --from=build /go/package-scanner/tools/syft-bin/syft.bin /usr/local/bin/syft
 
-COPY grype.yaml /root/.grype.yaml
-COPY entrypoint.sh /entrypoint.sh
+COPY package-scanner/grype.yaml /root/.grype.yaml
+COPY package-scanner/entrypoint.sh /entrypoint.sh
 
 RUN apt-get update
 

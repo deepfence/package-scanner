@@ -10,7 +10,7 @@ import (
 
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
@@ -40,14 +40,15 @@ var (
 	attackVectorRegex = regexp.MustCompile(`.*av:n.*`)
 )
 
-func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) ([]byte, error) {
+func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) (string, error) {
 	cmd := fmt.Sprintf("%s -c %s sbom:%s -o json", grypeBinPath, grypeConfigPath, bomPath)
-	log.Debugf("grype command: %s", cmd)
+	log.Debug().Str("command", cmd).Msg("grype command")
 	ecmd := exec.Command("bash", "-c", cmd)
 	if env != nil {
 		ecmd.Env = append(ecmd.Env, *env...)
 	}
-	return ecmd.CombinedOutput()
+	output, err := ecmd.CombinedOutput()
+	return string(output), err
 }
 
 func Parse(p []byte) (Document, error) {
@@ -77,8 +78,8 @@ func getGrypeDBPath(cfg utils.Config) (string, error) {
 	return fmt.Sprintf("%s/%s/vulnerability.db", c.DB.Dir, grypeDBVersion), nil
 }
 
-func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
-	grypeDocument, err := Parse(vulnerabilities)
+func PopulateFinalReport(vulnerabilities string, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
+	grypeDocument, err := Parse([]byte(vulnerabilities))
 	if err != nil {
 		return []scanner.VulnerabilityScanReport{}, err
 	}
@@ -148,7 +149,7 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 			Args: []any{match.Vulnerability.ID, match.Vulnerability.Namespace},
 		})
 		if err != nil {
-			log.Error(err.Error())
+			log.Error().Err(err).Msg("failed to query vulnerability metadata")
 			// Don't exit, continue with default values
 		}
 
