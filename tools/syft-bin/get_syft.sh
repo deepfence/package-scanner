@@ -2,8 +2,7 @@
 
 set -eux
 
-RELEASE=optimise-resolver-3
-# RELEASE=v1.3.0
+RELEASE=v1.39.0
 
 HOST_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 HOST_ARCH="${GOARCH:=$(uname -m)}"
@@ -22,8 +21,7 @@ IFS=/ read BUILD_OS BUILD_ARCH <<< $ARCHITECTURE
 
 rm -rf syft*
 
-git clone https://github.com/deepfence/syft.git --branch $RELEASE || true
-# git clone https://github.com/anchore/syft.git --branch $RELEASE || true
+git clone https://github.com/anchore/syft.git --branch $RELEASE || true
 (
     cd syft/cmd/syft
     export CGO_ENABLED=0
