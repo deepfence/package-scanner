@@ -24,8 +24,6 @@ ENV PACKAGE_SCAN_CONCURRENCY=5 \
     DOCKER_VERSION=29.1.3 \
     NERDCTL_VERSION=2.2.0
 
-# ENV GRYPE_DB_UPDATE_URL="https://threat-intel.deepfence.io/vulnerability-db/listing.json"
-
 COPY --from=build /go/package-scanner/package-scanner /usr/local/bin/package-scanner
 COPY --from=build /go/package-scanner/tools/grype-bin/grype.bin /usr/local/bin/grype
 COPY --from=build /go/package-scanner/tools/syft-bin/syft.bin /usr/local/bin/syft

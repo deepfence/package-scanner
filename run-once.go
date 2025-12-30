@@ -27,7 +27,7 @@ import (
 
 var (
 	checksumFile = "checksum.txt"
-	grypeDBPath  = "grype/db/5"
+	grypeDBPath  = "grype/db/6"
 )
 
 func RunOnce(config utils.Config) {
@@ -68,7 +68,13 @@ func RunOnce(config utils.Config) {
 		if config.ScanID == "" {
 			config.ScanID = fmt.Sprintf("%s_%d", hostname, utils.GetIntTimestamp())
 		}
-		if imageID, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
+		// Check if ContainerRuntime is available before trying to get image ID
+		if config.ContainerRuntime == nil {
+			log.Warn().Msg("container runtime not available, using source as node ID")
+			imageID := uuid.New().String()
+			config.ImageID = imageID
+			config.NodeID = imageID
+		} else if imageID, err := config.ContainerRuntime.GetImageID(config.Source); err != nil {
 			log.Error().Err(err).Msg("failed to get image ID")
 			// generate image_id if we are unable to get it from runtime
 			imageID = []byte(uuid.New().String())

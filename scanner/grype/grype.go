@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	grypeDBVersion = "5"
+	grypeDBVersion = "6"
 )
 
 var (
