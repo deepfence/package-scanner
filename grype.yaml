@@ -214,7 +214,7 @@ db:
   cache-dir: "/root/.cache/grype/db"
 
   # URL of the vulnerability database (env: GRYPE_DB_UPDATE_URL)
-  update-url: "https://threat-intel.threatmapper.org/threat-intel/vulnerability"
+  update-url: "https://artifacts.threatmapper.org/threat-intel/vulnerability"
 
   # certificate to trust download the database and listing file (env: GRYPE_DB_CA_CERT)
   ca-cert: ""

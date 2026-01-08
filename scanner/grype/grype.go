@@ -45,7 +45,10 @@ func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) (string,
 	log.Debug().Str("command", cmd).Msg("grype command")
 	ecmd := exec.Command("bash", "-c", cmd)
 	if env != nil {
-		ecmd.Env = append(ecmd.Env, *env...)
+		// Inherit parent environment and add custom environment variables
+		// Without this, setting Env to a non-nil slice would cause the subprocess
+		// to lose all inherited environment variables like PATH, HOME, etc.
+		ecmd.Env = append(os.Environ(), *env...)
 	}
 	output, err := ecmd.CombinedOutput()
 	return string(output), err
@@ -140,17 +143,53 @@ func PopulateFinalReport(vulnerabilities string, cfg utils.Config) ([]scanner.Vu
 
 		var cisaKev bool
 		var epssScore float64
-		err = sqlitex.Execute(conn, "SELECT cisakev,epss FROM vulnerability_metadata WHERE id=? AND namespace=?", &sqlitex.ExecOptions{
-			ResultFunc: func(stmt *sqlite.Stmt) error {
-				cisaKev = stmt.ColumnBool(0)
-				epssScore = stmt.ColumnFloat(1)
-				return nil
-			},
-			Args: []any{match.Vulnerability.ID, match.Vulnerability.Namespace},
-		})
-		if err != nil {
-			log.Error().Err(err).Msg("failed to query vulnerability metadata")
-			// Don't exit, continue with default values
+
+		// Collect CVE IDs to query - EPSS and KEV tables only contain CVE IDs
+		// The primary ID might be GHSA-xxx, ELSA-xxx, etc., so we also check RelatedVulnerabilities
+		cveIDs := []string{}
+		if strings.HasPrefix(match.Vulnerability.ID, "CVE-") {
+			cveIDs = append(cveIDs, match.Vulnerability.ID)
+		}
+		for _, related := range match.RelatedVulnerabilities {
+			if strings.HasPrefix(related.ID, "CVE-") {
+				cveIDs = append(cveIDs, related.ID)
+			}
+		}
+
+		// Query KEV and EPSS data for each CVE ID found
+		for _, cveID := range cveIDs {
+			// Query KEV data from grype v6 known_exploited_vulnerability_handles table
+			if !cisaKev {
+				err = sqlitex.Execute(conn, "SELECT 1 FROM known_exploited_vulnerability_handles WHERE cve=? COLLATE NOCASE LIMIT 1", &sqlitex.ExecOptions{
+					ResultFunc: func(stmt *sqlite.Stmt) error {
+						cisaKev = true
+						return nil
+					},
+					Args: []any{cveID},
+				})
+				if err != nil {
+					log.Error().Err(err).Str("cve", cveID).Msg("failed to query KEV data")
+				}
+			}
+
+			// Query EPSS data from grype v6 epss_handles table
+			if epssScore == 0 {
+				err = sqlitex.Execute(conn, "SELECT epss FROM epss_handles WHERE cve=? COLLATE NOCASE LIMIT 1", &sqlitex.ExecOptions{
+					ResultFunc: func(stmt *sqlite.Stmt) error {
+						epssScore = stmt.ColumnFloat(0)
+						return nil
+					},
+					Args: []any{cveID},
+				})
+				if err != nil {
+					log.Error().Err(err).Str("cve", cveID).Msg("failed to query EPSS data")
+				}
+			}
+
+			// Stop if we've found both
+			if cisaKev && epssScore > 0 {
+				break
+			}
 		}
 
 		report := scanner.VulnerabilityScanReport{
