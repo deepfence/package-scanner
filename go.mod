@@ -8,10 +8,10 @@ replace github.com/deepfence/YaraHunter => ../YaraHunter
 
 require (
 	github.com/Jeffail/tunny v0.1.4
-	github.com/deepfence/YaraHunter v0.0.0-20260307112048-f172ccaf25a5
+	github.com/deepfence/YaraHunter v0.0.0-20260307134835-2ab9df1097e7
 	github.com/deepfence/agent-plugins-grpc v0.0.0-00010101000000-000000000000
-	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20251220185839-eab97c9c3b76
-	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20251220185839-eab97c9c3b76
+	github.com/deepfence/golang_deepfence_sdk/client v0.0.0-20260307093138-2d84281ebdea
+	github.com/deepfence/golang_deepfence_sdk/utils v0.0.0-20260307093138-2d84281ebdea
 	github.com/deepfence/vessel v0.15.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
