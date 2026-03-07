@@ -18,7 +18,7 @@ import (
 	dockerRuntime "github.com/deepfence/vessel/docker"
 	podmanRuntime "github.com/deepfence/vessel/podman"
 	vesselConstants "github.com/deepfence/vessel/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -39,7 +39,7 @@ type ContainerScan struct {
 }
 
 func (containerScan *ContainerScan) exportFileSystemTar() error {
-	log.Infof("ContainerScan: %+v", containerScan)
+	log.Info().Interface("container_scan", containerScan).Msg("ContainerScan")
 
 	// Auto-detect underlying container runtime
 	containerRuntime, endpoint, err := vessel.AutoDetectRuntime()
@@ -58,7 +58,7 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerRuntimeInterface = podmanRuntime.New(endpoint)
 	}
 	if containerRuntimeInterface == nil {
-		log.Error("Error: Could not detect container runtime")
+		log.Error().Msg("Could not detect container runtime")
 		return fmt.Errorf("failed to detect container runtime")
 	}
 
@@ -66,13 +66,13 @@ func (containerScan *ContainerScan) exportFileSystemTar() error {
 		containerScan.containerID, containerScan.namespace,
 		containerScan.tempDir+".tar")
 	if err != nil {
-		log.Errorf("errored: %s", err)
+		log.Error().Err(err).Msg("failed to extract filesystem")
 		return err
 	}
 	tarCmd := exec.Command("tar", "-xf", strings.TrimSpace(containerScan.tempDir+".tar"), "-C", containerScan.tempDir)
 	stdout, err := runCommand(tarCmd)
 	if err != nil {
-		log.Errorf("error: %s output: %s", err, stdout.String())
+		log.Error().Err(err).Str("output", stdout.String()).Msg("tar command failed")
 		return err
 	}
 
@@ -87,8 +87,7 @@ func runCommand(cmd *exec.Cmd) (*bytes.Buffer, error) {
 	errorOnRun := cmd.Run()
 	if errorOnRun != nil {
 		if errorOnRun != context.Canceled {
-			log.Errorf("cmd: %s", cmd.String())
-			log.Errorf("error: %s", errorOnRun)
+			log.Error().Str("command", cmd.String()).Err(errorOnRun).Msg("command failed")
 			errorOnRun = errors.New(fmt.Sprint(errorOnRun) + ": " + stderr.String())
 		}
 		return nil, errorOnRun
@@ -102,18 +101,24 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	syftArgs := []string{"scan", config.Source, "-o", fmt.Sprintf("syft-json=%s", jsonFile), "-q"}
 
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		for _, excludeDir := range linuxExcludeDirs {
-			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
-		}
 		var scanDir = config.Source
 		if strings.HasPrefix(config.Source, "dir:") {
 			scanDir = strings.Split(scanDir, ":")[1]
 		}
 		scanDir, _ = filepath.Abs(scanDir)
+
+		// Collect all exclude dirs, normalizing mount dirs relative to scanDir
+		allExcludes := make([]string, 0, len(linuxExcludeDirs)+len(mntDirs))
+		allExcludes = append(allExcludes, linuxExcludeDirs...)
 		for _, excludeDir := range mntDirs {
 			if strings.Index(excludeDir, scanDir) == 0 && os.Getenv("DF_SERVERLESS") != "true" {
 				excludeDir = strings.Replace(excludeDir, scanDir, "", 1)
 			}
+			allExcludes = append(allExcludes, excludeDir)
+		}
+
+		// Remove duplicates and subdirectories of already-excluded paths
+		for _, excludeDir := range deduplicateExcludeDirs(allExcludes) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
@@ -136,7 +141,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			// create a temp directory for tar
 			tmpDir, err := os.MkdirTemp("", "syft-")
 			if err != nil {
-				log.Errorf("Error creating temp directory: %v", err)
+				log.Error().Err(err).Msg("Error creating temp directory")
 				return nil, err
 			}
 			defer os.RemoveAll(tmpDir)
@@ -144,7 +149,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 			tarFile := filepath.Join(tmpDir, "image.tar")
 			_, err = config.ContainerRuntime.Save(config.Source, tarFile)
 			if err != nil {
-				log.Errorf("Error creating tar file: %v", err)
+				log.Error().Err(err).Msg("Error creating tar file")
 				return nil, err
 			}
 			// feed the tar file to syft
@@ -157,7 +162,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 		} else if config.NodeType == utils.NodeTypeContainer {
 			tmpDir, err := os.MkdirTemp("", "syft-")
 			if err != nil {
-				log.Errorf("Error creating temp directory: %v", err)
+				log.Error().Err(err).Msg("Error creating temp directory")
 				return nil, err
 			}
 
@@ -173,7 +178,7 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 
 			err = containerScan.exportFileSystemTar()
 			if err != nil {
-				log.Error(err)
+				log.Error().Err(err).Msg("failed to export filesystem")
 				return nil, err
 			}
 			syftArgs[1] = "dir:" + tmpDir
@@ -211,26 +216,23 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, syftEnv...)
 
-	log.Debugf("execute command: %s", cmd.String())
-	log.Debugf("execute command with env: %s", syftEnv)
+	log.Debug().Str("command", cmd.String()).Msg("execute command")
+	log.Debug().Strs("env", syftEnv).Msg("execute command with env")
 
 	stdout, err := runCommand(cmd)
 	if err != nil {
 		if err == context.Canceled {
-			log.Infof("Command cacelled as context was cancelled %v",
-				context.Canceled)
+			log.Info().Err(context.Canceled).Msg("Command cancelled as context was cancelled")
 		} else {
-			log.Errorf("failed command: %s", cmd.String())
-			log.Errorf("failed command Env: %s", cmd.Env)
-			log.Errorf("err: %s", err)
-			log.Errorf("stdout: %s", stdout.String())
+			log.Error().Str("command", cmd.String()).Strs("env", cmd.Env).Err(err).
+				Str("stdout", stdout.String()).Msg("failed command")
 		}
 		return []byte(""), err
 	}
 
 	sbom, err := os.ReadFile(jsonFile)
 	if err != nil {
-		log.Error("error reading internal file", err)
+		log.Error().Err(err).Msg("error reading internal file")
 		return nil, err
 	}
 	defer os.RemoveAll(jsonFile)
@@ -301,4 +303,54 @@ func getNfsMountsDirs() []string {
 		}
 	}
 	return mountDirs
+}
+
+// isSubpathOf returns true if child is equal to or a subdirectory of parent.
+func isSubpathOf(child, parent string) bool {
+	parent = filepath.Clean(parent)
+	child = filepath.Clean(child)
+	if child == parent {
+		return true
+	}
+	return strings.HasPrefix(child, parent+"/")
+}
+
+// deduplicateExcludeDirs removes duplicate paths and paths that are already
+// covered by a shorter ancestor path in the list. This prevents the syft
+// command line from growing excessively large with redundant --exclude flags.
+func deduplicateExcludeDirs(dirs []string) []string {
+	// Remove exact duplicates first
+	seen := make(map[string]bool, len(dirs))
+	unique := make([]string, 0, len(dirs))
+	for _, d := range dirs {
+		cleaned := filepath.Clean(d)
+		if !seen[cleaned] {
+			seen[cleaned] = true
+			unique = append(unique, cleaned)
+		}
+	}
+
+	// Sort by length so shorter (parent) paths come first
+	slices.SortFunc(unique, func(a, b string) int {
+		if len(a) != len(b) {
+			return len(a) - len(b)
+		}
+		return strings.Compare(a, b)
+	})
+
+	// Keep only paths that are not subpaths of an already-kept path
+	var result []string
+	for _, d := range unique {
+		covered := false
+		for _, kept := range result {
+			if isSubpathOf(d, kept) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			result = append(result, d)
+		}
+	}
+	return result
 }

@@ -1,5 +1,5 @@
 export IMAGE_REPOSITORY?=quay.io/deepfenceio
-export DF_IMG_TAG?=2.5.7
+export DF_IMG_TAG?=2.5.8
 
 all: package-scanner
 
@@ -35,15 +35,15 @@ publish-docker-cli:
 
 .PHONY: docker-cli
 docker-cli:
-	docker build --build-arg MAKE_CMD="cli" -t $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) .
+	docker build --build-arg MAKE_CMD="cli" -t $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) -f Dockerfile ..
 
 .PHONY: docker-cli-multi-arch-push
 docker-cli-multi-arch-push: buildx
-	docker buildx build --build-arg MAKE_CMD="cli" --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) . --push
+	docker buildx build --build-arg MAKE_CMD="cli" --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner_cli:$(DF_IMG_TAG) -f Dockerfile .. --push
 
 .PHONY: docker-multi-arch
 docker-multi-arch:
-	docker buildx build --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner:$(DF_IMG_TAG) .
+	docker buildx build --platform linux/arm64,linux/amd64 --tag $(IMAGE_REPOSITORY)/deepfence_package_scanner:$(DF_IMG_TAG) -f Dockerfile ..
 
 .PHONY: buildx
 buildx:

@@ -10,14 +10,14 @@ import (
 
 	"github.com/deepfence/package-scanner/scanner"
 	"github.com/deepfence/package-scanner/utils"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
 const (
-	grypeDBVersion = "5"
+	grypeDBVersion = "6"
 )
 
 var (
@@ -40,14 +40,28 @@ var (
 	attackVectorRegex = regexp.MustCompile(`.*av:n.*`)
 )
 
-func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) ([]byte, error) {
+func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) (string, error) {
 	cmd := fmt.Sprintf("%s -c %s sbom:%s -o json", grypeBinPath, grypeConfigPath, bomPath)
-	log.Debugf("grype command: %s", cmd)
+	log.Debug().Str("command", cmd).Msg("grype command")
 	ecmd := exec.Command("bash", "-c", cmd)
 	if env != nil {
-		ecmd.Env = append(ecmd.Env, *env...)
+		// Inherit parent environment and add custom environment variables
+		// Without this, setting Env to a non-nil slice would cause the subprocess
+		// to lose all inherited environment variables like PATH, HOME, etc.
+		ecmd.Env = append(os.Environ(), *env...)
 	}
-	return ecmd.CombinedOutput()
+	var stdout, stderr strings.Builder
+	ecmd.Stdout = &stdout
+	ecmd.Stderr = &stderr
+	err := ecmd.Run()
+	if err != nil {
+		log.Error().Str("stderr", stderr.String()).Msg("grype scan stderr")
+		return stdout.String(), fmt.Errorf("%w: %s", err, stderr.String())
+	}
+	if stderr.Len() > 0 {
+		log.Debug().Str("stderr", stderr.String()).Msg("grype scan stderr")
+	}
+	return stdout.String(), nil
 }
 
 func Parse(p []byte) (Document, error) {
@@ -77,8 +91,8 @@ func getGrypeDBPath(cfg utils.Config) (string, error) {
 	return fmt.Sprintf("%s/%s/vulnerability.db", c.DB.Dir, grypeDBVersion), nil
 }
 
-func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
-	grypeDocument, err := Parse(vulnerabilities)
+func PopulateFinalReport(vulnerabilities string, cfg utils.Config) ([]scanner.VulnerabilityScanReport, error) {
+	grypeDocument, err := Parse([]byte(vulnerabilities))
 	if err != nil {
 		return []scanner.VulnerabilityScanReport{}, err
 	}
@@ -139,17 +153,53 @@ func PopulateFinalReport(vulnerabilities []byte, cfg utils.Config) ([]scanner.Vu
 
 		var cisaKev bool
 		var epssScore float64
-		err = sqlitex.Execute(conn, "SELECT cisakev,epss FROM vulnerability_metadata WHERE id=? AND namespace=?", &sqlitex.ExecOptions{
-			ResultFunc: func(stmt *sqlite.Stmt) error {
-				cisaKev = stmt.ColumnBool(0)
-				epssScore = stmt.ColumnFloat(1)
-				return nil
-			},
-			Args: []any{match.Vulnerability.ID, match.Vulnerability.Namespace},
-		})
-		if err != nil {
-			log.Error(err.Error())
-			// Don't exit, continue with default values
+
+		// Collect CVE IDs to query - EPSS and KEV tables only contain CVE IDs
+		// The primary ID might be GHSA-xxx, ELSA-xxx, etc., so we also check RelatedVulnerabilities
+		cveIDs := []string{}
+		if strings.HasPrefix(match.Vulnerability.ID, "CVE-") {
+			cveIDs = append(cveIDs, match.Vulnerability.ID)
+		}
+		for _, related := range match.RelatedVulnerabilities {
+			if strings.HasPrefix(related.ID, "CVE-") {
+				cveIDs = append(cveIDs, related.ID)
+			}
+		}
+
+		// Query KEV and EPSS data for each CVE ID found
+		for _, cveID := range cveIDs {
+			// Query KEV data from grype v6 known_exploited_vulnerability_handles table
+			if !cisaKev {
+				err = sqlitex.Execute(conn, "SELECT 1 FROM known_exploited_vulnerability_handles WHERE cve=? COLLATE NOCASE LIMIT 1", &sqlitex.ExecOptions{
+					ResultFunc: func(stmt *sqlite.Stmt) error {
+						cisaKev = true
+						return nil
+					},
+					Args: []any{cveID},
+				})
+				if err != nil {
+					log.Error().Err(err).Str("cve", cveID).Msg("failed to query KEV data")
+				}
+			}
+
+			// Query EPSS data from grype v6 epss_handles table
+			if epssScore == 0 {
+				err = sqlitex.Execute(conn, "SELECT epss FROM epss_handles WHERE cve=? COLLATE NOCASE LIMIT 1", &sqlitex.ExecOptions{
+					ResultFunc: func(stmt *sqlite.Stmt) error {
+						epssScore = stmt.ColumnFloat(0)
+						return nil
+					},
+					Args: []any{cveID},
+				})
+				if err != nil {
+					log.Error().Err(err).Str("cve", cveID).Msg("failed to query EPSS data")
+				}
+			}
+
+			// Stop if we've found both
+			if cisaKev && epssScore > 0 {
+				break
+			}
 		}
 
 		report := scanner.VulnerabilityScanReport{
