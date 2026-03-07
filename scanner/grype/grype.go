@@ -50,8 +50,18 @@ func Scan(grypeBinPath, grypeConfigPath, bomPath string, env *[]string) (string,
 		// to lose all inherited environment variables like PATH, HOME, etc.
 		ecmd.Env = append(os.Environ(), *env...)
 	}
-	output, err := ecmd.CombinedOutput()
-	return string(output), err
+	var stdout, stderr strings.Builder
+	ecmd.Stdout = &stdout
+	ecmd.Stderr = &stderr
+	err := ecmd.Run()
+	if err != nil {
+		log.Error().Str("stderr", stderr.String()).Msg("grype scan stderr")
+		return stdout.String(), fmt.Errorf("%w: %s", err, stderr.String())
+	}
+	if stderr.Len() > 0 {
+		log.Debug().Str("stderr", stderr.String()).Msg("grype scan stderr")
+	}
+	return stdout.String(), nil
 }
 
 func Parse(p []byte) (Document, error) {

@@ -12,32 +12,22 @@ Every [release](https://github.com/deepfence/package-scanner/releases) of packag
    tar -zxvf package-scanner_Linux_x86_64.tar
     ```
 
-## Usage
-
-Run this command to generate a license key. Work/official email id has to be used.
-```shell
-curl https://license.deepfence.io/threatmapper/generate-license?first_name=<FIRST_NAME>&last_name=<LAST_NAME>&email=<EMAIL>&company=<ORGANIZATION_NAME>&resend_email=true
-```
-
 ### Image scan
 Set product and licence key to download the vulnerability database needed for the scan 
 
 ```shell
 docker pull longhornio/csi-snapshotter:v6.2.1
 export DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker>
-export DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key>
 ./package-scanner -source longhornio/csi-snapshotter:v6.2.1 -container-runtime docker
 
 docker pull nginx:latest
 export DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker>
-export DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key>
 ./package-scanner -source nginx:latest -severity critical
 ```
 
 ### Directory scan
 ```shell
 export DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker>
-export DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key>
 ./package-scanner --source dir:<directory full path>
 ```
 
@@ -59,5 +49,5 @@ nginx                                               latest    1403e55ab369   8 d
 ## Docker image standalone usage example
 ```
 docker pull nginx:latest
-docker run -it --rm -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> -e DEEPFENCE_LICENSE=<ThreatMapper or ThreatStryker license key> -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.8 -source nginx:latest
+docker run -it --rm -e DEEPFENCE_PRODUCT=<ThreatMapper or ThreatStryker> -v /var/run/docker.sock:/var/run/docker.sock --name package-scanner quay.io/deepfenceio/deepfence_package_scanner_cli:2.5.8 -source nginx:latest
 ```

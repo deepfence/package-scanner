@@ -101,18 +101,24 @@ func GenerateSBOM(ctx context.Context, config utils.Config) ([]byte, error) {
 	syftArgs := []string{"scan", config.Source, "-o", fmt.Sprintf("syft-json=%s", jsonFile), "-q"}
 
 	if strings.HasPrefix(config.Source, "dir:") || config.Source == "." {
-		for _, excludeDir := range linuxExcludeDirs {
-			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
-		}
 		var scanDir = config.Source
 		if strings.HasPrefix(config.Source, "dir:") {
 			scanDir = strings.Split(scanDir, ":")[1]
 		}
 		scanDir, _ = filepath.Abs(scanDir)
+
+		// Collect all exclude dirs, normalizing mount dirs relative to scanDir
+		allExcludes := make([]string, 0, len(linuxExcludeDirs)+len(mntDirs))
+		allExcludes = append(allExcludes, linuxExcludeDirs...)
 		for _, excludeDir := range mntDirs {
 			if strings.Index(excludeDir, scanDir) == 0 && os.Getenv("DF_SERVERLESS") != "true" {
 				excludeDir = strings.Replace(excludeDir, scanDir, "", 1)
 			}
+			allExcludes = append(allExcludes, excludeDir)
+		}
+
+		// Remove duplicates and subdirectories of already-excluded paths
+		for _, excludeDir := range deduplicateExcludeDirs(allExcludes) {
 			syftArgs = append(syftArgs, "--exclude", "."+excludeDir+"/**")
 		}
 	} else {
@@ -297,4 +303,54 @@ func getNfsMountsDirs() []string {
 		}
 	}
 	return mountDirs
+}
+
+// isSubpathOf returns true if child is equal to or a subdirectory of parent.
+func isSubpathOf(child, parent string) bool {
+	parent = filepath.Clean(parent)
+	child = filepath.Clean(child)
+	if child == parent {
+		return true
+	}
+	return strings.HasPrefix(child, parent+"/")
+}
+
+// deduplicateExcludeDirs removes duplicate paths and paths that are already
+// covered by a shorter ancestor path in the list. This prevents the syft
+// command line from growing excessively large with redundant --exclude flags.
+func deduplicateExcludeDirs(dirs []string) []string {
+	// Remove exact duplicates first
+	seen := make(map[string]bool, len(dirs))
+	unique := make([]string, 0, len(dirs))
+	for _, d := range dirs {
+		cleaned := filepath.Clean(d)
+		if !seen[cleaned] {
+			seen[cleaned] = true
+			unique = append(unique, cleaned)
+		}
+	}
+
+	// Sort by length so shorter (parent) paths come first
+	slices.SortFunc(unique, func(a, b string) int {
+		if len(a) != len(b) {
+			return len(a) - len(b)
+		}
+		return strings.Compare(a, b)
+	})
+
+	// Keep only paths that are not subpaths of an already-kept path
+	var result []string
+	for _, d := range unique {
+		covered := false
+		for _, kept := range result {
+			if isSubpathOf(d, kept) {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			result = append(result, d)
+		}
+	}
+	return result
 }
